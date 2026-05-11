@@ -28,3 +28,8 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+Interface/重复确认.har
+Interface/重复项.har
+Interface/errorreparent.har
+Interface/reparent.har
+.gitignore

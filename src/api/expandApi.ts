@@ -603,7 +603,7 @@ class ExpandAPI {
 		}
 
 		// 判断是否最新修订版
-		const isLastRev = node['ds6w:isLastRevision'] === 'true' || node.islastrevision === 'true';
+		const isLastRev = String(node['ds6w:isLastRevision'] || node.islastrevision || '').toLowerCase() === 'true';
 
 		// 判断是否锁定
 		const isReserved = node['ds6w:reserved'] === 'TRUE' || node['ds6w:reserved'] === 'true';

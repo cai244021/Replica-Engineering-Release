@@ -4,7 +4,13 @@
  */
 
 import BaseAPI from '../base';
-import type { Set3DPartTemplateParams, Set3DPartTemplateResponse, Set3DPartTemplateQueryParams } from './modelerTypes';
+import type {
+	GetCADOriginsTypesParams,
+	GetCADOriginsTypesResponse,
+	Set3DPartTemplateParams,
+	Set3DPartTemplateResponse,
+	Set3DPartTemplateQueryParams
+} from './modelerTypes';
 
 class ModelerAPI extends BaseAPI {
 	constructor() {
@@ -34,6 +40,20 @@ class ModelerAPI extends BaseAPI {
 			return response;
 		} catch (error) {
 			console.error('set3DPartTemplateExpression error:', error);
+			throw error;
+		}
+	}
+
+	async getCADOriginsTypes(data: GetCADOriginsTypesParams, headers?: Record<string, string>) {
+		try {
+			const response = await this.post<GetCADOriginsTypesResponse>(
+				'/resources/v1/modelerServices/authoring/op/getCADOriginsTypes',
+				data as unknown as Record<string, unknown>,
+				{ headers }
+			);
+			return response;
+		} catch (error) {
+			console.error('getCADOriginsTypes error:', error);
 			throw error;
 		}
 	}

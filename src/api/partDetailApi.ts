@@ -103,18 +103,114 @@ export interface ReparentOperation {
 	source: {
 		instance: string;
 		isInstanceOf: string;
+		pathArray?: string[];
 	};
 	target: {
-		children: string[];
+		children?: string[];
 		isInstanceOf: string;
 		pathArray: string[];
 	};
+	mode?: 'CutPaste';
 }
 
 export interface ReparentParams {
 	bAllOrNothing: boolean;
+	lockConnectionAsParent?: boolean;
 	operations: ReparentOperation[];
 	version: '1.0';
+}
+
+export interface ReparentSourceItem {
+	physicalId: string;
+	instance?: string;
+	pathArray?: string[];
+	mode?: 'CutPaste';
+}
+
+export interface InsertExistingProductOperation {
+	parent: {
+		isInstanceOf: string;
+		children: string[];
+	};
+	child: {
+		isInstanceOf: string;
+	};
+}
+
+export interface InsertExistingProductParams {
+	version: '1.0';
+	bAllOrNothing: boolean;
+	lockConnectionAsParent: boolean;
+	operations: InsertExistingProductOperation[];
+}
+
+export interface InsertExistingProductResult {
+	status: string;
+	parent: string;
+	child: string;
+	instance?: string;
+	instanceName?: string;
+	messages?: string[];
+}
+
+export interface InsertExistingProductResponse {
+	status: string;
+	results?: InsertExistingProductResult[];
+}
+
+export interface DuplicateProductItem {
+	physicalid: string;
+	name: string;
+	revision: string;
+	typeDisplayName: string;
+	current: string;
+	imageUrl: string;
+}
+
+export interface DuplicateProductOptionsParams {
+	data: DuplicateProductItem[];
+	command: 'duplicate';
+}
+
+export interface DuplicateProductOptionsResponse {
+	status?: string;
+	report?: unknown[];
+	results?: unknown[];
+	hasExtProviders?: Array<{ physicalid: string }>;
+}
+
+export interface DuplicateStructureOption {
+	key: string;
+	value: string | boolean;
+	usingAdvancedDuplicate?: boolean;
+}
+
+export interface DuplicateStructureParams {
+	data: Array<{ physicalid: string }>;
+	options: DuplicateStructureOption[];
+	folderid: null;
+	NLVEnabled: string;
+	includeDrawings: boolean;
+	keepConfig: boolean;
+	excludeComposeeTypes: string[];
+	notificationTimeout: number;
+	metrics: {
+		UXName: string;
+		client_app_domain: string;
+		client_app_name: string;
+	};
+}
+
+export interface DuplicateStructureResult {
+	physicalid: string;
+	sourceid: string;
+	isRoot: boolean;
+}
+
+export interface DuplicateStructureResponse {
+	status?: string;
+	report?: unknown[];
+	results?: DuplicateStructureResult[][];
 }
 
 export interface MaturityObjectParams {
@@ -370,7 +466,12 @@ class PartDetailAPI {
 		}
 	}
 
-	async reparentParts(sourcePhysicalIds: string[], targetPhysicalId: string, children: string[] = [], targetPathArray?: string[]): Promise<unknown> {
+	async reparentParts(
+		sourceItems: Array<string | ReparentSourceItem>,
+		targetPhysicalId: string,
+		children: string[] = [],
+		targetPathArray?: string[]
+	): Promise<unknown> {
 		const baseInfoStore = useBaseInfoStore();
 
 		if (!baseInfoStore.spaceUrl) {
@@ -385,20 +486,35 @@ class PartDetailAPI {
 
 		const securityContext = baseInfoStore.securityContext || '';
 		const endpoint = '/resources/product/authoring/reparent';
-		const url = `${endpoint}?tenant=OnPremise`;
-		const params: ReparentParams = {
-			bAllOrNothing: true,
-			operations: sourcePhysicalIds.map(physicalId => ({
+		const url = `${endpoint}?securityContext=${encodeURIComponent(securityContext)}&tenant=OnPremise&xrequestedwith=xmlhttprequest`;
+		const operations: ReparentOperation[] = sourceItems.map(item => {
+			const sourceItem = typeof item === 'string' ? { physicalId: item } : item;
+			const operation: ReparentOperation = {
 				source: {
-					instance: '',
-					isInstanceOf: physicalId
+					instance: sourceItem.instance || '',
+					isInstanceOf: sourceItem.physicalId
 				},
 				target: {
-					children,
 					isInstanceOf: targetPhysicalId,
 					pathArray: targetPathArray?.length ? targetPathArray : [targetPhysicalId]
 				}
-			})),
+			};
+
+			if (sourceItem.pathArray?.length) {
+				operation.source.pathArray = sourceItem.pathArray;
+			}
+			if (sourceItem.mode) {
+				operation.mode = sourceItem.mode;
+			}
+			if (!sourceItem.mode && children.length) {
+				operation.target.children = children;
+			}
+			return operation;
+		});
+		const params: ReparentParams = {
+			bAllOrNothing: true,
+			lockConnectionAsParent: false,
+			operations,
 			version: '1.0'
 		};
 
@@ -414,6 +530,144 @@ class PartDetailAPI {
 			return response;
 		} catch (error) {
 			console.error('[PartDetailAPI] 插入子级失败:', error);
+			throw error;
+		}
+	}
+
+	async insertExistingProducts(operations: InsertExistingProductOperation[]): Promise<InsertExistingProductResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			console.log('[PartDetailAPI] 3DSpace URL 为空，先获取 URL');
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			console.log('[PartDetailAPI] SecurityContext 为空，先获取');
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/product/instances/';
+		const url = `${endpoint}?securityContext=${encodeURIComponent(securityContext)}`;
+		const params: InsertExistingProductParams = {
+			version: '1.0',
+			bAllOrNothing: false,
+			lockConnectionAsParent: false,
+			operations
+		};
+
+		console.log('[PartDetailAPI] 插入现有产品 URL:', url);
+		console.log('[PartDetailAPI] 插入现有产品 SecurityContext:', securityContext);
+		console.log('[PartDetailAPI] 插入现有产品参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.post(url, params as unknown as Record<string, unknown>, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 插入现有产品响应:', response);
+			return response as InsertExistingProductResponse;
+		} catch (error) {
+			console.error('[PartDetailAPI] 插入现有产品失败:', error);
+			throw error;
+		}
+	}
+
+	async duplicateProducts(data: DuplicateProductItem[]): Promise<DuplicateProductOptionsResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			console.log('[PartDetailAPI] 3DSpace URL 为空，先获取 URL');
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			console.log('[PartDetailAPI] SecurityContext 为空，先获取');
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/lifecycle/duplicate/options';
+		const url = `${endpoint}?tenant=OnPremise&xrequestedwith=xmlhttprequest`;
+		const params: DuplicateProductOptionsParams = {
+			data,
+			command: 'duplicate'
+		};
+
+		console.log('[PartDetailAPI] 插入重复项 URL:', url);
+		console.log('[PartDetailAPI] 插入重复项 SecurityContext:', securityContext);
+		console.log('[PartDetailAPI] 插入重复项参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.post(url, params as unknown as Record<string, unknown>, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 插入重复项响应:', response);
+			return response as DuplicateProductOptionsResponse;
+		} catch (error) {
+			console.error('[PartDetailAPI] 插入重复项失败:', error);
+			throw error;
+		}
+	}
+
+	async duplicateStructure(data: Array<{ physicalid: string }>, prefix: string, wholeStructure: boolean): Promise<DuplicateStructureResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			console.log('[PartDetailAPI] 3DSpace URL 为空，先获取 URL');
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			console.log('[PartDetailAPI] SecurityContext 为空，先获取');
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/lifecycle/duplicate/structure';
+		const url = `${endpoint}?tenant=OnPremise&xrequestedwith=xmlhttprequest`;
+		const params: DuplicateStructureParams = {
+			data,
+			options: [
+				{
+					key: 'wholeStructure',
+					value: wholeStructure
+				},
+				{
+					key: 'prefix',
+					value: prefix
+				},
+				{
+					key: 'advanced',
+					value: true,
+					usingAdvancedDuplicate: false
+				}
+			],
+			folderid: null,
+			NLVEnabled: '',
+			includeDrawings: false,
+			keepConfig: false,
+			excludeComposeeTypes: [],
+			notificationTimeout: 600,
+			metrics: {
+				UXName: 'Duplicate',
+				client_app_domain: '3DEXPERIENCE 3DDashboard',
+				client_app_name: 'ENXENG_AP'
+			}
+		};
+
+		console.log('[PartDetailAPI] 复制结构 URL:', url);
+		console.log('[PartDetailAPI] 复制结构 SecurityContext:', securityContext);
+		console.log('[PartDetailAPI] 复制结构参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.post(url, params as unknown as Record<string, unknown>, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 复制结构响应:', response);
+			return response as DuplicateStructureResponse;
+		} catch (error) {
+			console.error('[PartDetailAPI] 复制结构失败:', error);
 			throw error;
 		}
 	}

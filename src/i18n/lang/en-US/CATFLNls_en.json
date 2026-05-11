@@ -1,0 +1,59 @@
+{
+  "FL_CMDCollapseThumb": "Collapse Thumbnail",
+  "FL_CMDExpandThumb": "Expand Thumbnail",
+  "FL_CMDHideShowThumb":"Hide/Show all Thumbnails",
+  "FL_CMDLayoutOrientation": "Layout Orientation",
+  "FL_CMDLayoutDown": "Down",
+  "FL_CMDLayoutUp": "Up",
+  "FL_CMDLayoutLeft": "Left",
+  "FL_CMDLayoutRight": "Right",
+  
+  "ApprovalButtonYes": "Yes",
+  "ApprovalButtonNo": "No",
+  "PreviousContentTitle": "Previous content",
+  "PreviousContentText": "Load previously saved content",
+  
+  "SessionTimeout_ToContinueTitle": "Inactive session",
+  "SessionTimeout_ToContinueText": "Due to inactivity your session will expire in $1.",
+  "KeepSessionAliveButtonTitle": "Keep the session alive",
+
+  "SessionTimeout_ExpiredSessionTitle": "Expired session",
+  "SessionTimeout_ExpiredSessionText": "Your session has been closed after $1 minutes of inactivity.",
+  "RestartSessionButtonTitle": "Restart session",
+
+  "FLReplaceByLatestRevision":"Replace By Latest Revision",
+  "FLReplaceByLatestRevision_report":"Replace By Revision Report",
+  "authoring_failed_EC":"You cannot insert, update, replace by, nor copy/cut/paste an Embedded Component.",
+  "ERR_FUN092398":"Check the following possible causes:<br>- Edition is not allowed due to 'Maturity'. Revise these data before editing.<br>- Edition is not allowed due to lock. Ask the reservation owner to unlock.<br>- You do not have edition rights. Contact your administrator.",
+  "FLRevisionUpdate": "Update Revisions",
+  "FLRevisionUpdate_report": "Update Revisions Report",
+  
+  "FLReplaceByRevision": "Replace By Revision",
+  "FLReplaceByRevision_report": "Replace By Revision Report",
+  
+  "nothing_to_refresh": "No data to refresh",
+  
+  "msg_error_no_widget_id": "Internal error, widget id is not defined",
+  
+  "msg_error_detach_doc": "Error Document {1} could not be detached",
+  "msg_success_detach_doc": "Document {1} detached",
+
+  "Reference_Attributes_Tab_Label": "Reference Attributes",
+  "Instance_Attributes_Tab_Label": "Instance Attributes",
+  "Restore_Selected_Type_Button_Label": "Restore attributes for selected type",
+  "Restore_All_Type_Button_Label": "Restore attributes for all types",
+  "Customize_Displayed_Name_Dialog_Label": "Customize Displayed Name",
+  "Restore_Attributes_Dialog_Label": "Restore Attributes",
+  "Separator_Input_Placeholder": "Enter a separator",
+  "Reference_Type": "Reference Type",
+  "Instance_Type": "Instance Type",
+  "Separator": "Separator",
+  "Preview": "Preview",
+  "Available_Attributes": "Available Attributes",
+  "Displayed_Attributes": "Displayed Attributes",
+  "Visibility": "Visibility",
+  "Functional_Reference" : "Functional Reference"
+
+  
+}
+

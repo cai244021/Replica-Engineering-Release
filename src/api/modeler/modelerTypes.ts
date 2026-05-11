@@ -26,3 +26,18 @@ export interface Set3DPartTemplateResponse {
 		type: string;
 	};
 }
+
+export interface CADOriginsTypeItem {
+	objectId: string;
+}
+
+export interface GetCADOriginsTypesParams {
+	data: CADOriginsTypeItem[];
+}
+
+export interface GetCADOriginsTypesResponse {
+	result: {
+		cadOrigintypes?: string[];
+		V_usages?: string[];
+	};
+}

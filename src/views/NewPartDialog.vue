@@ -268,7 +268,7 @@
 				取消
 			</el-button>
 			<el-button
-				v-if="isDefaultPartTemplate"
+				v-if="showSaveButton"
 				class="dialog-btn"
 				size="default"
 				:loading="saving"
@@ -290,6 +290,8 @@ import { BaseDialog } from '@/components/common';
 import { useBaseInfoStore } from '@/store/modules/baseInfo';
 import { useDialogStore } from '@/store/modules/dialog';
 import { useQueryModeStore } from '@/store/modules/queryMode';
+import enNewWidgetNls from '@/i18n/lang/en-US/ENONewWidgetNls_en.json';
+import zhNewWidgetNls from '@/i18n/lang/zh-CN/ENONewWidgetNls_zh.json';
 import type { TypeInfoResponse, CreateResponse, TemplateAttribute } from '@/api/vplm/vplmTypes';
 import type { CreateContentParams, CreateContentRequest, Metrics } from '@/api/collab/collabTypes';
 
@@ -389,6 +391,8 @@ const isDefaultPartTemplate = computed(() => {
 	// 根据模板值判断是否为3DEXPERIENCE默认零件
 	return formData.value.Template === 'PartTemplate';
 });
+
+const showSaveButton = computed(() => isDefaultPartTemplate.value && baseInfoStore.currentUser === 'admin_platform');
 
 // 动态表单校验规则
 const formRules = ref<FormRules>({});
@@ -515,6 +519,33 @@ const classificationData = ref({
 	bookmarkFolder: '',
 	library: ''
 });
+
+const getCreateErrorCode = (response: unknown) => {
+	const result = (response as { result?: { errors?: { errorCode?: string }[] }[] })?.result || [];
+	for (const item of result) {
+		const errorCode = item.errors?.find(error => !!error.errorCode)?.errorCode;
+		if (errorCode) return errorCode;
+	}
+	return '';
+};
+
+const getCreateNls = () => {
+	const language = localStorage.getItem('language') || navigator.language || 'zh';
+	return language.toLowerCase().startsWith('en') ? enNewWidgetNls : zhNewWidgetNls;
+};
+
+const getCreateContextTypeText = () => Array.from(new Set(dialogStore.createContextTypeNames.filter(Boolean))).join(',');
+
+const showCreateErrorMessage = (response: unknown) => {
+	const errorCode = getCreateErrorCode(response);
+	if (!errorCode) return false;
+
+	const nls = getCreateNls() as Record<string, string>;
+	const title = nls[`${errorCode}_Title`] || nls[`${errorCode}_Subtitle`] || nls[errorCode] || errorCode;
+	const typeText = getCreateContextTypeText();
+	ElMessage.error(typeText ? `${title}:${typeText}` : title);
+	return true;
+};
 
 // 处理 publicAttributes 数据
 const processPublicAttributes = (typeInfoData: TypeInfoResponse) => {
@@ -967,15 +998,17 @@ const handleSubmit = async () => {
 				}
 
 				// 调用创建零件接口
-				const response = await CollabAPI.createProduct(
-					createRequest,
-					{},
-					{
-						SecurityContext: `ctx::${securityContext}`
-					}
-				);
+				const createQuery = {
+					aggregating_context: dialogStore.createContextPhysicalIds
+				};
+				const response = await CollabAPI.createProduct(createRequest, createQuery, {
+					SecurityContext: `ctx::${securityContext}`
+				});
 
 				console.log('创建零件响应:', JSON.parse(JSON.stringify(response)));
+				if (showCreateErrorMessage(response)) {
+					return;
+				}
 				if (response && response.result && response.result.length > 0) {
 					const resultItem = response.result[0];
 					const createdPhysicalId = resultItem.physicalid || '';
@@ -1057,13 +1090,15 @@ const handleSubmit = async () => {
 						const isRepeatMode = formData.value.repeat;
 						console.log('准备 emit success 事件:', { physicalid: createdPhysicalId, name: createdName, type: createdType, repeat: isRepeatMode });
 						// 传递创建的零件信息给父组件，包含重复模式标记和创建类型
-						emit('success', {
+						const createdInfo = {
 							physicalid: createdPhysicalId,
 							name: createdName,
 							type: createdType,
 							repeat: isRepeatMode,
 							createType: 'part'
-						});
+						} as const;
+						emit('success', createdInfo);
+						dialogStore.notifyCreated(createdInfo);
 						console.log('success 事件已 emit');
 
 						// 将新创建的零件添加到最近记录
@@ -1076,9 +1111,22 @@ const handleSubmit = async () => {
 							// 未勾选重复，关闭弹框
 							dialogStore.closeDialog();
 							resetForm(false);
-							// 切换到数据库模式并跳转到零件详情页
 							queryModeStore.switchToDbMode();
+							if (dialogStore.createSource === 'partDetailTable') {
+								return;
+							}
+							// 切换到数据库模式并跳转到零件详情页
 							router.push({ name: 'partDetail', params: { physicalId: createdPhysicalId }, query: { from: 'create' } });
+						} else if (dialogStore.createSource !== 'partDetailTable') {
+							queryModeStore.switchToDbMode();
+							dialogStore.startNavigation();
+							dialogStore.setShouldResetForm(true);
+							router.push({ name: 'partDetail', params: { physicalId: createdPhysicalId }, query: { from: 'create' } });
+						} else {
+							const currentSpace = formData.value.collaborativeSpace;
+							resetFormDataOnly();
+							await loadTemplateData(currentSpace);
+							ElMessage.success('零件创建成功，可继续创建下一个');
 						}
 						// 如果勾选了重复，保持弹框状态，让父组件决定是跳转还是重置
 					} else {

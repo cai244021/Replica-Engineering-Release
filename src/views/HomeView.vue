@@ -1091,11 +1091,13 @@ const formatDate = (dateString: string): string => {
 
 // 处理创建产品
 const handleCreateProduct = () => {
+	dialogStore.clearCreateContext();
 	dialogStore.openProductDialog();
 };
 
 // 处理创建零件
 const handleCreatePart = () => {
+	dialogStore.clearCreateContext();
 	dialogStore.openPartDialog();
 };
 

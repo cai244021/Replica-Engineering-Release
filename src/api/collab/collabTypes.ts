@@ -92,6 +92,7 @@ export interface CreateContentQueryParams {
 	parsed?: string;
 	activeFolder?: string;
 	xrequestedwith?: string;
+	aggregating_context?: string[];
 }
 
 /** 数据元素 */

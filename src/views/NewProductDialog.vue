@@ -243,6 +243,8 @@ import { BaseDialog } from '@/components/common';
 import { useBaseInfoStore } from '@/store/modules/baseInfo';
 import { useDialogStore } from '@/store/modules/dialog';
 import { useQueryModeStore } from '@/store/modules/queryMode';
+import enNewWidgetNls from '@/i18n/lang/en-US/ENONewWidgetNls_en.json';
+import zhNewWidgetNls from '@/i18n/lang/zh-CN/ENONewWidgetNls_zh.json';
 import type { TypeInfoResponse, CreateResponse, TemplateAttribute } from '@/api/vplm/vplmTypes';
 import type { CreateContentParams, CreateContentRequest, Metrics } from '@/api/collab/collabTypes';
 
@@ -456,6 +458,33 @@ const classificationData = ref({
 	bookmarkFolder: '',
 	library: ''
 });
+
+const getCreateErrorCode = (response: unknown) => {
+	const result = (response as { result?: { errors?: { errorCode?: string }[] }[] })?.result || [];
+	for (const item of result) {
+		const errorCode = item.errors?.find(error => !!error.errorCode)?.errorCode;
+		if (errorCode) return errorCode;
+	}
+	return '';
+};
+
+const getCreateNls = () => {
+	const language = localStorage.getItem('language') || navigator.language || 'zh';
+	return language.toLowerCase().startsWith('en') ? enNewWidgetNls : zhNewWidgetNls;
+};
+
+const getCreateContextTypeText = () => Array.from(new Set(dialogStore.createContextTypeNames.filter(Boolean))).join(',');
+
+const showCreateErrorMessage = (response: unknown) => {
+	const errorCode = getCreateErrorCode(response);
+	if (!errorCode) return false;
+
+	const nls = getCreateNls() as Record<string, string>;
+	const title = nls[`${errorCode}_Title`] || nls[`${errorCode}_Subtitle`] || nls[errorCode] || errorCode;
+	const typeText = getCreateContextTypeText();
+	ElMessage.error(typeText ? `${title}:${typeText}` : title);
+	return true;
+};
 
 const oldClassificationData = ref([
 	{
@@ -829,15 +858,17 @@ const handleSubmit = async () => {
 				}
 
 				// 调用创建产品接口
-				const response = await CollabAPI.createProduct(
-					createRequest,
-					{},
-					{
-						SecurityContext: encodeURIComponent(`ctx::${securityContext}`)
-					}
-				);
+				const createQuery = {
+					aggregating_context: dialogStore.createContextPhysicalIds
+				};
+				const response = await CollabAPI.createProduct(createRequest, createQuery, {
+					SecurityContext: encodeURIComponent(`ctx::${securityContext}`)
+				});
 
 				console.log('创建产品响应:', JSON.parse(JSON.stringify(response)));
+				if (showCreateErrorMessage(response)) {
+					return;
+				}
 				if (response && response.result && response.result.length > 0) {
 					const resultItem = response.result[0];
 					const createdPhysicalId = resultItem.physicalid || '';
@@ -914,13 +945,15 @@ const handleSubmit = async () => {
 						const isRepeatMode = formData.value.repeat;
 						console.log('准备 emit success 事件:', { physicalid: createdPhysicalId, name: createdName, type: createdType, repeat: isRepeatMode });
 						// 传递创建的产品信息给父组件，包含重复模式标记和创建类型
-						emit('success', {
+						const createdInfo = {
 							physicalid: createdPhysicalId,
 							name: createdName,
 							type: createdType,
 							repeat: isRepeatMode,
 							createType: 'product'
-						});
+						} as const;
+						emit('success', createdInfo);
+						dialogStore.notifyCreated(createdInfo);
 						console.log('success 事件已 emit');
 
 						// 将新创建的产品添加到最近记录
@@ -933,9 +966,22 @@ const handleSubmit = async () => {
 							// 未勾选重复，关闭弹框
 							dialogStore.closeDialog();
 							resetForm(false);
-							// 切换到数据库模式并跳转
 							queryModeStore.switchToDbMode();
+							if (dialogStore.createSource === 'partDetailTable') {
+								return;
+							}
+							// 切换到数据库模式并跳转
 							router.push({ name: 'partDetail', params: { physicalId: createdPhysicalId }, query: { from: 'create' } });
+						} else if (dialogStore.createSource !== 'partDetailTable') {
+							queryModeStore.switchToDbMode();
+							dialogStore.startNavigation();
+							dialogStore.setShouldResetForm(true);
+							router.push({ name: 'partDetail', params: { physicalId: createdPhysicalId }, query: { from: 'create' } });
+						} else {
+							const currentSpace = formData.value.collaborativeSpace;
+							resetFormDataOnly();
+							await loadTemplateData(currentSpace);
+							ElMessage.success('产品创建成功，可继续创建下一个');
 						}
 						// 如果勾选了重复，保持弹框状态，让父组件决定是跳转还是重置
 					} else {

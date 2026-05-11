@@ -8,7 +8,14 @@ export const useDialogStore = defineStore('dialog', {
 		isPartDialog: ref(false),
 		repeat: ref(false),
 		isNavigating: ref(false),
-		shouldResetForm: ref(false)
+		shouldResetForm: ref(false),
+		createSource: ref<'home' | 'partDetailTable'>('home'),
+		createContextPhysicalIds: ref<string[]>([]),
+		createContextRowIds: ref<string[]>([]),
+		createContextTypeNames: ref<string[]>([]),
+		createContextVersion: ref(0),
+		lastCreatedInfo: ref<{ physicalid: string; name: string; type: string; repeat?: boolean; createType?: 'product' | 'part' | 'drawing' } | null>(null),
+		lastCreatedVersion: ref(0)
 	}),
 	actions: {
 		openProductDialog() {
@@ -46,6 +53,24 @@ export const useDialogStore = defineStore('dialog', {
 		},
 		setShouldResetForm(val: boolean) {
 			this.shouldResetForm = val;
+		},
+		setCreateContext(source: 'home' | 'partDetailTable', physicalIds: string[] = [], rowIds: string[] = [], typeNames: string[] = []) {
+			this.createSource = source;
+			this.createContextPhysicalIds = physicalIds;
+			this.createContextRowIds = rowIds;
+			this.createContextTypeNames = typeNames;
+			this.createContextVersion += 1;
+		},
+		clearCreateContext() {
+			this.createSource = 'home';
+			this.createContextPhysicalIds = [];
+			this.createContextRowIds = [];
+			this.createContextTypeNames = [];
+			this.createContextVersion += 1;
+		},
+		notifyCreated(info: { physicalid: string; name: string; type: string; repeat?: boolean; createType?: 'product' | 'part' | 'drawing' }) {
+			this.lastCreatedInfo = info;
+			this.lastCreatedVersion += 1;
 		}
 	}
 });

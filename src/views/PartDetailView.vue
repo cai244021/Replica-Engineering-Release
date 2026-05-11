@@ -163,12 +163,73 @@
 					<span class="data-count">({{ childrenData.length }})</span>
 				</div>
 				<div class="toolbar">
-					<el-button
-						type="primary"
-						size="small"
-						circle>
-						<el-icon><Plus /></el-icon>
-					</el-button>
+					<el-dropdown
+						trigger="click"
+						placement="bottom-start"
+						popper-class="children-create-dropdown"
+						:teleported="true"
+						@command="handleCreateMenuCommand">
+						<span class="toolbar-create-trigger">
+							<el-icon><Plus /></el-icon>
+						</span>
+						<template #dropdown>
+							<div class="create-menu-panel">
+								<div class="create-menu-section-title">产品</div>
+								<el-dropdown-menu>
+									<el-dropdown-item command="newProduct">
+										<span class="create-menu-icon product-new-icon"></span>
+										<span>新产品</span>
+									</el-dropdown-item>
+									<el-dropdown-item command="existingProduct">
+										<span class="create-menu-icon product-existing-icon"></span>
+										<span>现有产品</span>
+									</el-dropdown-item>
+									<el-dropdown-item command="insertDuplicate">
+										<span class="create-menu-icon insert-duplicate-icon"></span>
+										<span>插入重复项</span>
+									</el-dropdown-item>
+									<el-dropdown-item command="newPart">
+										<span class="create-menu-icon part-new-icon"></span>
+										<span>新零件</span>
+									</el-dropdown-item>
+									<el-dropdown-item command="newShapeRepresentation">
+										<span class="create-menu-icon shape-new-icon"></span>
+										<span>新变形白</span>
+									</el-dropdown-item>
+									<el-dropdown-item command="materialQuantity">
+										<span class="create-menu-icon material-quantity-icon"></span>
+										<span>材料的新数量</span>
+									</el-dropdown-item>
+									<el-dropdown-item command="existingMaterial">
+										<span class="create-menu-icon material-existing-icon"></span>
+										<span>现有原材料</span>
+									</el-dropdown-item>
+								</el-dropdown-menu>
+								<div class="create-menu-section-title">规格文档</div>
+								<el-dropdown-menu>
+									<el-dropdown-item command="uploadDocument">
+										<span class="create-menu-icon upload-document-icon"></span>
+										<span>上传文档</span>
+									</el-dropdown-item>
+									<el-dropdown-item command="existingDocument">
+										<span class="create-menu-icon existing-document-icon"></span>
+										<span>现有文档</span>
+									</el-dropdown-item>
+								</el-dropdown-menu>
+								<div class="create-menu-section-title">绘图</div>
+								<el-dropdown-menu>
+									<el-dropdown-item command="newDrawing">
+										<span class="create-menu-icon drawing-new-icon"></span>
+										<span>新工程图</span>
+									</el-dropdown-item>
+									<el-dropdown-item command="existingDrawing">
+										<span class="create-menu-icon drawing-existing-icon"></span>
+										<span>现有工程图</span>
+									</el-dropdown-item>
+								</el-dropdown-menu>
+							</div>
+						</template>
+					</el-dropdown>
 					<el-button
 						size="small"
 						circle>
@@ -212,7 +273,7 @@
 						ref="tableRef"
 						v-loading="childrenLoading"
 						class="children-table children-table-v2"
-						:columns="childrenTableColumns"
+						:columns="createChildrenTableColumns(width)"
 						:data="flattenChildrenData"
 						:width="width"
 						:height="height"
@@ -267,8 +328,8 @@
 		</el-dialog>
 		<el-dialog
 			v-model="maturityDialogVisible"
-			:title="`成熟度 - ${maturityDialogTitle}`"
-			width="920px"
+			:title="maturityDialogTitle"
+			width="420px"
 			class="maturity-dialog"
 			:show-close="true">
 			<div
@@ -319,19 +380,62 @@
 				<el-button @click="maturityDialogVisible = false">取消</el-button>
 			</template>
 		</el-dialog>
+		<el-dialog
+			v-model="duplicateDialogVisible"
+			:title="`插入重复项 - ${duplicateDialogTitle}`"
+			width="690px"
+			class="duplicate-dialog">
+			<div class="duplicate-form">
+				<div class="duplicate-form-row">
+					<span class="duplicate-form-label">添加前缀:</span>
+					<el-input
+						v-model="duplicatePrefix"
+						class="duplicate-prefix-input"
+						size="small" />
+				</div>
+				<el-checkbox v-model="duplicateIncludeStructure">包括结构对象</el-checkbox>
+				<div class="duplicate-form-row">
+					<span class="duplicate-form-label">合作区</span>
+					<el-select
+						v-model="duplicateSecurityContext"
+						class="duplicate-security-select"
+						size="small"
+						disabled>
+						<el-option
+							:label="duplicateSecurityContextLabel"
+							:value="duplicateSecurityContext" />
+					</el-select>
+				</div>
+			</div>
+			<template #footer>
+				<el-button
+					type="primary"
+					:loading="duplicateSubmitting"
+					@click="submitDuplicateProducts">
+					复制
+				</el-button>
+				<el-button @click="duplicateDialogVisible = false">取消</el-button>
+			</template>
+		</el-dialog>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted, onUnmounted, ref } from 'vue';
+import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ArrowLeft, ArrowDown, Plus, Minus, View, Filter, Sort, Refresh, List, Download, Check, Close, Loading } from '@element-plus/icons-vue';
 import { ElCheckbox, ElIcon, ElImage, ElMessage, ElMessageBox, ElTag } from 'element-plus';
 import type { Column } from 'element-plus';
 import partDetailApi from '@/api/partDetailApi';
 import expandApi, { type TreeNode } from '@/api/expandApi';
-import type { MaturityObjectParams, MaturityState, PromoteMaturityParams, StateTransition, PartInfo } from '@/api/partDetailApi';
+import { ModelerAPI } from '@/api';
+import type { DuplicateProductItem, MaturityObjectParams, MaturityState, PromoteMaturityParams, StateTransition, PartInfo, ReparentSourceItem } from '@/api/partDetailApi';
+import { useBaseInfoStore } from '@/store';
+import { useDialogStore } from '@/store/modules/dialog';
 import { useQueryModeStore } from '@/store/modules/queryMode';
+import dsSearchInput from '@/plugins/ds-search-input';
+import enCatflNls from '@/i18n/lang/en-US/CATFLNls_en.json';
+import zhCatflNls from '@/i18n/lang/zh-CN/CATFLNls_zh.json';
 
 // 路由
 const route = useRoute();
@@ -339,6 +443,8 @@ const router = useRouter();
 
 // 查询模式
 const queryModeStore = useQueryModeStore();
+const dialogStore = useDialogStore();
+const baseInfoStore = useBaseInfoStore();
 
 // 默认缩略图
 const defaultThumbnail = [
@@ -386,10 +492,48 @@ interface ChildDragItem {
 	'ds6wg:revision': string;
 	cestamp?: string;
 	relationId?: string;
+	path?: string[];
+	sourceParentRowId?: string;
 	rowId: string;
 }
 
+interface ExistingProductSearchItem {
+	'physicalid'?: string;
+	'physicalId'?: string;
+	'id'?: string;
+	'objectId'?: string;
+	'ds6w:label'?: string;
+	'label'?: string;
+	'name'?: string;
+	'title'?: string;
+	'displayName'?: string;
+	'ds6wg:revision'?: string;
+	'ds6w:type'?: string;
+	'ds6w:status'?: string;
+	'thumbnail_2d'?: string;
+	'icon'?: string;
+}
+
+interface ExistingProductParentContext {
+	physicalId: string;
+	name: string;
+	row?: TreeNode;
+	children: string[];
+}
+
 type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger';
+type CreateMenuCommand =
+	| 'newProduct'
+	| 'existingProduct'
+	| 'insertDuplicate'
+	| 'newPart'
+	| 'newShapeRepresentation'
+	| 'materialQuantity'
+	| 'existingMaterial'
+	| 'uploadDocument'
+	| 'existingDocument'
+	| 'newDrawing'
+	| 'existingDrawing';
 
 const enterpriseDialogVisible = ref(false);
 const enterpriseCodeRows = ref<EnterpriseCodeRow[]>([]);
@@ -405,6 +549,21 @@ const maturitySelectedObject = ref<MaturityObjectParams | null>(null);
 const maturitySelectedSource = ref<'parent' | 'child'>('parent');
 const maturitySelectedRow = ref<TreeNode | null>(null);
 const includeStructureObjects = ref(false);
+const duplicateDialogVisible = ref(false);
+const duplicateSubmitting = ref(false);
+const duplicatePrefix = ref('');
+const duplicateIncludeStructure = ref(true);
+const duplicateSecurityContext = ref('');
+const duplicateTargets = ref<DuplicateProductItem[]>([]);
+const duplicateSecurityContextLabel = computed(() => {
+	const context = duplicateSecurityContext.value || baseInfoStore.securityContext || '';
+	return context.split('.').pop() || 'Common Space';
+});
+const duplicateDialogTitle = computed(() => {
+	const target = duplicateTargets.value[0];
+	if (!target) return '';
+	return `${target.typeDisplayName || '物理产品'}${target.name || ''} ${target.revision || ''}`.trim();
+});
 const columnWidths = ref<Record<string, number>>({
 	selection: 50,
 	label: 240,
@@ -448,6 +607,286 @@ const isChildrenRowSelected = (row: TreeNode) => selectedChildrenRows.value.some
 
 const isRowExpanding = (row: TreeNode) => expandingRowIds.value.has(row.id);
 
+const getParentPhysicalId = () => partInfo.value?.resourceid || partInfo.value?.physicalid || currentPhysicalId.value;
+
+const getParentTypeName = () => partInfo.value?.['ds6w:globalType'] || partInfo.value?.['ds6w:type'] || '';
+
+const getChildTypeName = (row: TreeNode) => row.typeDisplayName || row.globalType || '';
+
+const validateCreateContext = async (contextPhysicalIds: string[]) => {
+	const response = await ModelerAPI.getCADOriginsTypes({
+		data: contextPhysicalIds.map(objectId => ({ objectId }))
+	});
+	const usages = response?.result?.V_usages || [];
+	if (usages.includes('3DPart')) {
+		ElMessage.error('错误: 无法插入到选定对象下');
+		return false;
+	}
+	return true;
+};
+
+const openCreateDialogFromChildrenTable = async (command: 'newProduct' | 'newPart') => {
+	const selectedRows = [...selectedChildrenRows.value];
+	const contextPhysicalIds = selectedRows.length ? selectedRows.map(row => row.resourceid).filter(Boolean) : [getParentPhysicalId()].filter(Boolean);
+	const contextRowIds = selectedRows.map(row => row.id);
+	const contextTypeNames = selectedRows.length
+		? selectedRows.map(row => getChildTypeName(row)).filter(Boolean)
+		: [getParentTypeName()].filter(Boolean);
+
+	if (!contextPhysicalIds.length) {
+		ElMessage.warning('未获取到创建上下文');
+		return;
+	}
+
+	const canCreate = await validateCreateContext(contextPhysicalIds);
+	if (!canCreate) return;
+
+	if (selectedRows.length > 1) {
+		const title = command === 'newProduct' ? '插入新产品' : '插入新零件';
+		const message = command === 'newProduct' ? '是否确定要在多个父项下插入新产品?' : '是否确定要在多个父项下插入新零件?';
+		try {
+			await ElMessageBox.confirm(message, title, {
+				confirmButtonText: '确定',
+				cancelButtonText: '关闭',
+				showClose: true,
+				closeOnClickModal: false,
+				closeOnPressEscape: false
+			});
+		} catch (error) {
+			if (error === 'cancel' || error === 'close') {
+				return;
+			}
+			throw error;
+		}
+	}
+
+	dialogStore.setCreateContext('partDetailTable', contextPhysicalIds, contextRowIds, contextTypeNames);
+	if (command === 'newProduct') {
+		dialogStore.openProductDialog();
+		return;
+	}
+	dialogStore.openPartDialog();
+};
+
+const getExistingProductPhysicalId = (item: ExistingProductSearchItem) => item.physicalid || item.physicalId || item.id || item.objectId || '';
+
+const getExistingProductName = (item: ExistingProductSearchItem) =>
+	item['ds6w:label'] || item.label || item.name || item.title || item.displayName || getExistingProductPhysicalId(item);
+
+const getParentChildrenIds = (row?: TreeNode) => {
+	const children = row ? row.children || [] : childrenData.value;
+	return children.map(child => child.relationId).filter((relationId): relationId is string => !!relationId);
+};
+
+const getExistingProductParentContexts = (): ExistingProductParentContext[] => {
+	const selectedRows = [...selectedChildrenRows.value];
+	if (selectedRows.length) {
+		return selectedRows
+			.map(row => ({
+				physicalId: row.resourceid,
+				name: row.identifier || row.label || row.resourceid,
+				row,
+				children: getParentChildrenIds(row)
+			}))
+			.filter(item => !!item.physicalId);
+	}
+
+	const parentPhysicalId = getParentPhysicalId();
+	if (!parentPhysicalId) return [];
+	return [
+		{
+			physicalId: parentPhysicalId,
+			name: partInfo.value?.['ds6w:identifier'] || partInfo.value?.['ds6w:label'] || parentPhysicalId,
+			children: getParentChildrenIds()
+		}
+	];
+};
+
+const showInsertExistingReport = async (
+	results: { status: string; parent: string; instanceName?: string }[],
+	parents: ExistingProductParentContext[]
+) => {
+	const successResults = results.filter(item => item.status === 'success');
+	const parentNameMap = new Map(parents.map(parent => [parent.physicalId, parent.name]));
+	const content = successResults.map(item => `成功 在 ${parentNameMap.get(item.parent) || item.parent} 下插入 ${item.instanceName}。`).join('<br />');
+
+	await ElMessageBox.alert(content || '没有成功插入的数据。', '插入现有报告', {
+		confirmButtonText: '关闭',
+		dangerouslyUseHTMLString: true
+	});
+};
+
+const getInsertExistingFailureMessage = (response: { results?: Array<{ messages?: string[] }> }) => {
+	const messages = response.results?.flatMap(item => item.messages || []).filter(Boolean) || [];
+	return [...new Set(messages)].join('；');
+};
+
+const refreshAfterExistingProductInsert = async (parents: ExistingProductParentContext[]) => {
+	queryModeStore.switchToDbMode();
+	const rows = parents.map(parent => parent.row).filter((row): row is TreeNode => !!row);
+	if (rows.length) {
+		await Promise.all(rows.map(row => reloadAndExpandRow(row)));
+		return;
+	}
+	if (currentPhysicalId.value) {
+		await loadPartDetail(currentPhysicalId.value);
+	}
+};
+
+const insertExistingProducts = async (selectedProducts: ExistingProductSearchItem[]) => {
+	const childProducts = selectedProducts
+		.map(item => ({
+			physicalId: getExistingProductPhysicalId(item),
+			name: getExistingProductName(item)
+		}))
+		.filter(item => !!item.physicalId);
+
+	if (!childProducts.length) {
+		ElMessage.warning('未选择现有产品');
+		return;
+	}
+
+	const parents = getExistingProductParentContexts();
+	if (!parents.length) {
+		ElMessage.warning('未获取到插入父节点');
+		return;
+	}
+
+	const operations = parents.flatMap(parent =>
+		childProducts.map(child => ({
+			parent: {
+				isInstanceOf: parent.physicalId,
+				children: parent.children
+			},
+			child: {
+				isInstanceOf: child.physicalId
+			}
+		}))
+	);
+
+	const response = await partDetailApi.insertExistingProducts(operations);
+	if (response.status !== 'success') {
+		ElMessage.error(getInsertExistingFailureMessage(response) || '插入现有产品失败');
+		return;
+	}
+
+	await showInsertExistingReport(response.results || [], parents);
+	await refreshAfterExistingProductInsert(parents);
+};
+
+const openExistingProductDialogFromChildrenTable = () => {
+	dsSearchInput('', 'product', 'PSE', '', async value => {
+		try {
+			await insertExistingProducts(value as ExistingProductSearchItem[]);
+		} catch (error) {
+			console.error('[PartDetailView] 插入现有产品失败:', error);
+			ElMessage.error('插入现有产品失败');
+		}
+	});
+};
+
+const toDuplicateProductItem = (item: ExistingProductSearchItem): DuplicateProductItem => ({
+	physicalid: getExistingProductPhysicalId(item),
+	name: getExistingProductName(item),
+	revision: item['ds6wg:revision'] || '',
+	typeDisplayName: item['ds6w:type'] || '',
+	current: item['ds6w:status'] || '',
+	imageUrl: item.thumbnail_2d || item.icon || ''
+});
+
+const openInsertDuplicateDialogFromChildrenTable = () => {
+	dsSearchInput('', 'product', 'PSE', '', value => {
+		const targets = (value as ExistingProductSearchItem[]).map(toDuplicateProductItem).filter(item => !!item.physicalid);
+		if (!targets.length) {
+			ElMessage.warning('未选择重复项');
+			return;
+		}
+		duplicateTargets.value = targets;
+		duplicatePrefix.value = '';
+		duplicateIncludeStructure.value = true;
+		duplicateSecurityContext.value = baseInfoStore.securityContext || '';
+		duplicateDialogVisible.value = true;
+	});
+};
+
+const submitDuplicateProducts = async () => {
+	if (!duplicateTargets.value.length) {
+		ElMessage.warning('未选择重复项');
+		return;
+	}
+	const parents = getExistingProductParentContexts();
+	if (!parents.length) {
+		ElMessage.warning('未获取到插入父节点');
+		return;
+	}
+	duplicateSubmitting.value = true;
+	try {
+		const duplicateResponse = await partDetailApi.duplicateStructure(
+			duplicateTargets.value.map(item => ({ physicalid: item.physicalid })),
+			duplicatePrefix.value,
+			duplicateIncludeStructure.value
+		);
+		if (duplicateResponse.status && duplicateResponse.status !== 'success') {
+			ElMessage.error('复制结构失败');
+			return;
+		}
+		const duplicateResults = duplicateResponse.results?.flat() || [];
+		const newRootProducts = duplicateTargets.value
+			.map(target => ({
+				sourcePhysicalId: target.physicalid,
+				physicalId: duplicateResults.find(result => result.sourceid === target.physicalid)?.physicalid || ''
+			}))
+			.filter(item => !!item.physicalId);
+		if (!newRootProducts.length) {
+			ElMessage.error('未获取到复制后的对象');
+			return;
+		}
+		const operations = parents.flatMap(parent =>
+			newRootProducts.map(child => ({
+				parent: {
+					isInstanceOf: parent.physicalId,
+					children: parent.children
+				},
+				child: {
+					isInstanceOf: child.physicalId
+				}
+			}))
+		);
+		const response = await partDetailApi.insertExistingProducts(operations);
+		if (response.status !== 'success') {
+			ElMessage.error(getInsertExistingFailureMessage(response) || '建立重复项关系失败');
+			return;
+		}
+		const failedResults = response.results?.filter(item => item.status !== 'success') || [];
+		if (failedResults.length) {
+			ElMessage.error('插入重复项失败');
+			return;
+		}
+		duplicateDialogVisible.value = false;
+		ElMessage.success('插入重复项成功');
+		await refreshAfterExistingProductInsert(parents);
+	} catch (error) {
+		console.error('[PartDetailView] 插入重复项失败:', error);
+		ElMessage.error('插入重复项失败');
+	} finally {
+		duplicateSubmitting.value = false;
+	}
+};
+
+const handleCreateMenuCommand = async (command: CreateMenuCommand) => {
+	if (command === 'newProduct' || command === 'newPart') {
+		await openCreateDialogFromChildrenTable(command);
+		return;
+	}
+	if (command === 'existingProduct') {
+		openExistingProductDialogFromChildrenTable();
+		return;
+	}
+	if (command === 'insertDuplicate') {
+		openInsertDuplicateDialogFromChildrenTable();
+	}
+};
+
 const setRowExpanding = (row: TreeNode, expanding: boolean) => {
 	const nextIds = new Set(expandingRowIds.value);
 	if (expanding) {
@@ -481,8 +920,9 @@ const flattenChildrenData = computed(() => flattenTreeNodes(childrenData.value))
 const isAllVisibleChildrenSelected = computed(() => !!flattenChildrenData.value.length && flattenChildrenData.value.every(row => isChildrenRowSelected(row)));
 const isSomeVisibleChildrenSelected = computed(() => flattenChildrenData.value.some(row => isChildrenRowSelected(row)) && !isAllVisibleChildrenSelected.value);
 
-const getChildrenV2RowClass = ({ rowData }: { rowData: TreeNode }) =>
+const getChildrenV2RowClass = ({ rowData, rowIndex }: { rowData: TreeNode; rowIndex: number }) =>
 	[
+		rowIndex % 2 === 1 ? 'even-child-row' : 'odd-child-row',
 		isChildrenRowSelected(rowData) ? 'selected-child-row' : '',
 		draggingChildRowId.value === rowData.id ? 'dragging-child-row' : '',
 		dragOverChildRowId.value === rowData.id ? 'drag-over-child-row' : ''
@@ -496,9 +936,23 @@ const getChildDragObjectType = () => 'VPMReference';
 
 let childDragSequence = 0;
 
+const findParentRowByChildRowId = (nodes: TreeNode[], childRowId: string): TreeNode | null => {
+	for (const node of nodes) {
+		if (node.children?.some(child => child.id === childRowId)) {
+			return node;
+		}
+		if (node.children?.length) {
+			const parent = findParentRowByChildRowId(node.children, childRowId);
+			if (parent) return parent;
+		}
+	}
+	return null;
+};
+
 const toChildDragItem = (row: TreeNode): ChildDragItem => {
 	const objectType = getChildDragObjectType();
 	const displayName = `${row.label || row.identifier || row.resourceid} ${row.revision || ''}`.trim();
+	const sourceParentRow = findParentRowByChildRowId(childrenData.value, row.id);
 
 	return {
 		objectId: row.resourceid,
@@ -517,6 +971,8 @@ const toChildDragItem = (row: TreeNode): ChildDragItem => {
 		'ds6wg:revision': row.revision,
 		cestamp: row.revision,
 		relationId: row.relationId,
+		path: row.path,
+		sourceParentRowId: sourceParentRow?.id,
 		rowId: row.id
 	};
 };
@@ -627,8 +1083,23 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 		title: '',
 		width: columnWidths.value.selection,
 		fixed: true,
+		align: 'center',
+		headerAlign: 'center',
+		class: 'selection-column-cell',
+		headerClass: 'selection-column-header',
 		headerCellRenderer: () =>
-			h('div', { class: 'resizable-header-cell selection-header-cell' }, [
+			h('div', {
+				class: 'resizable-header-cell selection-header-cell',
+				style: {
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					width: '100%',
+					height: '100%',
+					padding: '0',
+					backgroundColor: '#f2f3f5'
+				}
+			}, [
 				h(ElCheckbox, {
 					modelValue: isAllVisibleChildrenSelected.value,
 					indeterminate: isSomeVisibleChildrenSelected.value,
@@ -640,11 +1111,24 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 				})
 			]),
 		cellRenderer: ({ rowData }) =>
-			h(ElCheckbox, {
-				modelValue: isChildrenRowSelected(rowData),
-				onChange: (checked: string | number | boolean) => toggleChildrenRowSelection(rowData, !!checked),
-				onClick: (event: MouseEvent) => event.stopPropagation()
-			})
+			h('div', {
+				class: 'selection-cell',
+				style: {
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					width: '100%',
+					height: '30px',
+					padding: '0',
+					backgroundColor: '#f2f3f5'
+				}
+			}, [
+				h(ElCheckbox, {
+					modelValue: isChildrenRowSelected(rowData),
+					onChange: (checked: string | number | boolean) => toggleChildrenRowSelection(rowData, !!checked),
+					onClick: (event: MouseEvent) => event.stopPropagation()
+				})
+			])
 	},
 	{
 		key: 'label',
@@ -751,6 +1235,17 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 	{ key: 'globalType', dataKey: 'globalType', title: '类型', width: columnWidths.value.globalType, headerCellRenderer: () => createResizableHeader('globalType', '类型') },
 	{ key: 'identifier', dataKey: 'identifier', title: '名称', width: columnWidths.value.identifier, headerCellRenderer: () => createResizableHeader('identifier', '名称') }
 ]);
+
+const createChildrenTableColumns = (tableWidth: number) => {
+	const columns = childrenTableColumns.value.map(column => ({ ...column }));
+	const totalWidth = columns.reduce((sum, column) => sum + Number(column.width || 0), 0);
+	const extraWidth = Math.max(0, tableWidth - totalWidth);
+	const lastColumn = columns[columns.length - 1];
+	if (lastColumn && extraWidth > 0) {
+		lastColumn.width = Number(lastColumn.width || 0) + extraWidth;
+	}
+	return columns;
+};
 
 const openEnterpriseCodeDialogForParent = () => {
 	if (!partInfo.value) return;
@@ -1287,7 +1782,43 @@ const reloadAndExpandRow = async (row: TreeNode) => {
 		setRowExpanding(row, false);
 	}
 };
+const findRowsByIds = (nodes: TreeNode[], ids: string[]): TreeNode[] => {
+	const idSet = new Set(ids);
+	const rows: TreeNode[] = [];
 
+	const walk = (items: TreeNode[]) => {
+		items.forEach(item => {
+			if (idSet.has(item.id)) {
+				rows.push(item);
+			}
+			if (item.children?.length) {
+				walk(item.children);
+			}
+		});
+	};
+
+	walk(nodes);
+	return rows;
+};
+
+const refreshAfterTableCreate = async () => {
+	if (dialogStore.createSource !== 'partDetailTable') return;
+
+	queryModeStore.switchToDbMode();
+
+	const rowIds = [...dialogStore.createContextRowIds];
+
+	if (rowIds.length) {
+		const rows = findRowsByIds(childrenData.value, rowIds);
+		await Promise.all(rows.map(row => reloadAndExpandRow(row)));
+	} else if (currentPhysicalId.value) {
+		await loadPartDetail(currentPhysicalId.value);
+	}
+
+	if (!dialogStore.lastCreatedInfo?.repeat) {
+		dialogStore.clearCreateContext();
+	}
+};
 // 返回上一页
 const handleBack = () => {
 	router.back();
@@ -1314,6 +1845,17 @@ let childrenDropZoneCleanup: (() => void) | null = null;
 interface DroppedItem {
 	physicalId: string;
 	title: string;
+	relationId?: string;
+	pathArray?: string[];
+	sourceParentPath?: string[];
+	sourceParentRowId?: string;
+	rowId?: string;
+	isInternalChildRow?: boolean;
+}
+
+interface ReparentResponse {
+	status?: string;
+	messages?: string[];
 }
 
 interface ChildrenDropTarget {
@@ -1325,16 +1867,110 @@ interface ChildrenDropTarget {
 
 let lastChildrenDragOverEvent: DragEvent | null = null;
 
-const getDroppedItems = (data: string) => {
+const getDroppedItems = (data: string): DroppedItem[] => {
 	const jsonData = JSON.parse(data);
 	const items = jsonData.data?.items || [];
+	const isInternalChildRow = jsonData.source?.amd === 'TW_EngineeringRelease/PartDetailView';
 
 	return items
-		.map((item: { objectId?: string; displayName?: string; title?: string; name?: string; objectName?: string }) => ({
-			physicalId: item.objectId || '',
-			title: item.displayName || item.title || item.name || item.objectName || ''
-		}))
+		.map(
+			(item: {
+				objectId?: string;
+				displayName?: string;
+				title?: string;
+				name?: string;
+				objectName?: string;
+				relationId?: string;
+				path?: string[];
+				sourceParentRowId?: string;
+				rowId?: string;
+			}) => {
+				const sourceParentPath = item.path && item.path.length > 2 ? item.path.slice(0, -2) : undefined;
+				return {
+					physicalId: item.objectId || '',
+					title: item.displayName || item.title || item.name || item.objectName || '',
+					relationId: item.relationId,
+					pathArray: item.relationId ? [item.relationId] : undefined,
+					sourceParentPath,
+					sourceParentRowId: item.sourceParentRowId,
+					rowId: item.rowId,
+					isInternalChildRow
+				};
+			}
+		)
 		.filter((item: DroppedItem) => !!item.physicalId);
+};
+
+const isSamePath = (left?: string[], right?: string[]) =>
+	!!left?.length && !!right?.length && left.length === right.length && left.every((item, index) => item === right[index]);
+
+const findRowByPath = (path?: string[]) => flattenChildrenData.value.find(row => isSamePath(row.path, path)) || null;
+
+const getCatflNls = () => {
+	const language = localStorage.getItem('language') || navigator.language || 'zh';
+	return language.toLowerCase().startsWith('en') ? enCatflNls : zhCatflNls;
+};
+
+const getReparentErrorMessage = (response: unknown) => {
+	const messages = (response as ReparentResponse)?.messages || [];
+	const nls = getCatflNls() as Record<string, string>;
+	const localizedMessages = messages.map(message => nls[message] || message);
+	return localizedMessages.join('<br />');
+};
+
+const showReparentFailureMessage = async (response: unknown) => {
+	const message = getReparentErrorMessage(response);
+	await ElMessageBox.alert(message || '插入失败', '插入失败', {
+		confirmButtonText: '关闭',
+		dangerouslyUseHTMLString: true,
+		type: 'error'
+	});
+};
+
+const getMovedSourceParentRows = (droppedItems: DroppedItem[]) => {
+	const rootPhysicalId = getParentPhysicalId();
+	const sourceParentRowIds = droppedItems
+		.map(item => item.sourceParentRowId)
+		.filter((rowId): rowId is string => !!rowId)
+		.filter((rowId, index, rowIds) => rowIds.indexOf(rowId) === index);
+	const sourceParentPaths = droppedItems
+		.map(item => item.sourceParentPath)
+		.filter((path): path is string[] => !!path?.length)
+		.filter((path, index, paths) => paths.findIndex(item => isSamePath(item, path)) === index);
+	const sourceRows = [
+		...sourceParentRowIds.map(rowId => flattenChildrenData.value.find(row => row.id === rowId) || null),
+		...sourceParentPaths.map(path => findRowByPath(path))
+	].filter((row): row is TreeNode => !!row);
+	const hasRootSource = droppedItems.some(
+		item => item.isInternalChildRow && !item.sourceParentRowId && childrenData.value.some(row => row.id === item.rowId)
+	);
+	const shouldReloadRoot = hasRootSource || sourceParentPaths.some(path => path.length === 1 && path[0] === rootPhysicalId);
+	return {
+		sourceRows,
+		shouldReloadRoot
+	};
+};
+
+const refreshMovedSourceAndTarget = async (droppedItems: DroppedItem[], target: ChildrenDropTarget) => {
+	const rootPhysicalId = getParentPhysicalId();
+	const { sourceRows, shouldReloadRoot } = getMovedSourceParentRows(droppedItems);
+	const targetRowId = target.row?.id;
+	const rows = [...sourceRows, target.row].filter((row): row is TreeNode => !!row);
+	const uniqueRows = rows.filter((row, index, items) => items.findIndex(item => item.id === row.id) === index);
+
+	if ((shouldReloadRoot || !target.row) && rootPhysicalId) {
+		await loadPartDetail(rootPhysicalId);
+	}
+	if (uniqueRows.length) {
+		const latestRows = uniqueRows.map(row => flattenChildrenData.value.find(item => item.id === row.id) || row);
+		await Promise.all(latestRows.map(row => reloadAndExpandRow(row)));
+	}
+	if (targetRowId && !uniqueRows.some(row => row.id === targetRowId)) {
+		const latestTargetRow = flattenChildrenData.value.find(row => row.id === targetRowId);
+		if (latestTargetRow) {
+			await reloadAndExpandRow(latestTargetRow);
+		}
+	}
 };
 
 const findChildrenDropRow = (event?: DragEvent | null) => {
@@ -1401,12 +2037,30 @@ const handleChildrenDrop = async (data: string, childrenDropZone: HTMLElement, e
 		});
 
 		childrenLoading.value = true;
-		await partDetailApi.reparentParts(sourcePhysicalIds, target.physicalId, [], target.pathArray);
+		const isInternalMove = droppedItems.every(item => item.isInternalChildRow && item.relationId);
+		let reparentSourceItems: Array<string | ReparentSourceItem> = sourcePhysicalIds;
+		if (isInternalMove) {
+			reparentSourceItems = droppedItems.map(item => ({
+				physicalId: item.physicalId,
+				instance: item.relationId,
+				pathArray: item.pathArray,
+				mode: 'CutPaste'
+			}));
+		}
+		const response = (await partDetailApi.reparentParts(reparentSourceItems, target.physicalId, [], target.pathArray)) as ReparentResponse;
+		if (response?.status && response.status !== 'success') {
+			await showReparentFailureMessage(response);
+			return;
+		}
 		queryModeStore.switchToDbMode();
-		if (target.row) {
-			await reloadAndExpandRow(target.row);
+		if (isInternalMove) {
+			await refreshMovedSourceAndTarget(droppedItems, target);
 		} else {
-			await loadPartDetail(partInfo.value?.resourceid || partInfo.value?.physicalid || currentPhysicalId.value);
+			if (target.row) {
+				await reloadAndExpandRow(target.row);
+			} else {
+				await loadPartDetail(partInfo.value?.resourceid || partInfo.value?.physicalid || currentPhysicalId.value);
+			}
 		}
 		ElMessage.success('插入成功');
 	} catch (error) {
@@ -1525,6 +2179,25 @@ const initDragAndDrop = () => {
 		});
 	}
 };
+watch(
+	() => dialogStore.lastCreatedVersion,
+	async () => {
+		if (!dialogStore.lastCreatedInfo) return;
+		await refreshAfterTableCreate();
+	}
+);
+
+watch(
+	() => route.params.physicalId,
+	physicalId => {
+		const nextPhysicalId = physicalId as string;
+		if (!nextPhysicalId || nextPhysicalId === currentPhysicalId.value) return;
+		if (route.query.from === 'create') {
+			queryModeStore.switchToDbMode();
+		}
+		loadPartDetail(nextPhysicalId);
+	}
+);
 
 // 页面加载
 onMounted(() => {
@@ -1943,7 +2616,26 @@ onUnmounted(() => {
 
 			.toolbar {
 				display: flex;
+				align-items: center;
 				gap: 8px;
+
+				.toolbar-create-trigger {
+					display: inline-flex;
+					align-items: center;
+					justify-content: center;
+					width: 24px;
+					height: 24px;
+					color: #6b7785;
+					font-size: 23px;
+					font-weight: 700;
+					line-height: 24px;
+					cursor: pointer;
+					outline: none;
+				}
+
+				.toolbar-create-trigger:hover {
+					color: #3d4752;
+				}
 			}
 		}
 
@@ -1996,6 +2688,10 @@ onUnmounted(() => {
 					opacity: 0.6;
 				}
 
+				:deep(.el-table-v2__row.even-child-row .el-table-v2__row-cell) {
+					background-color: #f6f7f9;
+				}
+
 				:deep(.el-table-v2__row-cell) {
 					font-weight: 400 !important;
 				}
@@ -2023,6 +2719,12 @@ onUnmounted(() => {
 					box-shadow: inset 0 0 0 1px #c0c4cc;
 				}
 
+				:deep(.el-table-v2__header-cell) {
+					background-color: #f2f3f5 !important;
+					color: #303133;
+					font-weight: 600;
+				}
+
 				:deep(.resizable-header-cell) {
 					position: relative;
 					display: flex;
@@ -2040,6 +2742,46 @@ onUnmounted(() => {
 
 				:deep(.selection-header-cell) {
 					justify-content: center;
+					padding-right: 0;
+					background-color: #f2f3f5;
+				}
+
+				:deep(.selection-column-header),
+				:deep(.selection-column-cell) {
+					padding: 0 !important;
+					background-color: #f2f3f5 !important;
+				}
+
+				:deep(.selection-column-header > *),
+				:deep(.selection-column-cell > *) {
+					width: 100%;
+					height: 100%;
+				}
+
+				:deep(.el-table-v2__header-cell:first-child),
+				:deep(.el-table-v2__row-cell:first-child) {
+					padding: 0 !important;
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					background-color: #f2f3f5 !important;
+				}
+
+				:deep(.selection-cell) {
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					width: 100%;
+					height: 100%;
+					background-color: #f2f3f5;
+				}
+
+				:deep(.selection-header-cell .el-checkbox),
+				:deep(.selection-cell .el-checkbox) {
+					height: 100%;
+					margin-right: 0;
+					display: inline-flex;
+					align-items: center;
 				}
 
 				:deep(.column-resize-handle) {
@@ -2062,8 +2804,8 @@ onUnmounted(() => {
 			white-space: nowrap;
 
 			.row-icon {
-				width: 20px;
-				height: 20px;
+				width: 16px;
+				height: 16px;
 				object-fit: contain;
 				flex-shrink: 0;
 				margin-left: 0.5em;
@@ -2141,7 +2883,7 @@ onUnmounted(() => {
 
 :deep(.enterprise-code-dialog) {
 	.el-dialog__body {
-		padding-top: 12px;
+		padding-top: 8px;
 	}
 }
 
@@ -2167,6 +2909,57 @@ onUnmounted(() => {
 		background-color: #f5f5f5;
 		border-top: 1px solid #dcdfe6;
 	}
+}
+
+:deep(.duplicate-dialog) {
+	.el-dialog__header {
+		padding: 14px 16px 8px;
+		margin-right: 0;
+		border-bottom: 1px solid #dcdfe6;
+	}
+
+	.el-dialog__title {
+		font-size: 18px;
+		font-weight: 700;
+		color: #303133;
+	}
+
+	.el-dialog__body {
+		height: 160px;
+		padding: 12px 16px;
+	}
+
+	.el-dialog__footer {
+		padding: 16px;
+		background-color: #f2f3f5;
+		border-top: 1px solid #dcdfe6;
+	}
+}
+
+.duplicate-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.duplicate-form-row {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.duplicate-form-label {
+	width: 218px;
+	color: #606266;
+	font-weight: 600;
+}
+
+.duplicate-prefix-input {
+	width: 170px;
+}
+
+.duplicate-security-select {
+	width: 440px;
 }
 
 .maturity-content {
@@ -2348,6 +3141,9 @@ onUnmounted(() => {
 	opacity: 0.6;
 	cursor: default;
 }
+#partDetailContainer .children-table-v2 .el-table-v2__row.even-child-row .el-table-v2__row-cell {
+	background-color: #f6f7f9;
+}
 .child-row-drag-image {
 	position: fixed;
 	top: -1000px;
@@ -2387,6 +3183,163 @@ onUnmounted(() => {
 	max-width: 210px;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+.children-create-dropdown.el-popper {
+	min-width: 132px !important;
+	padding: 0 !important;
+	border: 1px solid #d7dce2 !important;
+	border-radius: 0 !important;
+	box-shadow: 0 1px 3px rgb(0 0 0 / 18%) !important;
+}
+.children-create-dropdown .el-popper__arrow {
+	display: none !important;
+}
+.children-create-dropdown .create-menu-panel {
+	width: 132px;
+	padding: 0;
+	background: #fff;
+	color: #1f2d3d;
+	font-size: 12px;
+	line-height: 1;
+}
+.children-create-dropdown .create-menu-section-title {
+	height: 20px;
+	padding: 5px 8px 2px;
+	box-sizing: border-box;
+	color: #222;
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 13px;
+}
+.children-create-dropdown .el-dropdown-menu {
+	padding: 0 !important;
+	border: 0 !important;
+	box-shadow: none !important;
+}
+.children-create-dropdown .el-dropdown-menu__item {
+	display: flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	height: 24px !important;
+	padding: 0 8px 0 16px !important;
+	color: #1f2d3d !important;
+	font-size: 12px !important;
+	line-height: 24px !important;
+	white-space: nowrap !important;
+}
+.children-create-dropdown .el-dropdown-menu__item:not(.is-disabled):focus,
+.children-create-dropdown .el-dropdown-menu__item:not(.is-disabled):hover {
+	background-color: #ececec !important;
+	color: #1f2d3d !important;
+}
+.children-create-dropdown .create-menu-icon {
+	position: relative;
+	display: inline-block;
+	flex: 0 0 auto;
+	width: 13px;
+	height: 13px;
+	color: #687887;
+}
+.children-create-dropdown .create-menu-icon::before,
+.children-create-dropdown .create-menu-icon::after {
+	content: '';
+	position: absolute;
+	box-sizing: border-box;
+}
+.children-create-dropdown .create-menu-icon::before {
+	left: 2px;
+	top: 3px;
+	width: 8px;
+	height: 7px;
+	border: 1px solid currentColor;
+	background: #fff;
+}
+.children-create-dropdown .create-menu-icon::after {
+	right: 0;
+	bottom: 1px;
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: currentColor;
+	box-shadow:
+		-2px -2px 0 #fff,
+		-2px -2px 0 1px currentColor;
+}
+.children-create-dropdown .product-new-icon::before,
+.children-create-dropdown .part-new-icon::before {
+	border-radius: 1px;
+}
+.children-create-dropdown .product-existing-icon::before,
+.children-create-dropdown .material-existing-icon::before,
+.children-create-dropdown .existing-document-icon::before,
+.children-create-dropdown .drawing-existing-icon::before {
+	border-radius: 1px;
+	box-shadow:
+		2px 2px 0 -1px #fff,
+		2px 2px 0 0 currentColor;
+}
+.children-create-dropdown .insert-duplicate-icon::before {
+	border-radius: 50%;
+}
+.children-create-dropdown .insert-duplicate-icon::after {
+	border-radius: 0;
+}
+.children-create-dropdown .shape-new-icon::before {
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	border-top-color: transparent;
+}
+.children-create-dropdown .shape-new-icon::after {
+	left: 1px;
+	top: 7px;
+	width: 11px;
+	height: 1px;
+	border-radius: 0;
+	background: currentColor;
+	box-shadow: none;
+	transform: rotate(-12deg);
+}
+.children-create-dropdown .material-quantity-icon::before {
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+}
+.children-create-dropdown .upload-document-icon::before,
+.children-create-dropdown .existing-document-icon::before {
+	left: 3px;
+	top: 1px;
+	width: 8px;
+	height: 10px;
+}
+.children-create-dropdown .upload-document-icon::after {
+	left: 5px;
+	top: 3px;
+	width: 5px;
+	height: 5px;
+	border-right: 1px solid currentColor;
+	border-bottom: 1px solid currentColor;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	transform: rotate(-135deg);
+}
+.children-create-dropdown .drawing-new-icon::before,
+.children-create-dropdown .drawing-existing-icon::before {
+	left: 1px;
+	top: 2px;
+	width: 11px;
+	height: 8px;
+}
+.children-create-dropdown .drawing-new-icon::after,
+.children-create-dropdown .drawing-existing-icon::after {
+	left: 3px;
+	top: 5px;
+	width: 7px;
+	height: 1px;
+	border-radius: 0;
+	background: currentColor;
+	box-shadow: 0 3px 0 currentColor;
 }
 #partDetailContainer .children-table-v2 .el-table-v2__row-cell,
 #partDetailContainer .children-table-v2 .el-table-v2__header-cell {

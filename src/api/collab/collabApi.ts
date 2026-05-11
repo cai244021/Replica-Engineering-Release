@@ -11,6 +11,25 @@ class CollabAPI extends BaseAPI {
 		super('');
 	}
 
+	private buildCreateQueryParams(query: Omit<CreateContentQueryParams, 'typeName'> | undefined, typeName: string) {
+		const queryParams = new URLSearchParams({
+			tenant: query?.tenant || 'OnPremise',
+			appName: query?.appName || '',
+			typeName,
+			parsed: query?.parsed || 'false',
+			activeFolder: query?.activeFolder || 'false',
+			xrequestedwith: query?.xrequestedwith || 'xmlhttprequest'
+		});
+
+		query?.aggregating_context?.forEach(contextId => {
+			if (contextId) {
+				queryParams.append('aggregating_context', contextId);
+			}
+		});
+
+		return queryParams.toString();
+	}
+
 	/**
 	 * 创建内容（产品）
 	 * URL: /resources/v1/collabServices/authoring/createContent/Create
@@ -21,14 +40,7 @@ class CollabAPI extends BaseAPI {
 	 */
 	async createProduct(data: CreateContentRequest, query?: Omit<CreateContentQueryParams, 'typeName'>, headers?: Record<string, string>) {
 		try {
-			const queryParams = new URLSearchParams({
-				tenant: query?.tenant || 'OnPremise',
-				appName: query?.appName || '',
-				typeName: 'assembly',
-				parsed: query?.parsed || 'false',
-				activeFolder: query?.activeFolder || 'false',
-				xrequestedwith: query?.xrequestedwith || 'xmlhttprequest'
-			}).toString();
+			const queryParams = this.buildCreateQueryParams(query, 'assembly');
 
 			const response = await this.post<CreateContentResponse>(
 				`/resources/v1/collabServices/authoring/createContent/Create?${queryParams}`,
@@ -52,14 +64,7 @@ class CollabAPI extends BaseAPI {
 	 */
 	async createDrawing(data: CreateContentRequest, query?: Omit<CreateContentQueryParams, 'typeName'>, headers?: Record<string, string>) {
 		try {
-			const queryParams = new URLSearchParams({
-				tenant: query?.tenant || 'OnPremise',
-				appName: query?.appName || '',
-				typeName: 'drawing',
-				parsed: query?.parsed || 'false',
-				activeFolder: query?.activeFolder || 'false',
-				xrequestedwith: query?.xrequestedwith || 'xmlhttprequest'
-			}).toString();
+			const queryParams = this.buildCreateQueryParams(query, 'drawing');
 
 			const response = await this.post<CreateContentResponse>(
 				`/resources/v1/collabServices/authoring/createContent/Create?${queryParams}`,
@@ -83,14 +88,7 @@ class CollabAPI extends BaseAPI {
 	 */
 	async createComponent(data: CreateContentRequest, query?: Omit<CreateContentQueryParams, 'typeName'>, headers?: Record<string, string>) {
 		try {
-			const queryParams = new URLSearchParams({
-				tenant: query?.tenant || 'OnPremise',
-				appName: query?.appName || '',
-				typeName: 'component',
-				parsed: query?.parsed || 'false',
-				activeFolder: query?.activeFolder || 'false',
-				xrequestedwith: query?.xrequestedwith || 'xmlhttprequest'
-			}).toString();
+			const queryParams = this.buildCreateQueryParams(query, 'component');
 
 			const response = await this.post<CreateContentResponse>(
 				`/resources/v1/collabServices/authoring/createContent/Create?${queryParams}`,
