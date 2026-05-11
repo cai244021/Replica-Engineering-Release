@@ -1,0 +1,145 @@
+{
+    "infos": {
+        "estimated": false,
+        "nresults": 1,
+        "nmatches": 1,
+        "nhits": 1,
+        "version": "1.1"
+    },
+    "results": [
+        {
+            "sort": {
+                "sortValue": "4",
+                "sortType": "integer"
+            },
+            "attributes": [
+                {
+                    "format": "internal",
+                    "name": "resourceid",
+                    "type": "string",
+                    "value": "D5D205295CCB230069C23CAF00000051"
+                },
+                {
+                    "format": "attribute",
+                    "name": "physicalid",
+                    "type": "STRING",
+                    "value": "D5D205295CCB230069C23CAF00000051"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:label",
+                    "type": "string",
+                    "value": "V"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:identifier",
+                    "type": "string",
+                    "value": "prd-43709429-00000006"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:modified",
+                    "type": "date",
+                    "value": "2026-05-07T09:51:50Z"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:created",
+                    "type": "date",
+                    "value": "2026-03-24T07:30:56Z"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6wg:EnterpriseExtension.V_PartNumber",
+                    "type": "string",
+                    "value": "55555555"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:type",
+                    "type": "string",
+                    "value": "VPMReference"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:responsible",
+                    "type": "string",
+                    "value": "Admin Platform"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6wg:revision",
+                    "type": "string",
+                    "value": "A"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:cadMaster",
+                    "type": "string",
+                    "value": "3DEXPERIENCE"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:reserved",
+                    "type": "boolean",
+                    "value": "FALSE"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:status",
+                    "type": "string",
+                    "value": "VPLM_SMB_Definition_MajorRev.IN_WORK"
+                },
+                {
+                    "format": "attribute",
+                    "name": "owner",
+                    "type": "STRING",
+                    "value": "admin_platform"
+                },
+                {
+                    "format": "attribute",
+                    "name": "type",
+                    "type": "STRING",
+                    "value": "VPMReference"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:policy",
+                    "type": "string",
+                    "value": "VPLM_SMB_Definition_MajorRev"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:globalType",
+                    "type": "string",
+                    "value": "ds6w:Part"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:manufacturable",
+                    "type": "boolean",
+                    "value": "TRUE"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:isLastRevision",
+                    "type": "string",
+                    "value": "true"
+                },
+                {
+                    "format": "internal",
+                    "name": "type_icon_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/small/I_VPMNavProduct.png"
+                },
+                {
+                    "format": "internal",
+                    "name": "preview_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/large/I_VPMNavProduct108x144.png"
+                }
+            ]
+        }
+    ]
+}

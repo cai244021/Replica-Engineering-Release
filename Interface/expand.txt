@@ -1,0 +1,112 @@
+{
+    "infos": {
+        "encoding": "UTF-8",
+        "kind": "InstRefOccurrence",
+        "version": "1.1"
+    },
+    "results": [
+        {
+            "resourceid": "D5D205295CCB230069C23CAF00000051",
+            "ds6w:label": "V",
+            "ds6w:modified": "2026-05-07T12:41:38Z",
+            "ds6w:created": "2026-03-24T07:30:56Z",
+            "ds6w:description": "222",
+            "ds6wg:revision": "A",
+            "ds6w:cadMaster": "3DEXPERIENCE",
+            "ds6w:responsible": "Admin Platform",
+            "owner": "admin_platform",
+            "ds6w:status": "VPLM_SMB_Definition_MajorRev.RELEASED",
+            "ds6w:type": "VPMReference",
+            "ds6wg:EnterpriseExtension.V_PartNumber": "55555555",
+            "type": "VPMReference",
+            "ds6w:policy": "VPLM_SMB_Definition_MajorRev",
+            "ds6w:globalType": "ds6w:Part",
+            "ds6w:manufacturable": "TRUE",
+            "ds6w:isLastRevision": "true",
+            "ds6w:reserved": "FALSE",
+            "ds6w:identifier": "prd-43709429-00000006",
+            "islastrevision": "true",
+            "policy": "VPLM_SMB_Definition_MajorRev",
+            "current": "RELEASED",
+            "icon": "https://3dspace.r2026.v6.com/3dspace/cvservlet/files?fileType=ICON&ipml_46_iconname=I_VPMNavProduct&taxonomies=types%2FPLMEntity%2FPLMReference%2FPLMCoreReference%2FLPAbstractReference%2FPHYSICALAbstractReference%2FVPMReference"
+        },
+        {
+            "resourceid": "D5D205296E16000069FC7EB5000003EF",
+            "ds6w:label": "物理产品00000906",
+            "ds6w:modified": "2026-05-07T11:59:53Z",
+            "ds6w:created": "2026-05-07T11:59:53Z",
+            "ds6wg:revision": "AA.1",
+            "ds6w:cadMaster": "3DEXPERIENCE",
+            "ds6w:responsible": "Admin Platform",
+            "owner": "admin_platform",
+            "ds6w:status": "VPLM_SMB_Definition_MajorRev.IN_WORK",
+            "ds6w:type": "VPMReference",
+            "type": "VPMReference",
+            "ds6w:policy": "VPLM_SMB_Definition_MajorRev",
+            "ds6w:globalType": "ds6w:Part",
+            "ds6w:manufacturable": "TRUE",
+            "ds6w:isLastRevision": "true",
+            "ds6w:reserved": "FALSE",
+            "ds6w:identifier": "prd-43709429-00000906",
+            "islastrevision": "true",
+            "policy": "VPLM_SMB_Definition_MajorRev",
+            "current": "IN_WORK",
+            "icon": "https://3dspace.r2026.v6.com/3dspace/cvservlet/files?fileType=ICON&ipml_46_iconname=I_VPMNavProduct&taxonomies=types%2FPLMEntity%2FPLMReference%2FPLMCoreReference%2FLPAbstractReference%2FPHYSICALAbstractReference%2FVPMReference"
+        },
+        {
+            "resourceid": "D5D205296E16000069FC8535000003FB",
+            "ds6w:label": "物理产品00000907",
+            "ds6w:modified": "2026-05-07T12:27:37Z",
+            "ds6w:created": "2026-05-07T12:27:36Z",
+            "ds6wg:revision": "AA.1",
+            "ds6w:cadMaster": "3DEXPERIENCE",
+            "ds6w:responsible": "Admin Platform",
+            "owner": "admin_platform",
+            "ds6w:status": "VPLM_SMB_Definition_MajorRev.IN_WORK",
+            "ds6w:type": "VPMReference",
+            "type": "VPMReference",
+            "ds6w:policy": "VPLM_SMB_Definition_MajorRev",
+            "ds6w:globalType": "ds6w:Part",
+            "ds6w:manufacturable": "TRUE",
+            "ds6w:isLastRevision": "true",
+            "ds6w:reserved": "FALSE",
+            "ds6w:identifier": "prd-43709429-00000907",
+            "islastrevision": "true",
+            "policy": "VPLM_SMB_Definition_MajorRev",
+            "current": "IN_WORK",
+            "icon": "https://3dspace.r2026.v6.com/3dspace/cvservlet/files?fileType=ICON&ipml_46_iconname=I_VPMNavProduct&taxonomies=types%2FPLMEntity%2FPLMReference%2FPLMCoreReference%2FLPAbstractReference%2FPHYSICALAbstractReference%2FVPMReference"
+        },
+        {
+            "resourceid": "D5D205296E16000069FC7EB9000003F7",
+            "ds6w:label": "物理产品00000906.1",
+            "ds6w:type": "VPMInstance",
+            "ro.plminstance.V_treeorder": "647380793.132",
+            "type": "VPMInstance",
+            "from": "D5D205295CCB230069C23CAF00000051",
+            "to": "D5D205296E16000069FC7EB5000003EF"
+        },
+        {
+            "resourceid": "D5D205296E16000069FC853900000403",
+            "ds6w:label": "物理产品00000907.1",
+            "ds6w:type": "VPMInstance",
+            "ro.plminstance.V_treeorder": "647382457.078",
+            "type": "VPMInstance",
+            "from": "D5D205295CCB230069C23CAF00000051",
+            "to": "D5D205296E16000069FC8535000003FB"
+        },
+        {
+            "Path": [
+                "D5D205295CCB230069C23CAF00000051",
+                "D5D205296E16000069FC7EB9000003F7",
+                "D5D205296E16000069FC7EB5000003EF"
+            ]
+        },
+        {
+            "Path": [
+                "D5D205295CCB230069C23CAF00000051",
+                "D5D205296E16000069FC853900000403",
+                "D5D205296E16000069FC8535000003FB"
+            ]
+        }
+    ]
+}

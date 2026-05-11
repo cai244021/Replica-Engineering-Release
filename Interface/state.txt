@@ -1,0 +1,468 @@
+{
+    "data": {
+        "objects": [
+            {
+                "displayName": "物理产品00000907 AA.1",
+                "usage": null,
+                "project": "Common Space",
+                "InterfaceList": {},
+                "type": "VPMReference",
+                "isSingleIRPCAssembly": true,
+                "routes": [
+                    {
+                        "mode": "simulate",
+                        "fromState": "IN_WORK",
+                        "toState": "PRIVATE",
+                        "action": "promote",
+                        "bus_Id": "D5D205296E16000069FC8535000003FB",
+                        "message": "null",
+                        "internalMsg": "null",
+                        "status": "Promote"
+                    },
+                    {
+                        "mode": "simulate",
+                        "fromState": "IN_WORK",
+                        "toState": "FROZEN",
+                        "action": "promote",
+                        "bus_Id": "D5D205296E16000069FC8535000003FB",
+                        "message": "null",
+                        "internalMsg": "null",
+                        "status": "Promote"
+                    },
+                    {
+                        "mode": "simulate",
+                        "fromState": "IN_WORK",
+                        "toState": "RELEASED",
+                        "action": "promote",
+                        "bus_Id": "D5D205296E16000069FC8535000003FB",
+                        "message": "null",
+                        "internalMsg": "null",
+                        "status": "Promote"
+                    }
+                ],
+                "current": "IN_WORK",
+                "lockedBy": "Admin Platform",
+                "current_internal": "IN_WORK",
+                "imageUrl": "https://3dspace.r2026.v6.com/3dspace/cvservlet/files?fileType=ICON&ipml_46_iconname=I_VPMNavProduct&taxonomies=types%2FPLMEntity%2FPLMReference%2FPLMCoreReference%2FLPAbstractReference%2FPHYSICALAbstractReference%2FVPMReference",
+                "isOnceInstantiable": false,
+                "reservedby": null,
+                "serviceId": "3DSpace",
+                "locked": true,
+                "responsibleName": "admin_platform",
+                "hasSoftwareInterface": "FALSE",
+                "tenant": "OnPremise",
+                "policy": "VPLM_SMB_Definition_MajorRev",
+                "projectTitle": null,
+                "cadMaster": "3DEXPERIENCE",
+                "physicalid": "D5D205296E16000069FC8535000003FB",
+                "typeDisplayName": "物理产品",
+                "revision": "AA.1",
+                "currentStateUserName": "工作中",
+                "coretype": "Reference",
+                "organization": "Company Name",
+                "name": "物理产品00000907",
+                "organizationTitle": null,
+                "responsibleFullName": "admin_platform"
+            }
+        ],
+        "policies": [
+            {
+                "maturityGraph": {
+                    "transitions": [
+                        {
+                            "targetState": "IN_WORK",
+                            "sourceState": "PRIVATE",
+                            "signatures": [
+                                {
+                                    "ignored": false,
+                                    "approved": false,
+                                    "rejected": false,
+                                    "name": "ShareWithinProject",
+                                    "signed": false,
+                                    "comment": null,
+                                    "username": "开始工作",
+                                    "signer": null
+                                }
+                            ]
+                        },
+                        {
+                            "targetState": "PRIVATE",
+                            "sourceState": "IN_WORK",
+                            "signatures": [
+                                {
+                                    "ignored": false,
+                                    "approved": false,
+                                    "rejected": false,
+                                    "name": "Isolate",
+                                    "signed": false,
+                                    "comment": null,
+                                    "username": "返回到草稿",
+                                    "signer": null
+                                }
+                            ]
+                        },
+                        {
+                            "targetState": "FROZEN",
+                            "sourceState": "IN_WORK",
+                            "signatures": [
+                                {
+                                    "ignored": false,
+                                    "approved": false,
+                                    "rejected": false,
+                                    "name": "ToFreeze",
+                                    "signed": false,
+                                    "comment": null,
+                                    "username": "冻结",
+                                    "signer": null
+                                }
+                            ]
+                        },
+                        {
+                            "targetState": "RELEASED",
+                            "sourceState": "IN_WORK",
+                            "signatures": [
+                                {
+                                    "ignored": false,
+                                    "approved": false,
+                                    "rejected": false,
+                                    "name": "ToRelease",
+                                    "signed": false,
+                                    "comment": null,
+                                    "username": "发布",
+                                    "signer": null
+                                }
+                            ]
+                        },
+                        {
+                            "targetState": "RELEASED",
+                            "sourceState": "FROZEN",
+                            "signatures": [
+                                {
+                                    "ignored": false,
+                                    "approved": false,
+                                    "rejected": false,
+                                    "name": "ToRelease",
+                                    "signed": false,
+                                    "comment": null,
+                                    "username": "发布",
+                                    "signer": null
+                                }
+                            ]
+                        },
+                        {
+                            "targetState": "IN_WORK",
+                            "sourceState": "FROZEN",
+                            "signatures": [
+                                {
+                                    "ignored": false,
+                                    "approved": false,
+                                    "rejected": false,
+                                    "name": "UnFreeze",
+                                    "signed": false,
+                                    "comment": null,
+                                    "username": "返回到工作中",
+                                    "signer": null
+                                }
+                            ]
+                        },
+                        {
+                            "targetState": "OBSOLETE",
+                            "sourceState": "RELEASED",
+                            "signatures": [
+                                {
+                                    "ignored": false,
+                                    "approved": false,
+                                    "rejected": false,
+                                    "name": "OutDated",
+                                    "signed": false,
+                                    "comment": null,
+                                    "username": "使作废",
+                                    "signer": null
+                                }
+                            ]
+                        }
+                    ],
+                    "states": [
+                        {
+                            "visuorder": 0,
+                            "stateSysName": "PRIVATE",
+                            "inactiveColor": "#CD95CB",
+                            "activeColor": "#9B2C98",
+                            "stateUserName": "草稿",
+                            "tooltip": "emxFramework.PRIVATE.tooltip"
+                        },
+                        {
+                            "visuorder": 1,
+                            "stateSysName": "IN_WORK",
+                            "inactiveColor": "#7FBED1",
+                            "activeColor": "#007DA3",
+                            "stateUserName": "工作中",
+                            "tooltip": "emxFramework.IN_WORK.tooltip"
+                        },
+                        {
+                            "visuorder": 2,
+                            "stateSysName": "FROZEN",
+                            "inactiveColor": "#BABABA",
+                            "activeColor": "#757575",
+                            "stateUserName": "冻结",
+                            "tooltip": "emxFramework.FROZEN.tooltip"
+                        },
+                        {
+                            "visuorder": 3,
+                            "stateSysName": "RELEASED",
+                            "inactiveColor": "#80C183",
+                            "activeColor": "#018308",
+                            "stateUserName": "已发布",
+                            "tooltip": "emxFramework.RELEASED.tooltip"
+                        },
+                        {
+                            "visuorder": 4,
+                            "stateSysName": "OBSOLETE",
+                            "inactiveColor": "#FFFFFF",
+                            "activeColor": "#FFFFFF",
+                            "stateUserName": "作废",
+                            "tooltip": "emxFramework.OBSOLETE.tooltip"
+                        }
+                    ]
+                },
+                "name": "VPLM_SMB_Definition_MajorRev"
+            }
+        ],
+        "isConfirmationDialogEnabled": false
+    },
+    "options": {
+        "objects": [
+            {
+                "displayName": "物理产品00000907 AA.1",
+                "usage": null,
+                "project": "Common Space",
+                "InterfaceList": {},
+                "type": "VPMReference",
+                "isSingleIRPCAssembly": true,
+                "routes": [
+                    {
+                        "mode": "simulate",
+                        "fromState": "IN_WORK",
+                        "toState": "PRIVATE",
+                        "action": "promote",
+                        "bus_Id": "D5D205296E16000069FC8535000003FB",
+                        "message": "null",
+                        "internalMsg": "null",
+                        "status": "Promote"
+                    },
+                    {
+                        "mode": "simulate",
+                        "fromState": "IN_WORK",
+                        "toState": "FROZEN",
+                        "action": "promote",
+                        "bus_Id": "D5D205296E16000069FC8535000003FB",
+                        "message": "null",
+                        "internalMsg": "null",
+                        "status": "Promote"
+                    },
+                    {
+                        "mode": "simulate",
+                        "fromState": "IN_WORK",
+                        "toState": "RELEASED",
+                        "action": "promote",
+                        "bus_Id": "D5D205296E16000069FC8535000003FB",
+                        "message": "null",
+                        "internalMsg": "null",
+                        "status": "Promote"
+                    }
+                ],
+                "current": "IN_WORK",
+                "lockedBy": "Admin Platform",
+                "current_internal": "IN_WORK",
+                "imageUrl": "https://3dspace.r2026.v6.com/3dspace/cvservlet/files?fileType=ICON&ipml_46_iconname=I_VPMNavProduct&taxonomies=types%2FPLMEntity%2FPLMReference%2FPLMCoreReference%2FLPAbstractReference%2FPHYSICALAbstractReference%2FVPMReference",
+                "isOnceInstantiable": false,
+                "reservedby": null,
+                "serviceId": "3DSpace",
+                "locked": true,
+                "responsibleName": "admin_platform",
+                "hasSoftwareInterface": "FALSE",
+                "tenant": "OnPremise",
+                "policy": "VPLM_SMB_Definition_MajorRev",
+                "projectTitle": null,
+                "cadMaster": "3DEXPERIENCE",
+                "physicalid": "D5D205296E16000069FC8535000003FB",
+                "typeDisplayName": "物理产品",
+                "revision": "AA.1",
+                "currentStateUserName": "工作中",
+                "coretype": "Reference",
+                "organization": "Company Name",
+                "name": "物理产品00000907",
+                "organizationTitle": null,
+                "responsibleFullName": "admin_platform"
+            }
+        ],
+        "policies": [
+            {
+                "maturityGraph": {
+                    "transitions": [
+                        {
+                            "targetState": "IN_WORK",
+                            "sourceState": "PRIVATE",
+                            "signatures": [
+                                {
+                                    "ignored": false,
+                                    "approved": false,
+                                    "rejected": false,
+                                    "name": "ShareWithinProject",
+                                    "signed": false,
+                                    "comment": null,
+                                    "username": "开始工作",
+                                    "signer": null
+                                }
+                            ]
+                        },
+                        {
+                            "targetState": "PRIVATE",
+                            "sourceState": "IN_WORK",
+                            "signatures": [
+                                {
+                                    "ignored": false,
+                                    "approved": false,
+                                    "rejected": false,
+                                    "name": "Isolate",
+                                    "signed": false,
+                                    "comment": null,
+                                    "username": "返回到草稿",
+                                    "signer": null
+                                }
+                            ]
+                        },
+                        {
+                            "targetState": "FROZEN",
+                            "sourceState": "IN_WORK",
+                            "signatures": [
+                                {
+                                    "ignored": false,
+                                    "approved": false,
+                                    "rejected": false,
+                                    "name": "ToFreeze",
+                                    "signed": false,
+                                    "comment": null,
+                                    "username": "冻结",
+                                    "signer": null
+                                }
+                            ]
+                        },
+                        {
+                            "targetState": "RELEASED",
+                            "sourceState": "IN_WORK",
+                            "signatures": [
+                                {
+                                    "ignored": false,
+                                    "approved": false,
+                                    "rejected": false,
+                                    "name": "ToRelease",
+                                    "signed": false,
+                                    "comment": null,
+                                    "username": "发布",
+                                    "signer": null
+                                }
+                            ]
+                        },
+                        {
+                            "targetState": "RELEASED",
+                            "sourceState": "FROZEN",
+                            "signatures": [
+                                {
+                                    "ignored": false,
+                                    "approved": false,
+                                    "rejected": false,
+                                    "name": "ToRelease",
+                                    "signed": false,
+                                    "comment": null,
+                                    "username": "发布",
+                                    "signer": null
+                                }
+                            ]
+                        },
+                        {
+                            "targetState": "IN_WORK",
+                            "sourceState": "FROZEN",
+                            "signatures": [
+                                {
+                                    "ignored": false,
+                                    "approved": false,
+                                    "rejected": false,
+                                    "name": "UnFreeze",
+                                    "signed": false,
+                                    "comment": null,
+                                    "username": "返回到工作中",
+                                    "signer": null
+                                }
+                            ]
+                        },
+                        {
+                            "targetState": "OBSOLETE",
+                            "sourceState": "RELEASED",
+                            "signatures": [
+                                {
+                                    "ignored": false,
+                                    "approved": false,
+                                    "rejected": false,
+                                    "name": "OutDated",
+                                    "signed": false,
+                                    "comment": null,
+                                    "username": "使作废",
+                                    "signer": null
+                                }
+                            ]
+                        }
+                    ],
+                    "states": [
+                        {
+                            "visuorder": 0,
+                            "stateSysName": "PRIVATE",
+                            "inactiveColor": "#CD95CB",
+                            "activeColor": "#9B2C98",
+                            "stateUserName": "草稿",
+                            "tooltip": "emxFramework.PRIVATE.tooltip"
+                        },
+                        {
+                            "visuorder": 1,
+                            "stateSysName": "IN_WORK",
+                            "inactiveColor": "#7FBED1",
+                            "activeColor": "#007DA3",
+                            "stateUserName": "工作中",
+                            "tooltip": "emxFramework.IN_WORK.tooltip"
+                        },
+                        {
+                            "visuorder": 2,
+                            "stateSysName": "FROZEN",
+                            "inactiveColor": "#BABABA",
+                            "activeColor": "#757575",
+                            "stateUserName": "冻结",
+                            "tooltip": "emxFramework.FROZEN.tooltip"
+                        },
+                        {
+                            "visuorder": 3,
+                            "stateSysName": "RELEASED",
+                            "inactiveColor": "#80C183",
+                            "activeColor": "#018308",
+                            "stateUserName": "已发布",
+                            "tooltip": "emxFramework.RELEASED.tooltip"
+                        },
+                        {
+                            "visuorder": 4,
+                            "stateSysName": "OBSOLETE",
+                            "inactiveColor": "#FFFFFF",
+                            "activeColor": "#FFFFFF",
+                            "stateUserName": "作废",
+                            "tooltip": "emxFramework.OBSOLETE.tooltip"
+                        }
+                    ]
+                },
+                "name": "VPLM_SMB_Definition_MajorRev"
+            }
+        ],
+        "isConfirmationDialogEnabled": false
+    },
+    "status": {
+        "code": 0,
+        "errorMsg": null
+    }
+}

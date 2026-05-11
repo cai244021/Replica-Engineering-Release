@@ -1,0 +1,132 @@
+{
+    "batch": {
+        "expands": [
+            {
+                "filter": {
+                    "and": {
+                        "filters": [
+                            {
+                                "prefix_filter": {
+                                    "prefix_path": [
+                                        {
+                                            "physical_id_path": [
+                                                "D5D205295CCB230069C23CAF00000051"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "and": {
+                                    "filters": [
+                                        {
+                                            "sequence_filter": {
+                                                "sequence": [
+                                                    {
+                                                        "uql": "((flattenedtaxonomies:\"reltypes/VPMInstance\") OR (flattenedtaxonomies:\"reltypes/VPMRepInstance\") OR (flattenedtaxonomies:\"reltypes/SpecificationDocument\")) AND (NOT (ds6wg_58_synchroebomext_46_v_95_inebomuser:\"FALSE\" ))"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                },
+                "root": {
+                    "physical_id": "D5D205295CCB230069C23CAF00000051"
+                },
+                "label": "xEngineer-admin_platform-1778204768467",
+                "graph": {
+                    "descending_condition_relation": {
+                        "uql": "NOT (flattenedtaxonomies:\"reltypes/XCADBaseDependency\") AND ((flattenedtaxonomies:\"reltypes/VPMInstance\") OR (flattenedtaxonomies:\"reltypes/VPMRepInstance\") OR (flattenedtaxonomies:\"reltypes/SpecificationDocument\"))"
+                    },
+                    "descending_condition_object": {
+                        "uql": "(flattenedtaxonomies:\"types/Drawing\") OR ds6w_58_globaltype:\"ds6w:Part\" OR (flattenedtaxonomies:\"types/Document\") OR (flattenedtaxonomies:\"types/CONTROLLED DOCUMENTS\")"
+                    }
+                },
+                "aggregation_processors": [
+                    {
+                        "truncate": {
+                            "max_distance_from_prefix": 1,
+                            "prefix_filter": {
+                                "prefix_path": [
+                                    {
+                                        "physical_id_path": [
+                                            "D5D205295CCB230069C23CAF00000051"
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "outputs": {
+        "hits": {
+            "predefined_computation": [
+                "icons",
+                "urlstream|thumbnail_2d|2dthb|allrefs"
+            ]
+        },
+        "select_object": [
+            "ds6w:label",
+            "ds6w:modified",
+            "ds6w:created",
+            "ds6w:description",
+            "ds6wg:revision",
+            "ds6w:cadMaster",
+            "ds6w:responsible",
+            "owner",
+            "ds6w:status",
+            "ds6w:type",
+            "ds6wg:EnterpriseExtension.V_PartNumber",
+            "ds6wg:MaterialUsageExtension.DeclaredQuantity",
+            "ds6wg:DELFmiContQuantity_Mass.V_ContQuantity",
+            "ds6wg:DELFmiContQuantity_Volume.V_ContQuantity",
+            "ds6wg:raw_material.v_dimensiontype",
+            "type",
+            "physicalid",
+            "ds6w:policy",
+            "ds6w:reservedBy",
+            "ds6w:globalType",
+            "ds6w:manufacturable",
+            "pathsr",
+            "ds6w:isLastRevision",
+            "ds6w:reserved",
+            "ds6w:identifier",
+            "ds6w:docextension",
+            "islastrevision",
+            "policy",
+            "current"
+        ],
+        "select_relation": [
+            "ds6w:label",
+            "ds6w:type",
+            "ds6wg:SynchroEBOMExt.V_InEBOMUser",
+            "physicalid",
+            "ro.plminstance.V_treeorder",
+            "ds6wg:raw_material.v_dimensiontype",
+            "ro.madefromquantity_length.V_ContQuantity",
+            "ro.madefromquantity_mass.V_ContQuantity",
+            "ro.madefromquantity_area.V_ContQuantity",
+            "ro.madefromquantity_volume.V_ContQuantity",
+            "ro.madefromquantity_AsRequired.AsRequired",
+            "ro.MadeFromQuantity_Rectangular.Length",
+            "ro.MadeFromQuantity_Rectangular.Width",
+            "ro.VPMInstanceQuantity_Area.V_ContQuantity",
+            "ro.VPMInstanceQuantity_Mass.V_ContQuantity",
+            "ro.VPMInstanceQuantity_Volume.V_ContQuantity",
+            "ro.VPMInstanceQuantity_Length.V_ContQuantity",
+            "ro.VPMInstanceQuantity_AsRequired.AsRequired",
+            "ro.VPMInstanceQuantity_Rectangular.Length",
+            "ro.VPMInstanceQuantity_Rectangular.Width",
+            "ds6w:reservedBy",
+            "type"
+        ],
+        "format": "entity_relation_occurrence"
+    }
+}
