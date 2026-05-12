@@ -87,8 +87,9 @@
 				<div class="part-column first-column">
 					<el-icon
 						class="back-icon"
+						title="主页"
 						@click="handleBack">
-						<ArrowLeft />
+						<HomeFilled />
 					</el-icon>
 					<div class="thumbnail-container">
 						<img
@@ -194,7 +195,7 @@
 									</el-dropdown-item>
 									<el-dropdown-item command="newShapeRepresentation">
 										<span class="create-menu-icon shape-new-icon"></span>
-										<span>新变形白</span>
+										<span>新变形件自</span>
 									</el-dropdown-item>
 									<el-dropdown-item command="materialQuantity">
 										<span class="create-menu-icon material-quantity-icon"></span>
@@ -329,7 +330,7 @@
 		<el-dialog
 			v-model="maturityDialogVisible"
 			:title="maturityDialogTitle"
-			width="420px"
+			width="720px"
 			class="maturity-dialog"
 			:show-close="true">
 			<div
@@ -417,19 +418,88 @@
 				<el-button @click="duplicateDialogVisible = false">取消</el-button>
 			</template>
 		</el-dialog>
+		<el-dialog
+			v-model="deformDialogVisible"
+			:title="`待变形 - ${deformTargets[0]?.title || ''}`"
+			width="720px"
+			class="deform-dialog"
+			draggable
+			:style="deformDialogStyle"
+			:destroy-on-close="false"
+			:align-center="false">
+			<el-table
+				:data="deformTargets"
+				:size="'small'"
+				style="width: 100%"
+				border>
+				<el-table-column
+					prop="title"
+					label="标题"
+					min-width="200" />
+				<el-table-column
+					label="操作"
+					width="120">
+					<template #default>待变形</template>
+				</el-table-column>
+				<el-table-column
+					prop="Deformabilty_Status"
+					label="可变形性"
+					width="120" />
+				<el-table-column
+					prop="Maturity"
+					label="成熟度"
+					width="100" />
+				<el-table-column
+					prop="revision"
+					label="修订版"
+					width="100" />
+				<el-table-column
+					prop="type"
+					label="类型"
+					width="140" />
+			</el-table>
+			<div class="deform-form-row">
+				<span class="deform-form-label">添加前缀:</span>
+				<el-input
+					v-model="deformPrefix"
+					class="deform-prefix-input"
+					size="small" />
+			</div>
+			<template #footer>
+				<el-button
+					type="primary"
+					:loading="deformSubmitting"
+					@click="submitDeformedProducts">
+					变形
+				</el-button>
+				<el-button @click="deformDialogVisible = false">取消</el-button>
+			</template>
+			<div
+				class="deform-dialog-resize-handle"
+				@mousedown="handleDeformDialogResizeStart"></div>
+		</el-dialog>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ArrowLeft, ArrowDown, Plus, Minus, View, Filter, Sort, Refresh, List, Download, Check, Close, Loading } from '@element-plus/icons-vue';
+import { ArrowDown, Plus, Minus, View, Filter, Sort, Refresh, List, Download, Check, Close, Loading, HomeFilled } from '@element-plus/icons-vue';
 import { ElCheckbox, ElIcon, ElImage, ElMessage, ElMessageBox, ElTag } from 'element-plus';
 import type { Column } from 'element-plus';
 import partDetailApi from '@/api/partDetailApi';
 import expandApi, { type TreeNode } from '@/api/expandApi';
 import { ModelerAPI } from '@/api';
-import type { DuplicateProductItem, MaturityObjectParams, MaturityState, PromoteMaturityParams, StateTransition, PartInfo, ReparentSourceItem } from '@/api/partDetailApi';
+import type {
+	DeformableProductInfo,
+	DuplicateProductItem,
+	MaturityObjectParams,
+	MaturityState,
+	PromoteMaturityParams,
+	StateTransition,
+	PartInfo,
+	ReparentSourceItem
+} from '@/api/partDetailApi';
 import { useBaseInfoStore } from '@/store';
 import { useDialogStore } from '@/store/modules/dialog';
 import { useQueryModeStore } from '@/store/modules/queryMode';
@@ -564,6 +634,23 @@ const duplicateDialogTitle = computed(() => {
 	if (!target) return '';
 	return `${target.typeDisplayName || '物理产品'}${target.name || ''} ${target.revision || ''}`.trim();
 });
+const deformDialogVisible = ref(false);
+const deformSubmitting = ref(false);
+const deformPrefix = ref('');
+const deformTargets = ref<DeformableProductInfo[]>([]);
+const deformDialogSize = ref({
+	width: 720,
+	height: 300
+});
+const deformDialogStyle = computed(() => ({
+	width: `${deformDialogSize.value.width}px`,
+	height: `${deformDialogSize.value.height}px`
+}));
+let deformDialogResizing = false;
+let deformDialogResizeStartX = 0;
+let deformDialogResizeStartY = 0;
+let deformDialogResizeStartWidth = 0;
+let deformDialogResizeStartHeight = 0;
 const columnWidths = ref<Record<string, number>>({
 	selection: 50,
 	label: 240,
@@ -595,6 +682,37 @@ const normalizeEnterpriseCode = (value?: string) => {
 	return value && value.trim() ? value : '无';
 };
 
+const handleDeformDialogResizeMove = (event: MouseEvent) => {
+	if (!deformDialogResizing) return;
+	const nextWidth = Math.max(480, deformDialogResizeStartWidth + event.clientX - deformDialogResizeStartX);
+	const nextHeight = Math.max(300, deformDialogResizeStartHeight + event.clientY - deformDialogResizeStartY);
+	deformDialogSize.value = {
+		width: nextWidth,
+		height: nextHeight
+	};
+};
+
+const handleDeformDialogResizeEnd = () => {
+	if (!deformDialogResizing) return;
+	deformDialogResizing = false;
+	document.body.classList.remove('deform-dialog-resizing');
+	window.removeEventListener('mousemove', handleDeformDialogResizeMove);
+	window.removeEventListener('mouseup', handleDeformDialogResizeEnd);
+};
+
+const handleDeformDialogResizeStart = (event: MouseEvent) => {
+	event.preventDefault();
+	event.stopPropagation();
+	deformDialogResizing = true;
+	deformDialogResizeStartX = event.clientX;
+	deformDialogResizeStartY = event.clientY;
+	deformDialogResizeStartWidth = deformDialogSize.value.width;
+	deformDialogResizeStartHeight = deformDialogSize.value.height;
+	document.body.classList.add('deform-dialog-resizing');
+	window.addEventListener('mousemove', handleDeformDialogResizeMove);
+	window.addEventListener('mouseup', handleDeformDialogResizeEnd);
+};
+
 const getParentEnterpriseCode = () => {
 	return normalizeEnterpriseCode(partInfo.value?.['ds6wg:EnterpriseExtension.V_PartNumber']);
 };
@@ -613,7 +731,12 @@ const getParentTypeName = () => partInfo.value?.['ds6w:globalType'] || partInfo.
 
 const getChildTypeName = (row: TreeNode) => row.typeDisplayName || row.globalType || '';
 
-const validateCreateContext = async (contextPhysicalIds: string[]) => {
+const getSelectedParentContextPhysicalIds = () => {
+	const selectedRows = [...selectedChildrenRows.value];
+	return selectedRows.length ? selectedRows.map(row => row.resourceid).filter(Boolean) : [getParentPhysicalId()].filter(Boolean);
+};
+
+const validateChildInsertParentContext = async (contextPhysicalIds: string[]) => {
 	const response = await ModelerAPI.getCADOriginsTypes({
 		data: contextPhysicalIds.map(objectId => ({ objectId }))
 	});
@@ -627,7 +750,7 @@ const validateCreateContext = async (contextPhysicalIds: string[]) => {
 
 const openCreateDialogFromChildrenTable = async (command: 'newProduct' | 'newPart') => {
 	const selectedRows = [...selectedChildrenRows.value];
-	const contextPhysicalIds = selectedRows.length ? selectedRows.map(row => row.resourceid).filter(Boolean) : [getParentPhysicalId()].filter(Boolean);
+	const contextPhysicalIds = getSelectedParentContextPhysicalIds();
 	const contextRowIds = selectedRows.map(row => row.id);
 	const contextTypeNames = selectedRows.length
 		? selectedRows.map(row => getChildTypeName(row)).filter(Boolean)
@@ -638,7 +761,7 @@ const openCreateDialogFromChildrenTable = async (command: 'newProduct' | 'newPar
 		return;
 	}
 
-	const canCreate = await validateCreateContext(contextPhysicalIds);
+	const canCreate = await validateChildInsertParentContext(contextPhysicalIds);
 	if (!canCreate) return;
 
 	if (selectedRows.length > 1) {
@@ -700,6 +823,15 @@ const getExistingProductParentContexts = (): ExistingProductParentContext[] => {
 			children: getParentChildrenIds()
 		}
 	];
+};
+
+const validateCurrentChildInsertParentContext = async (emptyMessage = '未获取到插入父节点') => {
+	const contextPhysicalIds = getSelectedParentContextPhysicalIds();
+	if (!contextPhysicalIds.length) {
+		ElMessage.warning(emptyMessage);
+		return false;
+	}
+	return validateChildInsertParentContext(contextPhysicalIds);
 };
 
 const showInsertExistingReport = async (
@@ -795,7 +927,7 @@ const toDuplicateProductItem = (item: ExistingProductSearchItem): DuplicateProdu
 });
 
 const openInsertDuplicateDialogFromChildrenTable = () => {
-	dsSearchInput('', 'product', 'PSE', '', value => {
+	dsSearchInput('', 'product', 'PSE', '', async value => {
 		const targets = (value as ExistingProductSearchItem[]).map(toDuplicateProductItem).filter(item => !!item.physicalid);
 		if (!targets.length) {
 			ElMessage.warning('未选择重复项');
@@ -819,6 +951,8 @@ const submitDuplicateProducts = async () => {
 		ElMessage.warning('未获取到插入父节点');
 		return;
 	}
+	const canInsert = await validateChildInsertParentContext(parents.map(parent => parent.physicalId));
+	if (!canInsert) return;
 	duplicateSubmitting.value = true;
 	try {
 		const duplicateResponse = await partDetailApi.duplicateStructure(
@@ -879,11 +1013,116 @@ const handleCreateMenuCommand = async (command: CreateMenuCommand) => {
 		return;
 	}
 	if (command === 'existingProduct') {
+		const canInsert = await validateCurrentChildInsertParentContext();
+		if (!canInsert) return;
 		openExistingProductDialogFromChildrenTable();
 		return;
 	}
 	if (command === 'insertDuplicate') {
+		const canInsert = await validateCurrentChildInsertParentContext();
+		if (!canInsert) return;
 		openInsertDuplicateDialogFromChildrenTable();
+		return;
+	}
+	if (command === 'newShapeRepresentation') {
+		const canInsert = await validateCurrentChildInsertParentContext();
+		if (!canInsert) return;
+		openNewShapeRepresentationDialogFromChildrenTable();
+	}
+};
+
+const openNewShapeRepresentationDialogFromChildrenTable = () => {
+	const precond = `(((flattenedtaxonomies:"types/VPMReference") AND (NOT (flattenedtaxonomies:"types/AxisSystemReference" OR flattenedtaxonomies:"types/VPMReferenceExtPos" OR flattenedtaxonomies:"types/ENOStrRefinementVDRPSpec"))) AND flattenedtaxonomies:"types/VPMReference" AND flattenedtaxonomies:"interfaces/PrdDeformableExtension")`;
+	dsSearchInput(
+		'',
+		'product',
+		'PSE',
+		'',
+		async value => {
+			try {
+				const selected = value as ExistingProductSearchItem[];
+				const physicalIds = selected.map(getExistingProductPhysicalId).filter(Boolean);
+				if (!physicalIds.length) {
+					ElMessage.warning('未选择可变形产品');
+					return;
+				}
+				const details = await Promise.all(physicalIds.map(id => partDetailApi.expandDeformableProduct(id)));
+				const products = details.flatMap(r => r.results || []).filter(p => p.Deformabilty_Status === 'Deformable');
+				if (!products.length) {
+					ElMessage.warning('选中的产品不是可变形产品');
+					return;
+				}
+				deformTargets.value = products;
+				deformPrefix.value = '';
+				deformDialogVisible.value = true;
+			} catch (error) {
+				console.error('[PartDetailView] 获取可变形产品详情失败:', error);
+				ElMessage.error('获取可变形产品详情失败');
+			}
+		},
+		{ precond }
+	);
+};
+
+const submitDeformedProducts = async () => {
+	if (!deformTargets.value.length) {
+		ElMessage.warning('未选择待变形产品');
+		return;
+	}
+	const parents = getExistingProductParentContexts();
+	if (!parents.length) {
+		ElMessage.warning('未获取到插入父节点');
+		return;
+	}
+	const canInsert = await validateChildInsertParentContext(parents.map(parent => parent.physicalId));
+	if (!canInsert) return;
+	deformSubmitting.value = true;
+	try {
+		const prefix = deformPrefix.value || '';
+		const createdResults = await Promise.all(
+			deformTargets.value.map(product => {
+				const options = prefix ? [{ nlsKey: 'Prefix:', type: 'text', value: prefix, key: 'prefix' }] : [];
+				return partDetailApi.createDeformedFromDeformable([{ cestamp: product.cestamp, deformableID: product.resourceid }], options);
+			})
+		);
+
+		const deformedIds = createdResults
+			.flatMap(r => r.results || [])
+			.filter(r => r.status === 'success')
+			.map(r => r.deformedID);
+
+		if (!deformedIds.length) {
+			ElMessage.error('创建变形件失败');
+			return;
+		}
+
+		const operations = parents.flatMap(parent =>
+			deformedIds.map(childId => ({
+				parent: {
+					isInstanceOf: parent.physicalId,
+					children: parent.children
+				},
+				child: {
+					isInstanceOf: childId
+				}
+			}))
+		);
+
+		const response = await partDetailApi.insertExistingProducts(operations);
+		if (response.status !== 'success') {
+			ElMessage.error(getInsertExistingFailureMessage(response) || '插入变形件失败');
+			return;
+		}
+
+		await showInsertExistingReport(response.results || [], parents);
+		await refreshAfterExistingProductInsert(parents);
+		deformDialogVisible.value = false;
+		ElMessage.success('变形件创建并插入成功');
+	} catch (error) {
+		console.error('[PartDetailView] 创建变形件失败:', error);
+		ElMessage.error('创建变形件失败');
+	} finally {
+		deformSubmitting.value = false;
 	}
 };
 
@@ -1485,7 +1724,7 @@ const getReverseRouteStyle = (targetState: string) => {
 
 	const currentIndex = maturityStates.value.findIndex(state => state.stateSysName === maturityCurrentState.value);
 	const targetIndex = maturityStates.value.findIndex(state => state.stateSysName === targetState);
-	const stateStepWidth = 140;
+	const stateStepWidth = 136;
 	const stateWidth = 102;
 
 	return {
@@ -1724,8 +1963,24 @@ const loadChildren = async (row: TreeNode, treeNode: any, resolve: (data: TreeNo
 	);
 
 	try {
-		const response = queryModeStore.isDbMode ? await expandApi.getExpandDataDbMode(row.resourceid) : await expandApi.getExpandData(row.resourceid);
-		const childData = expandApi.parseExpandData(response, row.resourceid);
+		let childData: TreeNode[] = [];
+
+		if (queryModeStore.isDbMode) {
+			// 数据库模式下同时查询子级产品和关联文档
+			const [expandResponse, docs] = await Promise.all([
+				expandApi.getExpandDataDbMode(row.resourceid),
+				expandApi.getSpecificationDocuments(row.resourceid)
+			]);
+
+			const productChildren = expandApi.parseExpandData(expandResponse, row.resourceid);
+			const docChildren = expandApi.parseDocumentsToTreeNodes(docs, (row.level || 0) + 1, row.path || [row.resourceid]);
+
+			// 合并产品子级和文档，按标题排序
+			childData = [...productChildren, ...docChildren].sort((a, b) => (a.label || '').localeCompare(b.label || '', 'zh'));
+		} else {
+			const response = await expandApi.getExpandData(row.resourceid);
+			childData = expandApi.parseExpandData(response, row.resourceid);
+		}
 
 		// 设置子节点的 level 为父节点 level + 1
 		const childDataWithLevel = childData.map(child => ({
@@ -2221,6 +2476,7 @@ onMounted(() => {
 
 // 页面卸载
 onUnmounted(() => {
+	handleDeformDialogResizeEnd();
 	if (dropZoneCleanup) {
 		dropZoneCleanup();
 	}
@@ -2351,8 +2607,8 @@ onUnmounted(() => {
 				gap: 8px;
 
 				.back-icon {
-					font-size: 20px;
-					color: #606266;
+					font-size: 22px;
+					color: #c0c4cc;
 					cursor: pointer;
 					flex-shrink: 0;
 
@@ -2962,9 +3218,90 @@ onUnmounted(() => {
 	width: 440px;
 }
 
+:deep(.deform-dialog) {
+	position: relative;
+	overflow: auto;
+	min-width: 480px;
+	min-height: 300px;
+	margin: 0;
+
+	&::after {
+		content: '';
+		position: absolute;
+		bottom: 2px;
+		right: 2px;
+		width: 12px;
+		height: 12px;
+		background:
+			linear-gradient(135deg, transparent 45%, #909399 45%, #909399 55%, transparent 55%),
+			linear-gradient(135deg, transparent 35%, #909399 35%, #909399 45%, transparent 45%),
+			linear-gradient(135deg, transparent 25%, #909399 25%, #909399 35%, transparent 35%);
+		pointer-events: none;
+		z-index: 10;
+	}
+
+	.el-dialog__header {
+		padding: 14px 16px 8px;
+		margin-right: 0;
+		border-bottom: 1px solid #dcdfe6;
+		cursor: move;
+	}
+
+	.el-dialog__title {
+		font-size: 18px;
+		font-weight: 700;
+		color: #303133;
+	}
+
+	.el-dialog__body {
+		padding: 12px 16px;
+		overflow: auto;
+	}
+
+	.el-dialog__footer {
+		padding: 16px;
+		background-color: #f2f3f5;
+		border-top: 1px solid #dcdfe6;
+	}
+}
+
+.deform-dialog-resize-handle {
+	position: absolute;
+	right: 2px;
+	bottom: 2px;
+	width: 16px;
+	height: 16px;
+	cursor: nwse-resize;
+	z-index: 11;
+}
+
+:global(.deform-dialog-resizing) {
+	cursor: nwse-resize;
+	user-select: none;
+}
+
+.deform-form-row {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin-top: 12px;
+}
+
+.deform-form-label {
+	width: 80px;
+	color: #606266;
+	font-weight: 600;
+}
+
+.deform-prefix-input {
+	width: 170px;
+}
+
 .maturity-content {
 	min-height: 176px;
 	padding: 18px 22px 28px;
+	overflow-x: auto;
+	overflow-y: hidden;
 	background-color: #f5f5f5;
 }
 
@@ -2974,6 +3311,7 @@ onUnmounted(() => {
 	align-items: center;
 	justify-content: center;
 	width: fit-content;
+	min-width: max-content;
 	min-height: 118px;
 	margin-bottom: 16px;
 	margin-left: auto;
@@ -2988,9 +3326,9 @@ onUnmounted(() => {
 }
 
 .state-box {
-	min-width: 102px;
+	width: 102px;
 	height: 44px;
-	padding: 0 22px;
+	padding: 0 12px;
 	color: #fff;
 	font-size: 14px;
 	font-weight: 700;
@@ -3030,7 +3368,8 @@ onUnmounted(() => {
 .transition-action {
 	position: absolute;
 	top: -34px;
-	left: 50%;
+	left: 100%;
+	transform: translateX(-50%);
 	display: flex;
 	align-items: center;
 	gap: 4px;
@@ -3347,6 +3686,11 @@ onUnmounted(() => {
 	line-height: 30px !important;
 	font-size: 12px !important;
 	font-weight: 400 !important;
+	border-right: 1px solid #e4e7ed;
+}
+#partDetailContainer .children-table-v2 .el-table-v2__header-cell:last-child,
+#partDetailContainer .children-table-v2 .el-table-v2__row-cell:last-child {
+	border-right: none;
 }
 #partDetailContainer .children-table-v2 .enterprise-code-link {
 	color: #409eff !important;

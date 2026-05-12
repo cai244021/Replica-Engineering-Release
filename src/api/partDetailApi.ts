@@ -167,6 +167,51 @@ export interface DuplicateProductItem {
 	imageUrl: string;
 }
 
+export interface DeformableProductInfo {
+	resourceid: string;
+	title: string;
+	revision: string;
+	Maturity: string;
+	type: string;
+	cestamp: string;
+	Deformabilty_Status: string;
+	parentid: string;
+	IconUrl: string;
+}
+
+export interface ExpandDeformableResponse {
+	status: string;
+	results: DeformableProductInfo[];
+}
+
+export interface CreateDeformedItem {
+	cestamp: string;
+	deformableID: string;
+}
+
+export interface CreateDeformedOption {
+	nlsKey: string;
+	type: string;
+	value: string;
+	key: string;
+}
+
+export interface CreateDeformedFromDeformableParams {
+	data: CreateDeformedItem[];
+	options: CreateDeformedOption[];
+}
+
+export interface CreateDeformedResult {
+	status: string;
+	deformableID: string;
+	deformedID: string;
+}
+
+export interface CreateDeformedFromDeformableResponse {
+	status: string;
+	results: CreateDeformedResult[];
+}
+
 export interface DuplicateProductOptionsParams {
 	data: DuplicateProductItem[];
 	command: 'duplicate';
@@ -725,6 +770,69 @@ class PartDetailAPI {
 			SecurityContext: securityContext
 		});
 		return response;
+	}
+
+	async expandDeformableProduct(deformableId: string): Promise<ExpandDeformableResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = `/resources/product/deformable/${deformableId}/expandAll`;
+		const url = `${endpoint}?securityContext=${encodeURIComponent(securityContext)}&tenant=OnPremise&xrequestedwith=xmlhttprequest`;
+
+		console.log('[PartDetailAPI] 展开可变形产品 URL:', url);
+
+		try {
+			const response = await http.get(url, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 展开可变形产品响应:', response);
+			return response as ExpandDeformableResponse;
+		} catch (error) {
+			console.error('[PartDetailAPI] 展开可变形产品失败:', error);
+			throw error;
+		}
+	}
+
+	async createDeformedFromDeformable(data: CreateDeformedItem[], options: CreateDeformedOption[]): Promise<CreateDeformedFromDeformableResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/product/deformable/createDeformedFromDeformable';
+		const url = `${endpoint}?securityContext=${encodeURIComponent(securityContext)}&tenant=OnPremise&xrequestedwith=xmlhttprequest`;
+		const params: CreateDeformedFromDeformableParams = {
+			data,
+			options
+		};
+
+		console.log('[PartDetailAPI] 创建变形件 URL:', url);
+		console.log('[PartDetailAPI] 创建变形件参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.post(url, params as unknown as Record<string, unknown>, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 创建变形件响应:', response);
+			return response as CreateDeformedFromDeformableResponse;
+		} catch (error) {
+			console.error('[PartDetailAPI] 创建变形件失败:', error);
+			throw error;
+		}
 	}
 }
 

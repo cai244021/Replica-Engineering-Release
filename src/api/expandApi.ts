@@ -117,6 +117,7 @@ export interface TreeNode {
 	isExpanded: boolean;
 	hasChildren: boolean;
 	path: string[];
+	isDocument?: boolean;
 }
 
 class ExpandAPI {
@@ -453,6 +454,72 @@ class ExpandAPI {
 			console.error('[ExpandAPI] DB模式 获取展开数据失败:', error);
 			throw error;
 		}
+	}
+
+	/**
+	 * 查询父节点关联的 SpecificationDocument 文档
+	 * @param parentId 父节点 physicalId
+	 * @returns 文档数据数组
+	 */
+	async getSpecificationDocuments(parentId: string): Promise<any[]> {
+		const url = `/resources/v1/modeler/documents/parentId/${parentId}?parentRelName=SpecificationDocument&parentDirection=from&$fields=indexedImage,indexedTypeicon,isDocumentType&tenant=OnPremise`;
+		try {
+			const response = (await http.get(url)) as any;
+			console.log('[ExpandAPI] 文档查询响应:', response);
+			return response?.data || [];
+		} catch (error) {
+			console.error('[ExpandAPI] 查询文档失败:', error);
+			return [];
+		}
+	}
+
+	/**
+	 * 将文档数据解析为 TreeNode 数组
+	 * @param docs 文档原始数据
+	 * @param level 节点层级
+	 * @param parentPath 父节点路径
+	 * @returns TreeNode 数组
+	 */
+	parseDocumentsToTreeNodes(docs: any[], level: number, parentPath: string[]): TreeNode[] {
+		return docs.map(doc => {
+			const de = doc.dataelements || {};
+			const ownerInfo = doc.relateddata?.ownerInfo?.[0]?.dataelements;
+
+			let modifiedText = '-';
+			if (de.modified) {
+				try {
+					const date = new Date(de.modified);
+					modifiedText = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+				} catch {
+					modifiedText = de.modified;
+				}
+			}
+
+			return {
+				id: doc.id,
+				resourceid: doc.id,
+				label: de.title || de.name || '-',
+				partNumber: de.name || '无',
+				revision: de.revision || '-',
+				instanceLabel: '-',
+				isLastRevision: de.isLatestRevision === 'TRUE',
+				status: de.stateNLS || '-',
+				statusRaw: de.state || '',
+				owner: ownerInfo ? (ownerInfo.name || `${ownerInfo.firstname || ''} ${ownerInfo.lastname || ''}`).trim() : '-',
+				reserved: false,
+				modified: modifiedText,
+				globalType: de.typeNLS || '文档',
+				identifier: de.name || '-',
+				icon: de.indexedTypeicon || de.typeicon || '',
+				typeDisplayName: 'Document',
+				level,
+				children: [],
+				isExpanded: false,
+				hasChildren: false,
+				path: [...parentPath, doc.id],
+				isDocument: true
+			};
+		});
 	}
 
 	/**

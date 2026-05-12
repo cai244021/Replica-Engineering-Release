@@ -19,12 +19,18 @@ interface AppName {
 	CA: string;
 	XEN: string;
 }
+interface SearchOptions {
+	precond?: string;
+	ftsValue?: string;
+}
+
 function dsSearchInput(
 	searchData: string,
 	openType: OpenType[keyof OpenType],
 	appName: AppName[keyof AppName],
 	_CaId: string,
-	callback: (value: Array<any>) => void
+	callback: (value: Array<any>) => void,
+	options?: SearchOptions
 ) {
 	'use strict';
 
@@ -40,8 +46,8 @@ function dsSearchInput(
 		const pseSearch = {
 			parent_window: null,
 			title: showTitle,
-			precond: openType === 'product' ? precond : openType === 'filter' ? precondFilter : undefined,
-			fts_value: openType === 'content' ? openSearchFilter : undefined,
+			precond: options?.precond ?? (openType === 'product' ? precond : openType === 'filter' ? precondFilter : undefined),
+			fts_value: options?.ftsValue ?? (openType === 'content' ? openSearchFilter : undefined),
 			search_criteria_to_display: '',
 			showApplyButton: false,//openType === 'product', //是否显示应用按钮
 			applyButton_Nls: '打开内容并对其进行过滤', //应用按钮说明
