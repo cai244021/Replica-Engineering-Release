@@ -169,8 +169,9 @@
 						placement="bottom-start"
 						popper-class="children-create-dropdown"
 						:teleported="true"
+						:disabled="isCreateMenuDisabled"
 						@command="handleCreateMenuCommand">
-						<span class="toolbar-create-trigger">
+						<span class="toolbar-create-trigger" :class="{ 'is-disabled': isCreateMenuDisabled }">
 							<el-icon><Plus /></el-icon>
 						</span>
 						<template #dropdown>
@@ -485,6 +486,9 @@
 			:initial-file="selectedUploadFile"
 			@submit="handleUploadDocumentSubmit" />
 
+		<!-- 新工程图对话框 -->
+		<NewDrawingDialog />
+
 		<!-- 上传进度面板 -->
 		<UploadProgressPanel
 			v-model="uploadProgressVisible"
@@ -518,6 +522,7 @@ import dsSearchInput from '@/plugins/ds-search-input';
 import enCatflNls from '@/i18n/lang/en-US/CATFLNls_en.json';
 import zhCatflNls from '@/i18n/lang/zh-CN/CATFLNls_zh.json';
 import UploadDocumentDialog from './UploadDocumentDialog.vue';
+import NewDrawingDialog from './NewDrawingDialog.vue';
 import UploadProgressPanel from '@/components/UploadProgressPanel.vue';
 import type { UploadItem } from '@/components/UploadProgressPanel.vue';
 import documentApi from '@/api/documentApi';
@@ -742,6 +747,15 @@ const getChildEnterpriseCode = (row: TreeNode) => {
 };
 
 const isChildrenRowSelected = (row: TreeNode) => selectedChildrenRows.value.some(item => item.id === row.id);
+
+// 判断+号菜单是否可用（当勾选了非VPMReference类型的零件时禁用）
+const isCreateMenuDisabled = computed(() => {
+	if (selectedChildrenRows.value.length === 0) {
+		return false;
+	}
+	// 检查是否有任何勾选的行不是 VPMReference 类型（使用 globalType 判断）
+	return selectedChildrenRows.value.some(row => row.globalType !== 'VPMReference');
+});
 
 const isRowExpanding = (row: TreeNode) => expandingRowIds.value.has(row.id);
 
@@ -1057,6 +1071,38 @@ const handleCreateMenuCommand = async (command: CreateMenuCommand) => {
 	}
 	if (command === 'existingDocument') {
 		openAddExistingDocumentDialog();
+		return;
+	}
+	if (command === 'newDrawing') {
+		const canInsert = await validateCurrentChildInsertParentContext();
+		if (!canInsert) return;
+
+		// 获取勾选的零件物理ID列表
+		const selectedRows = [...selectedChildrenRows.value];
+		const physicalIds = selectedRows.length > 0 ? selectedRows.map(row => row.resourceid).filter(Boolean) : [currentPhysicalId.value].filter(Boolean);
+
+		// 如果勾选了多个父项，弹出确认框
+		if (selectedRows.length > 1) {
+			try {
+				await ElMessageBox.confirm('是否确定要在多个父项下插入新图纸?', '插入新工程图', {
+					confirmButtonText: '确定',
+					cancelButtonText: '关闭',
+					showClose: true,
+					closeOnClickModal: false,
+					closeOnPressEscape: false
+				});
+			} catch (error) {
+				if (error === 'cancel' || error === 'close') {
+					return;
+				}
+				throw error;
+			}
+		}
+
+		// 设置创建上下文并打开工程图弹框
+		const rowIds = selectedRows.map(row => row.id);
+		dialogStore.setCreateContext('partDetailTable', physicalIds, rowIds, []);
+		dialogStore.openDrawingDialog();
 		return;
 	}
 };
@@ -3155,6 +3201,12 @@ onUnmounted(() => {
 
 				.toolbar-create-trigger:hover {
 					color: #3d4752;
+				}
+
+				.toolbar-create-trigger.is-disabled {
+					color: #c0c4cc;
+					cursor: not-allowed;
+					pointer-events: none;
 				}
 			}
 		}

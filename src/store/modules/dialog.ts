@@ -6,6 +6,7 @@ export const useDialogStore = defineStore('dialog', {
 		visible: ref(false),
 		isProductDialog: ref(false),
 		isPartDialog: ref(false),
+		isDrawingDialog: ref(false),
 		repeat: ref(false),
 		isNavigating: ref(false),
 		shouldResetForm: ref(false),
@@ -29,6 +30,16 @@ export const useDialogStore = defineStore('dialog', {
 		openPartDialog() {
 			this.isProductDialog = false;
 			this.isPartDialog = true;
+			this.isDrawingDialog = false;
+			this.visible = true;
+			this.repeat = false;
+			this.isNavigating = false;
+			this.shouldResetForm = false;
+		},
+		openDrawingDialog() {
+			this.isProductDialog = false;
+			this.isPartDialog = false;
+			this.isDrawingDialog = true;
 			this.visible = true;
 			this.repeat = false;
 			this.isNavigating = false;
@@ -38,6 +49,7 @@ export const useDialogStore = defineStore('dialog', {
 			this.visible = false;
 			this.isProductDialog = false;
 			this.isPartDialog = false;
+			this.isDrawingDialog = false;
 			this.repeat = false;
 			this.isNavigating = false;
 			this.shouldResetForm = false;
