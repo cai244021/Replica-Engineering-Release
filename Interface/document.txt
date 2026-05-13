@@ -1,0 +1,125 @@
+{
+    "success": true,
+    "statusCode": 200,
+    "csrf": {
+        "name": "ENO_CSRF_TOKEN",
+        "value": "YM2E-PDLR-TXU2-QKAN-N096-46CA-XUB0-OOKQ"
+    },
+    "items": 1,
+    "data": [
+        {
+            "id": "D5D205296E1600006A0411970000661C",
+            "type": "Document",
+            "identifier": "D5D205296E1600006A0411970000661C",
+            "source": "https://3dspace.r2026.v6.com:443/3dspace",
+            "relativePath": "/resources/v1/modeler/documents/D5D205296E1600006A0411970000661C",
+            "tempId": "temp_17786515824075197",
+            "cestamp": "D5D205296E1600006A04119700006618",
+            "dataelements": {
+                "name": "DOC-43709429-0000027",
+                "policy": "Document Release",
+                "state": "IN_WORK",
+                "stateNLS": "工作中",
+                "typeNLS": "文档",
+                "revision": "0",
+                "isLatestRevision": "TRUE",
+                "title": "reparent",
+                "proxyurl": "",
+                "description": "",
+                "collabspace": "Common Space",
+                "collabSpaceTitle": "Common Space",
+                "originated": "2026-05-13T05:52:23.000Z",
+                "modified": "2026-05-13T05:52:23.000Z",
+                "comments": "",
+                "hasDownloadAccess": "TRUE",
+                "hasReviseAccess": "TRUE",
+                "hasModifyAccess": "TRUE",
+                "hasDeleteAccess": "TRUE",
+                "reservedby": "",
+                "secondaryTitle": "",
+                "typeicon": "https://3dspace.r2026.v6.com:443/3dspace/snresources/images/icons/small/I_CDM_Document.png",
+                "image": "https://3dspace.r2026.v6.com:443/3dspace/snresources/images/icons/large/I_CDM_Document108x144.png",
+                "parentId": "D5D205296E1600006A0411850000272B"
+            },
+            "relateddata": {
+                "files": [
+                    {
+                        "id": "D5D205296E1600006A04119800006632",
+                        "type": "Document",
+                        "identifier": "D5D205296E1600006A04119800006632",
+                        "source": "https://3dspace.r2026.v6.com:443/3dspace",
+                        "relativePath": "/resources/v1/modeler/documents/D5D205296E1600006A04119800006632",
+                        "relId": "D5D205296E1600006A0411980000663C",
+                        "cestamp": "D5D205296E1600006A04119700006618",
+                        "dataelements": {
+                            "title": "reparent.har",
+                            "name": "54f7f2b7-267c-4230-870b-e36e2699fd94",
+                            "comments": "",
+                            "locker": "",
+                            "fileType": " ",
+                            "dimension": "",
+                            "length": "0.0",
+                            "revision": "1",
+                            "originated": "2026-05-13T05:52:24.000Z",
+                            "modified": "2026-05-13T05:52:24.000Z",
+                            "fileSize": "387902",
+                            "fileChecksum": "{MD5}d2016487411b40646f014c5155b8bfe9",
+                            "format": "generic",
+                            "image": "https://3dspace.r2026.v6.com:443/3dspace/snresources/images/icons/large/I_CDM_Document108x144.png"
+                        },
+                        "relateddata": {
+                            "ownerInfo": [
+                                {
+                                    "id": "55411629F2680000695145B700000004",
+                                    "type": "Person",
+                                    "cestamp": "D5D205296E1600006A04107E000065A8",
+                                    "dataelements": {
+                                        "name": "admin_platform",
+                                        "firstname": "Admin",
+                                        "lastname": "Platform"
+                                    },
+                                    "children": []
+                                }
+                            ],
+                            "lockerInfo": [
+                                {
+                                    "children": []
+                                }
+                            ]
+                        },
+                        "children": []
+                    }
+                ],
+                "ownerInfo": [
+                    {
+                        "id": "55411629F2680000695145B700000004",
+                        "type": "Person",
+                        "cestamp": "D5D205296E1600006A04107E000065A8",
+                        "dataelements": {
+                            "name": "admin_platform",
+                            "firstname": "Admin",
+                            "lastname": "Platform"
+                        },
+                        "children": []
+                    }
+                ],
+                "originatorInfo": [
+                    {
+                        "id": "55411629F2680000695145B700000004",
+                        "type": "Person",
+                        "cestamp": "D5D205296E1600006A04107E000065A8",
+                        "dataelements": {
+                            "name": "admin_platform",
+                            "firstname": "Admin",
+                            "lastname": "Platform"
+                        },
+                        "children": []
+                    }
+                ]
+            },
+            "children": []
+        }
+    ],
+    "masks": [],
+    "definitions": []
+}

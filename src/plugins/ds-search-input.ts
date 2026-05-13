@@ -40,8 +40,10 @@ function dsSearchInput(
 	const precondFilter = ` (flattenedtaxonomies:\"types/ENOStrRefinementSpecification\")`;
 	const showTitle = openType === 'content' ? '打开内容' : openType === 'product' ? '打开产品' : openType === 'filter' ? '打开过滤器' : '打开内容'; //搜索栏上方标题
 
+	console.log('[dsSearchInput] loading SearchUtils...');
 	// @ts-expect-error parent is provided by the 3DDashboard host
 	parent.require(['DS/PADServices/utils/SearchUtils'], (SearchUtils: any) => {
+		console.log('[dsSearchInput] SearchUtils loaded');
 		// use 3DDashboard APIs
 		const pseSearch = {
 			parent_window: null,
@@ -96,7 +98,11 @@ function dsSearchInput(
 			}
 		};
 		const params = appName === 'PSE' ? pseSearch : CASearch;
+		console.log('[dsSearchInput] calling inAppsSearch with params:', JSON.parse(JSON.stringify(params)));
 		SearchUtils.inAppsSearch(params);
+	},
+	(error: any) => {
+		console.error('[dsSearchInput] failed to load SearchUtils:', error);
 	});
 }
 // }

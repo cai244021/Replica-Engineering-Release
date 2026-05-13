@@ -66,14 +66,30 @@ const request = async (
 					resolve(res);
 				}
 			},
-			onFailure(error: any) {
-				ElMessage({
-					duration: 10000,
-					message: error,
-					type: 'error'
-				});
-				reject(error);
-				console.log('error while fetching the securtiy context ', error);
+			onFailure(error: any, ...args: any[]) {
+				console.error('WAFData request failed:', error, args);
+				// 尝试从 args 中提取 JSON 响应体（3DSpace 业务错误通常以 JSON 返回在响应体中）
+				let parsedBody: any = null;
+				for (const arg of args) {
+					if (typeof arg === 'string') {
+						try {
+							const parsed = JSON.parse(arg);
+							if (parsed && (parsed.error !== undefined || parsed.success === false)) {
+								parsedBody = parsed;
+								break;
+							}
+						} catch {}
+					}
+					if (typeof arg === 'object' && arg && (arg.error !== undefined || arg.success === false)) {
+						parsedBody = arg;
+						break;
+					}
+				}
+				if (parsedBody) {
+					reject(parsedBody);
+				} else {
+					reject(error);
+				}
 			}
 		});
 	});

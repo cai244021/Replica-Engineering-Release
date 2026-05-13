@@ -478,6 +478,17 @@
 				class="deform-dialog-resize-handle"
 				@mousedown="handleDeformDialogResizeStart"></div>
 		</el-dialog>
+
+		<!-- 上传文档对话框 -->
+		<UploadDocumentDialog
+			v-model="uploadDocumentDialogVisible"
+			:initial-file="selectedUploadFile"
+			@submit="handleUploadDocumentSubmit" />
+
+		<!-- 上传进度面板 -->
+		<UploadProgressPanel
+			v-model="uploadProgressVisible"
+			:upload-list="uploadProgressList" />
 	</div>
 </template>
 
@@ -506,6 +517,10 @@ import { useQueryModeStore } from '@/store/modules/queryMode';
 import dsSearchInput from '@/plugins/ds-search-input';
 import enCatflNls from '@/i18n/lang/en-US/CATFLNls_en.json';
 import zhCatflNls from '@/i18n/lang/zh-CN/CATFLNls_zh.json';
+import UploadDocumentDialog from './UploadDocumentDialog.vue';
+import UploadProgressPanel from '@/components/UploadProgressPanel.vue';
+import type { UploadItem } from '@/components/UploadProgressPanel.vue';
+import documentApi from '@/api/documentApi';
 
 // 路由
 const route = useRoute();
@@ -651,6 +666,11 @@ let deformDialogResizeStartX = 0;
 let deformDialogResizeStartY = 0;
 let deformDialogResizeStartWidth = 0;
 let deformDialogResizeStartHeight = 0;
+
+// 上传文档对话框
+const uploadDocumentDialogVisible = ref(false);
+const uploadProgressVisible = ref(false);
+const uploadProgressList = ref<UploadItem[]>([]);
 const columnWidths = ref<Record<string, number>>({
 	selection: 50,
 	label: 240,
@@ -1008,6 +1028,7 @@ const submitDuplicateProducts = async () => {
 };
 
 const handleCreateMenuCommand = async (command: CreateMenuCommand) => {
+	console.log('[PartDetailView] menu command:', command);
 	if (command === 'newProduct' || command === 'newPart') {
 		await openCreateDialogFromChildrenTable(command);
 		return;
@@ -1028,6 +1049,118 @@ const handleCreateMenuCommand = async (command: CreateMenuCommand) => {
 		const canInsert = await validateCurrentChildInsertParentContext();
 		if (!canInsert) return;
 		openNewShapeRepresentationDialogFromChildrenTable();
+		return;
+	}
+	if (command === 'uploadDocument') {
+		openUploadDocumentDialog();
+		return;
+	}
+	if (command === 'existingDocument') {
+		openAddExistingDocumentDialog();
+		return;
+	}
+};
+
+// 上传文档相关
+const selectedUploadFile = ref<File | null>(null);
+
+const openUploadDocumentDialog = () => {
+	// 先触发文件选择
+	const fileInput = document.createElement('input');
+	fileInput.type = 'file';
+	fileInput.style.display = 'none';
+	fileInput.onchange = (event: Event) => {
+		const target = event.target as HTMLInputElement;
+		const file = target.files?.[0];
+		if (file) {
+			selectedUploadFile.value = file;
+			uploadDocumentDialogVisible.value = true;
+		}
+		document.body.removeChild(fileInput);
+	};
+	document.body.appendChild(fileInput);
+	fileInput.click();
+};
+
+// 添加现有文档 - 使用 dsSearchInput 打开搜索对话框
+const openAddExistingDocumentDialog = () => {
+	console.log('[PartDetailView] opening existing document dialog');
+	// 文档类型的搜索条件
+	const precond = `((flattenedtaxonomies:"types/Document" OR flattenedtaxonomies:"types/CONTROLLED DOCUMENTS") AND (NOT (flattenedtaxonomies:"types/Controlled Document Template" OR flattenedtaxonomies:"types/Rendition Document Template")))`;
+
+	console.log('[PartDetailView] calling dsSearchInput for documents with precond:', precond);
+	dsSearchInput(
+		'',
+		'product',
+		'PSE',
+		'',
+		async value => {
+			console.log('[PartDetailView] document search callback triggered with value:', value);
+			try {
+				const selected = value as any[];
+				if (!selected.length) {
+					ElMessage.warning('未选择文档');
+					return;
+				}
+
+				// 获取选中的文档ID
+				const documentIds = selected.map(item => item.id || item['ds6w:identifier'] || item.identifier).filter(Boolean);
+				if (!documentIds.length) {
+					ElMessage.warning('未获取到文档ID');
+					return;
+				}
+
+				console.log('[PartDetailView] 选中文档:', documentIds);
+
+				// 获取当前父节点ID
+				const parentId = getParentPhysicalId();
+				if (!parentId) {
+					ElMessage.warning('未获取到父节点');
+					return;
+				}
+
+				// 先获取 CheckinTicket 换取新鲜 CSRF Token，避免 403
+				const ticketResponse = await documentApi.getCheckinTicket();
+				if (!ticketResponse.success || !ticketResponse.csrf?.value) {
+					ElMessage.error('获取 CSRF Token 失败，请刷新后重试');
+					return;
+				}
+				const csrfToken = ticketResponse.csrf.value;
+				console.log('[PartDetailView] 使用新鲜 CSRF Token:', csrfToken);
+
+				// 调用关联文档API
+				const response = await documentApi.relateDocuments(documentIds, parentId, csrfToken);
+
+				if (response.success) {
+					ElMessage.success(`成功关联 ${documentIds.length} 个文档`);
+
+					// 切换到数据库模式并刷新
+					await switchToDbModeAndRefresh();
+				} else {
+					ElMessage.error(response.error || '关联文档失败');
+				}
+			} catch (error: any) {
+				console.error('[PartDetailView] 关联文档失败:', error);
+				ElMessage.error(error?.error || error?.message || '关联文档失败');
+			}
+		},
+		{ precond }
+	);
+};
+
+// 切换到数据库模式并刷新
+const switchToDbModeAndRefresh = async () => {
+	try {
+		// 切换到数据库模式
+		queryModeStore.switchToDbMode();
+
+		// 刷新当前零件详情
+		if (currentPhysicalId.value) {
+			await loadPartDetail(currentPhysicalId.value);
+		}
+	} catch (error) {
+		console.error('[PartDetailView] 切换数据库模式并刷新失败:', error);
+		ElMessage.error('刷新失败');
 	}
 };
 
@@ -1123,6 +1256,129 @@ const submitDeformedProducts = async () => {
 		ElMessage.error('创建变形件失败');
 	} finally {
 		deformSubmitting.value = false;
+	}
+};
+
+// 处理上传文档提交
+const handleUploadDocumentSubmit = async (data: {
+	title: string;
+	type: string;
+	collaborativeSpace: string;
+	file: File | null;
+	fileName: string;
+	remark: string;
+	description: string;
+	policy: string;
+}) => {
+	console.log('[PartDetailView] 上传文档数据:', data);
+
+	// 验证文件是否存在
+	if (!data.file) {
+		ElMessage.error('请选择要上传的文件');
+		return;
+	}
+
+	// 获取父对象ID（当前零件的 physicalId）
+	const parentId = getParentPhysicalId();
+	if (!parentId) {
+		ElMessage.error('无法获取父对象ID，请刷新页面后重试');
+		return;
+	}
+
+	console.log('[PartDetailView] 父对象ID:', parentId);
+
+	// 生成上传任务ID
+	const uploadId = `upload_${Date.now()}`;
+
+	// 隐藏对话框，显示上传进度面板
+	uploadDocumentDialogVisible.value = false;
+	uploadProgressVisible.value = true;
+
+	// 添加到上传列表（未决状态）
+	uploadProgressList.value.push({
+		id: uploadId,
+		fileName: data.fileName,
+		status: 'pending'
+	});
+
+	// 更新状态为上传中
+	const updateUploadStatus = (status: UploadItem['status']) => {
+		const item = uploadProgressList.value.find(item => item.id === uploadId);
+		if (item) {
+			item.status = status;
+		}
+	};
+
+	// 开始上传，更新状态
+	updateUploadStatus('uploading');
+
+	try {
+		// 调用文档上传API
+		const response = await documentApi.uploadDocument(
+			data.file,
+			data.title,
+			data.description,
+			parentId,
+			data.remark
+		);
+
+		// 处理响应结果
+		if (response.success) {
+			// 上传成功
+			updateUploadStatus('completed');
+			ElMessage.success('文档上传成功');
+
+			// 刷新当前零件详情，显示新上传的文档
+			await refreshCurrentPartDetail();
+
+			// 3秒后从列表中移除已完成的任务
+			setTimeout(() => {
+				uploadProgressList.value = uploadProgressList.value.filter(item => item.id !== uploadId);
+				// 如果没有上传任务了，隐藏进度面板
+				if (uploadProgressList.value.length === 0) {
+					uploadProgressVisible.value = false;
+				}
+			}, 3000);
+		} else {
+			// 上传失败，显示对话框让用户可以重试
+			updateUploadStatus('error');
+			uploadDocumentDialogVisible.value = true;
+
+			// 处理失败情况
+			const errorMsg = response.error || '文档上传失败';
+			console.error('[PartDetailView] 文档上传失败:', errorMsg, response.internalError);
+			ElMessage.error(errorMsg);
+		}
+	} catch (error) {
+		// 上传异常，显示对话框让用户可以重试
+		updateUploadStatus('error');
+		uploadDocumentDialogVisible.value = true;
+
+		console.error('[PartDetailView] 文档上传异常:', error);
+		const errorMessage = error instanceof Error ? error.message : '文档上传过程中发生错误';
+		ElMessage.error(errorMessage);
+	}
+};
+
+// 刷新当前零件详情
+const refreshCurrentPartDetail = async () => {
+	console.log('[PartDetailView] 刷新当前零件详情');
+
+	// 切换到数据库模式以确保获取最新数据
+	queryModeStore.switchToDbMode();
+
+	// 如果有选中的子行，刷新对应的子行
+	if (selectedChildrenRows.value.length > 0) {
+		// 刷新选中的行
+		await Promise.all(
+			selectedChildrenRows.value.map(row => reloadAndExpandRow(row))
+		);
+	} else {
+		// 刷新当前零件详情
+		const physicalId = currentPhysicalId.value;
+		if (physicalId) {
+			await loadPartDetail(physicalId);
+		}
 	}
 };
 
@@ -1860,10 +2116,14 @@ const loadPartDetail = async (physicalId: string) => {
 
 	try {
 		if (isDbMode) {
-			// 数据库模式：使用 enoauthoring/expand 同时获取零件详情和子级展开
+			// 数据库模式：使用 enoauthoring/expand 同时获取零件详情和子级展开，同时获取关联文档
 			console.log('[PartDetailView] 使用数据库模式查询');
-			const expandResponse = await expandApi.getExpandDataDbMode(physicalId);
+			const [expandResponse, docs] = await Promise.all([
+				expandApi.getExpandDataDbMode(physicalId),
+				expandApi.getSpecificationDocuments(physicalId)
+			]);
 			console.log('[PartDetailView] DB模式 展开数据响应:', expandResponse);
+			console.log('[PartDetailView] DB模式 文档数据响应:', docs);
 
 			// 从展开响应中提取零件基本信息
 			const dbPartInfo = expandApi.extractPartInfoFromDbExpand(expandResponse, physicalId);
@@ -1884,8 +2144,12 @@ const loadPartDetail = async (physicalId: string) => {
 			// 保存当前 physicalId
 			currentPhysicalId.value = physicalId;
 
-			// 解析子级树形数据
-			const treeData = expandApi.parseExpandData(expandResponse, physicalId);
+			// 解析子级树形数据（产品子级）
+			const productChildren = expandApi.parseExpandData(expandResponse, physicalId);
+			// 解析文档数据为树形节点
+			const docChildren = expandApi.parseDocumentsToTreeNodes(docs, 1, [physicalId]);
+			// 合并产品子级和文档，按标题排序
+			const treeData = [...productChildren, ...docChildren].sort((a, b) => (a.label || '').localeCompare(b.label || '', 'zh'));
 			console.log('[PartDetailView] DB模式 解析后的树形数据:', treeData);
 			childrenData.value = treeData;
 		} else {
