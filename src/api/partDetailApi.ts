@@ -836,6 +836,48 @@ class PartDetailAPI {
 	}
 
 	/**
+	 * 关联材料到产品（连续材料数量）
+	 * 接口: POST /resources/v1/engineeringItem/createContinousMaterialItemReference?tenant=OnPremise
+	 * @param items 关联项数组
+	 */
+	async createContinousMaterialItemReference(
+		items: Array<{
+			materialref: { physicalid: string };
+			quantity: { name: string; value: string; unit: string };
+			reference: { physicalid: string };
+		}>
+	): Promise<any> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/v1/engineeringItem/createContinousMaterialItemReference';
+		const url = `${endpoint}?tenant=OnPremise`;
+		const params = { items };
+
+		console.log('[PartDetailAPI] 关联材料 URL:', url);
+		console.log('[PartDetailAPI] 关联材料参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.post(url, params as unknown as Record<string, unknown>, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 关联材料响应:', response);
+			return response;
+		} catch (error) {
+			console.error('[PartDetailAPI] 关联材料失败:', error);
+			throw error;
+		}
+	}
+
+	/**
 	 * 关联现有工程图到产品（使用和现有产品一样的接口）
 	 * 接口: POST /resources/product/instances/
 	 * @param operations 关联操作数组

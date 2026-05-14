@@ -489,6 +489,12 @@
 		<!-- 新工程图对话框 -->
 		<NewDrawingDialog />
 
+		<!-- 材料数量对话框 -->
+		<MaterialQuantityDialog
+			v-model="materialQuantityDialogVisible"
+			:material-name="selectedMaterialName"
+			@confirm="handleMaterialQuantityConfirm" />
+
 		<!-- 上传进度面板 -->
 		<UploadProgressPanel
 			v-model="uploadProgressVisible"
@@ -523,6 +529,7 @@ import enCatflNls from '@/i18n/lang/en-US/CATFLNls_en.json';
 import zhCatflNls from '@/i18n/lang/zh-CN/CATFLNls_zh.json';
 import UploadDocumentDialog from './UploadDocumentDialog.vue';
 import NewDrawingDialog from './NewDrawingDialog.vue';
+import MaterialQuantityDialog from './MaterialQuantityDialog.vue';
 import UploadProgressPanel from '@/components/UploadProgressPanel.vue';
 import type { UploadItem } from '@/components/UploadProgressPanel.vue';
 import documentApi from '@/api/documentApi';
@@ -676,6 +683,11 @@ let deformDialogResizeStartHeight = 0;
 const uploadDocumentDialogVisible = ref(false);
 const uploadProgressVisible = ref(false);
 const uploadProgressList = ref<UploadItem[]>([]);
+
+// 材料数量对话框
+const materialQuantityDialogVisible = ref(false);
+const selectedMaterialName = ref('');
+const pendingMaterialQuantity = ref<{ materialPhysicalId: string; quantityName: string; value: string; unit: string } | null>(null);
 const columnWidths = ref<Record<string, number>>({
 	selection: 50,
 	label: 240,
@@ -1116,6 +1128,7 @@ const submitDuplicateProducts = async () => {
 const handleCreateMenuCommand = async (command: CreateMenuCommand) => {
 	console.log('[PartDetailView] menu command:', command);
 	if (command === 'newProduct' || command === 'newPart') {
+		pendingMaterialQuantity.value = null;
 		await openCreateDialogFromChildrenTable(command);
 		return;
 	}
@@ -1180,6 +1193,12 @@ const handleCreateMenuCommand = async (command: CreateMenuCommand) => {
 	if (command === 'existingDrawing') {
 		// 打开现有工程图搜索对话框
 		openExistingDrawingDialogFromChildrenTable();
+		return;
+	}
+	if (command === 'materialQuantity') {
+		const canInsert = await validateCurrentChildInsertParentContext();
+		if (!canInsert) return;
+		openMaterialQuantitySearchDialog();
 		return;
 	}
 };
@@ -1304,6 +1323,58 @@ const openExistingDrawingDialogFromChildrenTable = () => {
 			ElMessage.error('关联现有图纸失败');
 		}
 	}, { precond });
+};
+
+// 打开材料搜索对话框
+const openMaterialQuantitySearchDialog = () => {
+	console.log('[PartDetailView] opening material search dialog');
+
+	dsSearchInput(
+		'',
+		'product',
+		'PSE',
+		'',
+		async value => {
+			try {
+				const selected = value as any[];
+				if (!selected.length) {
+					ElMessage.warning('未选择材料');
+					return;
+				}
+
+				const materialItem = selected[0];
+				const materialPhysicalId = materialItem.id || materialItem['ds6w:identifier'] || materialItem.identifier;
+				if (!materialPhysicalId) {
+					ElMessage.warning('未获取到材料ID');
+					return;
+				}
+
+				selectedMaterialName.value = materialItem['ds6w:label'] || materialItem.label || '材料';
+				pendingMaterialQuantity.value = {
+					materialPhysicalId,
+					quantityName: '',
+					value: '',
+					unit: ''
+				};
+				materialQuantityDialogVisible.value = true;
+			} catch (error) {
+				console.error('[PartDetailView] 选择材料失败:', error);
+				ElMessage.error('选择材料失败');
+			}
+		},
+		{ query: '(flattenedtaxonomies:"types/dsc_matref_ref_Core")' }
+	);
+};
+
+// 处理材料数量确认
+const handleMaterialQuantityConfirm = (data: { quantityType: string; value: string; unit: string }) => {
+	if (!pendingMaterialQuantity.value) return;
+	pendingMaterialQuantity.value.quantityName = data.quantityType === 'DSDim_VOLUME' ? 'VOLUME' : 'MASS';
+	pendingMaterialQuantity.value.value = data.value;
+	pendingMaterialQuantity.value.unit = data.unit;
+
+	// 打开新产品创建对话框
+	openCreateDialogFromChildrenTable('newProduct');
 };
 
 const openNewShapeRepresentationDialogFromChildrenTable = () => {
@@ -2845,6 +2916,26 @@ watch(
 	async () => {
 		if (!dialogStore.lastCreatedInfo) return;
 		await refreshAfterTableCreate();
+
+		// 如果存在待关联的材料数量信息，调用关联接口
+		if (pendingMaterialQuantity.value && dialogStore.lastCreatedInfo.physicalid) {
+			try {
+				const { materialPhysicalId, quantityName, value, unit } = pendingMaterialQuantity.value;
+				await partDetailApi.createContinousMaterialItemReference([
+					{
+						materialref: { physicalid: materialPhysicalId },
+						quantity: { name: quantityName, value, unit },
+						reference: { physicalid: dialogStore.lastCreatedInfo.physicalid }
+					}
+				]);
+				ElMessage.success('材料关联成功');
+			} catch (error) {
+				console.error('[PartDetailView] 关联材料失败:', error);
+				ElMessage.error('关联材料失败');
+			} finally {
+				pendingMaterialQuantity.value = null;
+			}
+		}
 	}
 );
 

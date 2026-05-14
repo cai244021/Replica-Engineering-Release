@@ -22,6 +22,7 @@ interface AppName {
 interface SearchOptions {
 	precond?: string;
 	ftsValue?: string;
+	query?: string;
 	searchType?: 'product' | 'document' | 'drawing';
 	owner?: string;
 	securityContext?: string;
@@ -92,10 +93,19 @@ function dsSearchInput(
 			const currentSecurityContext = options?.securityContext || 'VPLMProjectLeader.Company Name.Common Space';
 
 			// use 3DDashboard APIs
+			let defaultPrecond;
+			if (openType === 'product') {
+				defaultPrecond = precond;
+			} else if (openType === 'filter') {
+				defaultPrecond = precondFilter;
+			} else {
+				defaultPrecond = undefined;
+			}
+
 			const pseSearch = {
 				parent_window: null,
 				title: showTitle,
-				precond: options?.precond ?? (openType === 'product' ? precond : openType === 'filter' ? precondFilter : undefined),
+				precond: options?.precond ?? options?.query ?? defaultPrecond,
 				fts_value: options?.ftsValue ?? (openType === 'content' ? openSearchFilter : undefined),
 				search_criteria_to_display: '',
 				showApplyButton: false, // openType === 'product', // 是否显示应用按钮
