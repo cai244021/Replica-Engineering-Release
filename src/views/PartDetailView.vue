@@ -830,6 +830,24 @@ const getExistingProductPhysicalId = (item: ExistingProductSearchItem) => item.p
 const getExistingProductName = (item: ExistingProductSearchItem) =>
 	item['ds6w:label'] || item.label || item.name || item.title || item.displayName || getExistingProductPhysicalId(item);
 
+// 工程图搜索项类型
+interface ExistingDrawingSearchItem {
+	'physicalid'?: string;
+	'physicalId'?: string;
+	'id'?: string;
+	'identifier'?: string;
+	'ds6w:identifier'?: string;
+	'ds6w:label'?: string;
+	label?: string;
+	name?: string;
+	title?: string;
+}
+
+const getExistingDrawingPhysicalId = (item: ExistingDrawingSearchItem) => item.physicalid || item.physicalId || item.id || item['ds6w:identifier'] || item.identifier || '';
+
+const getExistingDrawingName = (item: ExistingDrawingSearchItem) =>
+	item['ds6w:label'] || item.label || item.name || item.title || getExistingDrawingPhysicalId(item);
+
 const getParentChildrenIds = (row?: TreeNode) => {
 	const children = row ? row.children || [] : childrenData.value;
 	return children.map(child => child.relationId).filter((relationId): relationId is string => !!relationId);
@@ -841,7 +859,7 @@ const getExistingProductParentContexts = (): ExistingProductParentContext[] => {
 		return selectedRows
 			.map(row => ({
 				physicalId: row.resourceid,
-				name: row.identifier || row.label || row.resourceid,
+				name: row.instanceLabel || row.label || row.identifier || row.resourceid,
 				row,
 				children: getParentChildrenIds(row)
 			}))
@@ -897,6 +915,60 @@ const refreshAfterExistingProductInsert = async (parents: ExistingProductParentC
 	if (currentPhysicalId.value) {
 		await loadPartDetail(currentPhysicalId.value);
 	}
+};
+
+// 工程图关联报告
+const showRelateDrawingReport = async (
+	results: { status: string; parent: string; instanceName?: string }[],
+	parents: ExistingProductParentContext[]
+) => {
+	const successResults = results.filter(item => item.status === 'success');
+	const parentNameMap = new Map(parents.map(parent => [parent.physicalId, parent.name]));
+	const content = successResults.map(item => `成功关联 ${item.instanceName} 到 ${parentNameMap.get(item.parent) || item.parent}。`).join('<br />');
+	await ElMessageBox.alert(content || '没有成功关联的数据。', '关联工程图报告', {
+		confirmButtonText: '关闭',
+		dangerouslyUseHTMLString: true
+	});
+};
+
+// 关联现有图纸到产品
+const relateExistingDrawings = async (selectedDrawings: ExistingDrawingSearchItem[]) => {
+	const drawings = selectedDrawings
+		.map(item => ({
+			physicalId: getExistingDrawingPhysicalId(item),
+			name: getExistingDrawingName(item)
+		}))
+		.filter(item => !!item.physicalId);
+
+	if (!drawings.length) {
+		ElMessage.warning('未选择现有图纸');
+		return;
+	}
+
+	const parents = getExistingProductParentContexts();
+	if (!parents.length) {
+		ElMessage.warning('未获取到关联父节点');
+		return;
+	}
+
+	const operations = parents.flatMap(parent =>
+		drawings.map(drawing => ({
+			drawing,
+			parent: {
+				physicalId: parent.physicalId,
+				children: parent.children
+			}
+		}))
+	);
+
+	const response = await partDetailApi.relateDrawings(operations);
+	if (response.status !== 'success') {
+		ElMessage.error('关联现有图纸失败');
+		return;
+	}
+
+	await showRelateDrawingReport(response.results || [], parents);
+	await refreshAfterExistingProductInsert(parents);
 };
 
 const insertExistingProducts = async (selectedProducts: ExistingProductSearchItem[]) => {
@@ -1105,6 +1177,11 @@ const handleCreateMenuCommand = async (command: CreateMenuCommand) => {
 		dialogStore.openDrawingDialog();
 		return;
 	}
+	if (command === 'existingDrawing') {
+		// 打开现有工程图搜索对话框
+		openExistingDrawingDialogFromChildrenTable();
+		return;
+	}
 };
 
 // 上传文档相关
@@ -1208,6 +1285,25 @@ const switchToDbModeAndRefresh = async () => {
 		console.error('[PartDetailView] 切换数据库模式并刷新失败:', error);
 		ElMessage.error('刷新失败');
 	}
+};
+
+// 打开现有工程图搜索对话框
+const openExistingDrawingDialogFromChildrenTable = () => {
+	console.log('[PartDetailView] opening existing drawing dialog');
+
+	// 工程图类型的搜索条件
+	const precond = `(flattenedtaxonomies:"types/Drawing" AND [ds6w:composed]:FALSE)`;
+
+	console.log('[PartDetailView] 调用 dsSearchInput 搜索工程图，precond:', precond);
+
+	dsSearchInput('', 'product', 'PSE', '', async value => {
+		try {
+			await relateExistingDrawings(value as ExistingDrawingSearchItem[]);
+		} catch (error) {
+			console.error('[PartDetailView] 关联现有图纸失败:', error);
+			ElMessage.error('关联现有图纸失败');
+		}
+	}, { precond });
 };
 
 const openNewShapeRepresentationDialogFromChildrenTable = () => {

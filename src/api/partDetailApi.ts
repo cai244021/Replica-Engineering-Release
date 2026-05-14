@@ -834,6 +834,61 @@ class PartDetailAPI {
 			throw error;
 		}
 	}
+
+	/**
+	 * 关联现有工程图到产品（使用和现有产品一样的接口）
+	 * 接口: POST /resources/product/instances/
+	 * @param operations 关联操作数组
+	 */
+	async relateDrawings(operations: Array<{ drawing: { physicalId: string; name?: string }; parent: { physicalId: string; children?: string[] } }>): Promise<any> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			console.log('[PartDetailAPI] 3DSpace URL 为空，先获取 URL');
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			console.log('[PartDetailAPI] SecurityContext 为空，先获取');
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/product/instances/';
+		const url = `${endpoint}?securityContext=${encodeURIComponent(securityContext)}`;
+
+		// 转换为 insertExistingProducts 格式
+		const insertOperations = operations.map(op => ({
+			parent: {
+				isInstanceOf: op.parent.physicalId,
+				children: op.parent.children || []
+			},
+			child: {
+				isInstanceOf: op.drawing.physicalId
+			}
+		}));
+
+		const params = {
+			version: '1.0',
+			bAllOrNothing: false,
+			lockConnectionAsParent: false,
+			operations: insertOperations
+		};
+
+		console.log('[PartDetailAPI] 关联工程图 URL:', url);
+		console.log('[PartDetailAPI] 关联工程图参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.post(url, params as unknown as Record<string, unknown>, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 关联工程图响应:', response);
+			return response;
+		} catch (error) {
+			console.error('[PartDetailAPI] 关联工程图失败:', error);
+			throw error;
+		}
+	}
 }
 
 export default new PartDetailAPI();
