@@ -1,4 +1,4 @@
-import { http } from '@/utils/ds-request';
+import http from '@/utils/ds-request';
 import { useBaseInfoStore } from '@/store';
 
 // 零件详情请求参数
@@ -882,7 +882,12 @@ class PartDetailAPI {
 	 * 接口: POST /resources/product/instances/
 	 * @param operations 关联操作数组
 	 */
-	async relateDrawings(operations: Array<{ drawing: { physicalId: string; name?: string }; parent: { physicalId: string; children?: string[] } }>): Promise<any> {
+	async relateDrawings(
+		operations: Array<{
+			drawing: { physicalId: string; name?: string };
+			parent: { physicalId: string; children?: string[] };
+		}>
+	): Promise<any> {
 		const baseInfoStore = useBaseInfoStore();
 
 		if (!baseInfoStore.spaceUrl) {
@@ -928,6 +933,105 @@ class PartDetailAPI {
 			return response;
 		} catch (error) {
 			console.error('[PartDetailAPI] 关联工程图失败:', error);
+			throw error;
+		}
+	}
+
+	/**
+	 * 获取原材料可用的单位列表
+	 * 接口: GET /resources/RawMaterial/v1/Raw_Material/getUOMsAvailableOnRM
+	 */
+	async getRawMaterialUOMs(
+		objectPID: string
+	): Promise<{ success: boolean; result?: { applicableUOMTypes: Array<{ units: Array<{ dbName: string; nlsLabel: string }> }> } }> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.securityContext) {
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/RawMaterial/v1/Raw_Material/getUOMsAvailableOnRM';
+		const url = `${endpoint}?objectPID=${encodeURIComponent(objectPID)}&tenant=OnPremise&SecurityContext=${encodeURIComponent(securityContext)}`;
+
+		console.log('[PartDetailAPI] 获取原材料单位列表 URL:', url);
+
+		try {
+			const response = await http.get(url);
+			console.log('[PartDetailAPI] 获取原材料单位列表响应:', response);
+			return response as { success: boolean; result?: { applicableUOMTypes: Array<{ units: Array<{ dbName: string; nlsLabel: string }> }> } };
+		} catch (error) {
+			console.error('[PartDetailAPI] 获取原材料单位列表失败:', error);
+			throw error;
+		}
+	}
+
+	/**
+	 * 获取 CSRF Token
+	 * 接口: GET /resources/v1/application/E6WFoundation/CSRF?tenant=OnPremise
+	 */
+	async getCSRFToken(): Promise<{ success: boolean; csrf?: { name: string; value: string } }> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.securityContext) {
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/v1/application/E6WFoundation/CSRF';
+		const url = `${endpoint}?tenant=OnPremise`;
+
+		console.log('[PartDetailAPI] 获取 CSRF Token URL:', url);
+
+		try {
+			const response = await http.get(url, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 获取 CSRF Token 响应:', response);
+			return response as { success: boolean; csrf?: { name: string; value: string } };
+		} catch (error) {
+			console.error('[PartDetailAPI] 获取 CSRF Token 失败:', error);
+			throw error;
+		}
+	}
+
+	/**
+	 * 创建连续材料数量关联
+	 * 接口: POST /resources/v1/ContinuousQuantity/PhysicalProduct/{parentId}/QtyInstance:ContinuousQuantity
+	 */
+	async createContinuousQuantity(
+		parentId: string,
+		params: {
+			childId: string;
+			quantity?: string;
+			quantityUOM?: string;
+			asRequired: boolean;
+		},
+		csrfToken: string
+	): Promise<unknown> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.securityContext) {
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = `/resources/v1/ContinuousQuantity/PhysicalProduct/${parentId}/QtyInstance:ContinuousQuantity`;
+		const url = `${endpoint}?tenant=OnPremise&SecurityContext=${encodeURIComponent(securityContext)}`;
+
+		console.log('[PartDetailAPI] 创建连续材料数量关联 URL:', url);
+		console.log('[PartDetailAPI] 创建连续材料数量关联参数:', JSON.stringify(params, null, 2));
+		console.log('[PartDetailAPI] CSRF Token:', csrfToken);
+
+		try {
+			const response = await http.post(url, params as unknown as Record<string, unknown>, {
+				SecurityContext: securityContext,
+				eno_csrf_token: csrfToken
+			});
+			console.log('[PartDetailAPI] 创建连续材料数量关联响应:', response);
+			return response;
+		} catch (error) {
+			console.error('[PartDetailAPI] 创建连续材料数量关联失败:', error);
 			throw error;
 		}
 	}

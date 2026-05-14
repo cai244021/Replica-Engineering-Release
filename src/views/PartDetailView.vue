@@ -202,18 +202,18 @@
 										<span class="create-menu-icon material-quantity-icon"></span>
 										<span>材料的新数量</span>
 									</el-dropdown-item>
-									<el-dropdown-item command="existingMaterial">
+									<el-dropdown-item command="existingMaterial" v-if="selectedChildrenRows.length < 2">
 										<span class="create-menu-icon material-existing-icon"></span>
 										<span>现有原材料</span>
 									</el-dropdown-item>
 								</el-dropdown-menu>
 								<div class="create-menu-section-title">规格文档</div>
 								<el-dropdown-menu>
-									<el-dropdown-item command="uploadDocument">
+									<el-dropdown-item command="uploadDocument" v-if="selectedChildrenRows.length < 2">
 										<span class="create-menu-icon upload-document-icon"></span>
 										<span>上传文档</span>
 									</el-dropdown-item>
-									<el-dropdown-item command="existingDocument">
+									<el-dropdown-item command="existingDocument" v-if="selectedChildrenRows.length < 2">
 										<span class="create-menu-icon existing-document-icon"></span>
 										<span>现有文档</span>
 									</el-dropdown-item>
@@ -495,6 +495,13 @@
 			:material-name="selectedMaterialName"
 			@confirm="handleMaterialQuantityConfirm" />
 
+		<!-- 现有原材料对话框 -->
+		<ExistingMaterialDialog
+			v-model="existingMaterialDialogVisible"
+			:material-name="selectedExistingMaterialName"
+			:material-physical-id="pendingExistingMaterial?.materialPhysicalId"
+			@confirm="handleExistingMaterialConfirm" />
+
 		<!-- 上传进度面板 -->
 		<UploadProgressPanel
 			v-model="uploadProgressVisible"
@@ -530,6 +537,7 @@ import zhCatflNls from '@/i18n/lang/zh-CN/CATFLNls_zh.json';
 import UploadDocumentDialog from './UploadDocumentDialog.vue';
 import NewDrawingDialog from './NewDrawingDialog.vue';
 import MaterialQuantityDialog from './MaterialQuantityDialog.vue';
+import ExistingMaterialDialog from './ExistingMaterialDialog.vue';
 import UploadProgressPanel from '@/components/UploadProgressPanel.vue';
 import type { UploadItem } from '@/components/UploadProgressPanel.vue';
 import documentApi from '@/api/documentApi';
@@ -688,6 +696,11 @@ const uploadProgressList = ref<UploadItem[]>([]);
 const materialQuantityDialogVisible = ref(false);
 const selectedMaterialName = ref('');
 const pendingMaterialQuantity = ref<{ materialPhysicalId: string; quantityName: string; value: string; unit: string } | null>(null);
+
+// 现有原材料对话框
+const existingMaterialDialogVisible = ref(false);
+const selectedExistingMaterialName = ref('');
+const pendingExistingMaterial = ref<{ materialPhysicalId: string; materialName: string } | null>(null);
 const columnWidths = ref<Record<string, number>>({
 	selection: 50,
 	label: 240,
@@ -1201,6 +1214,10 @@ const handleCreateMenuCommand = async (command: CreateMenuCommand) => {
 		openMaterialQuantitySearchDialog();
 		return;
 	}
+	if (command === 'existingMaterial') {
+		openExistingMaterialSearchDialog();
+		return;
+	}
 };
 
 // 上传文档相关
@@ -1375,6 +1392,129 @@ const handleMaterialQuantityConfirm = (data: { quantityType: string; value: stri
 
 	// 打开新产品创建对话框
 	openCreateDialogFromChildrenTable('newProduct');
+};
+
+// 打开现有原材料搜索对话框
+const openExistingMaterialSearchDialog = () => {
+	console.log('[PartDetailView] opening existing material search dialog');
+
+	dsSearchInput(
+		'',
+		'product',
+		'PSE',
+		'',
+		async value => {
+			try {
+				const selected = value as any[];
+				if (!selected.length) {
+					ElMessage.warning('未选择原材料');
+					return;
+				}
+
+				const materialItem = selected[0];
+				const materialPhysicalId = materialItem.id || materialItem['ds6w:identifier'] || materialItem.identifier;
+				if (!materialPhysicalId) {
+					ElMessage.warning('未获取到原材料ID');
+					return;
+				}
+
+				const materialLabel = materialItem['ds6w:label'] || materialItem.label || '原材料';
+				const materialRevision = materialItem.revision || materialItem['ds6wg:revision'] || '';
+				const materialName = materialRevision ? `${materialLabel} ${materialRevision}` : materialLabel;
+				selectedExistingMaterialName.value = materialName;
+				pendingExistingMaterial.value = {
+					materialPhysicalId,
+					materialName
+				};
+				existingMaterialDialogVisible.value = true;
+			} catch (error) {
+				console.error('[PartDetailView] 选择原材料失败:', error);
+				ElMessage.error('选择原材料失败');
+			}
+		},
+		{ query: '(flattenedtaxonomies:"types/Raw_Material")' }
+	);
+};
+
+// 处理现有原材料确认
+const handleExistingMaterialConfirm = async (data: {
+	materialPhysicalId: string;
+	quantity?: string;
+	unit?: string;
+	asRequired: boolean;
+}) => {
+	if (!pendingExistingMaterial.value) return;
+
+	try {
+		// 如果勾选了行，则关联到选中行；否则关联到根节点
+		let parentId: string;
+		if (selectedChildrenRows.value.length > 0) {
+			// 使用 resourceid（physicalId）而不是内部 id
+			parentId = selectedChildrenRows.value[0].resourceid || selectedChildrenRows.value[0].id;
+			console.log('[PartDetailView] 关联到选中行 resourceid:', parentId);
+		} else {
+			parentId = currentPhysicalId.value;
+			console.log('[PartDetailView] 关联到根节点:', parentId);
+		}
+
+		if (!parentId) {
+			ElMessage.warning('未获取到父节点');
+			return;
+		}
+
+		// 获取 CSRF Token
+		const csrfResponse = await partDetailApi.getCSRFToken();
+		if (!csrfResponse.success || !csrfResponse.csrf?.value) {
+			ElMessage.error('获取 CSRF Token 失败，请刷新后重试');
+			return;
+		}
+		const csrfToken = csrfResponse.csrf.value;
+		console.log('[PartDetailView] 使用新鲜 CSRF Token:', csrfToken);
+
+		// 构建请求参数
+		const params: {
+			childId: string;
+			quantity?: string;
+			quantityUOM?: string;
+			asRequired: boolean;
+		} = {
+			childId: data.materialPhysicalId,
+			asRequired: data.asRequired
+		};
+
+		if (!data.asRequired) {
+			params.quantity = data.quantity || '';
+			params.quantityUOM = data.unit || '';
+		}
+
+		// 调用关联接口
+		const response = await partDetailApi.createContinuousQuantity(parentId, params, csrfToken);
+
+		if (response && (response as any).success !== false) {
+			ElMessage.success('关联原材料成功');
+
+			// 切换到数据库模式
+			queryModeStore.switchToDbMode();
+
+			// 关联成功后刷新
+			if (selectedChildrenRows.value.length > 0) {
+				// 勾选了行 → 强制展开勾选的行
+				await Promise.all(
+					selectedChildrenRows.value.map(row => reloadAndExpandRow(row))
+				);
+			} else {
+				// 没有勾选 → 强制刷新根节点
+				if (currentPhysicalId.value) {
+					await loadPartDetail(currentPhysicalId.value);
+				}
+			}
+		} else {
+			ElMessage.error((response as any).error || '关联原材料失败');
+		}
+	} catch (error: any) {
+		console.error('[PartDetailView] 关联原材料失败:', error);
+		ElMessage.error(error?.error || error?.message || '关联原材料失败');
+	}
 };
 
 const openNewShapeRepresentationDialogFromChildrenTable = () => {
