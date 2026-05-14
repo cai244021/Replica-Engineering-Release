@@ -171,7 +171,9 @@
 						:teleported="true"
 						:disabled="isCreateMenuDisabled"
 						@command="handleCreateMenuCommand">
-						<span class="toolbar-create-trigger" :class="{ 'is-disabled': isCreateMenuDisabled }">
+						<span
+							class="toolbar-create-trigger"
+							:class="{ 'is-disabled': isCreateMenuDisabled }">
 							<el-icon><Plus /></el-icon>
 						</span>
 						<template #dropdown>
@@ -202,18 +204,24 @@
 										<span class="create-menu-icon material-quantity-icon"></span>
 										<span>材料的新数量</span>
 									</el-dropdown-item>
-									<el-dropdown-item command="existingMaterial" v-if="selectedChildrenRows.length < 2">
+									<el-dropdown-item
+										v-if="selectedChildrenRows.length < 2"
+										command="existingMaterial">
 										<span class="create-menu-icon material-existing-icon"></span>
 										<span>现有原材料</span>
 									</el-dropdown-item>
 								</el-dropdown-menu>
 								<div class="create-menu-section-title">规格文档</div>
 								<el-dropdown-menu>
-									<el-dropdown-item command="uploadDocument" v-if="selectedChildrenRows.length < 2">
+									<el-dropdown-item
+										v-if="selectedChildrenRows.length < 2"
+										command="uploadDocument">
 										<span class="create-menu-icon upload-document-icon"></span>
 										<span>上传文档</span>
 									</el-dropdown-item>
-									<el-dropdown-item command="existingDocument" v-if="selectedChildrenRows.length < 2">
+									<el-dropdown-item
+										v-if="selectedChildrenRows.length < 2"
+										command="existingDocument">
 										<span class="create-menu-icon existing-document-icon"></span>
 										<span>现有文档</span>
 									</el-dropdown-item>
@@ -234,38 +242,12 @@
 					</el-dropdown>
 					<el-button
 						size="small"
-						circle>
-						<el-icon><View /></el-icon>
-					</el-button>
-					<el-button
-						size="small"
-						circle>
-						<el-icon><Filter /></el-icon>
-					</el-button>
-					<el-button
-						size="small"
-						circle>
-						<el-icon><Sort /></el-icon>
-					</el-button>
-					<el-button
-						size="small"
-						circle>
-						<el-icon><Refresh /></el-icon>
-					</el-button>
-					<el-button
-						size="small"
-						circle>
-						<el-icon><List /></el-icon>
-					</el-button>
-					<el-button
-						size="small"
-						circle>
-						<el-icon><Grid /></el-icon>
-					</el-button>
-					<el-button
-						size="small"
-						circle>
-						<el-icon><Download /></el-icon>
+						circle
+						title="导出 CSV"
+						@click="handleExportCSV">
+						<img
+							src="@/assets/images/I_Export_CSV.png"
+							style="width: 14px; height: 14px; object-fit: contain;" />
 					</el-button>
 				</div>
 			</div>
@@ -287,9 +269,25 @@
 						fixed />
 				</template>
 			</el-auto-resizer>
+	</div>
+	<!-- 导出进度对话框 -->
+	<el-dialog
+		v-model="exportDialogVisible"
+		title="导出 CSV"
+		width="400px"
+		:close-on-click-modal="false">
+		<div class="export-progress-content">
+			<el-progress
+				:percentage="exportPercentage"
+				:status="exportPercentage >= 100 ? 'success' : undefined"
+				:stroke-width="10" />
+			<div class="export-status-text">
+				{{ exportStatusText }}
+			</div>
 		</div>
-		<el-dialog
-			v-model="enterpriseDialogVisible"
+	</el-dialog>
+	<el-dialog
+		v-model="enterpriseDialogVisible"
 			:title="`企业项目编号 - ${enterpriseCodeRows.length} 个对象`"
 			width="790px"
 			class="enterprise-code-dialog">
@@ -581,25 +579,25 @@ interface EnterpriseCodeRow {
 }
 
 interface ChildDragItem {
-	objectId: string;
-	physicalId: string;
-	physicalid: string;
-	displayName: string;
-	title: string;
-	name: string;
-	objectName: string;
-	type: string;
-	objectType: string;
-	displayType: string;
-	typeName: string;
+	'objectId': string;
+	'physicalId': string;
+	'physicalid': string;
+	'displayName': string;
+	'title': string;
+	'name': string;
+	'objectName': string;
+	'type': string;
+	'objectType': string;
+	'displayType': string;
+	'typeName': string;
 	'ds6w:type': string;
 	'ds6w:label': string;
 	'ds6wg:revision': string;
-	cestamp?: string;
-	relationId?: string;
-	path?: string[];
-	sourceParentRowId?: string;
-	rowId: string;
+	'cestamp'?: string;
+	'relationId'?: string;
+	'path'?: string[];
+	'sourceParentRowId'?: string;
+	'rowId': string;
 }
 
 interface ExistingProductSearchItem {
@@ -641,6 +639,9 @@ type CreateMenuCommand =
 	| 'existingDrawing';
 
 const enterpriseDialogVisible = ref(false);
+const exportDialogVisible = ref(false);
+const exportPercentage = ref(0);
+const exportStatusText = ref('准备导出...');
 const enterpriseCodeRows = ref<EnterpriseCodeRow[]>([]);
 const selectedChildrenRows = ref<TreeNode[]>([]);
 const selectedEnterpriseRows = ref<EnterpriseCodeRow[]>([]);
@@ -863,12 +864,13 @@ interface ExistingDrawingSearchItem {
 	'identifier'?: string;
 	'ds6w:identifier'?: string;
 	'ds6w:label'?: string;
-	label?: string;
-	name?: string;
-	title?: string;
+	'label'?: string;
+	'name'?: string;
+	'title'?: string;
 }
 
-const getExistingDrawingPhysicalId = (item: ExistingDrawingSearchItem) => item.physicalid || item.physicalId || item.id || item['ds6w:identifier'] || item.identifier || '';
+const getExistingDrawingPhysicalId = (item: ExistingDrawingSearchItem) =>
+	item.physicalid || item.physicalId || item.id || item['ds6w:identifier'] || item.identifier || '';
 
 const getExistingDrawingName = (item: ExistingDrawingSearchItem) =>
 	item['ds6w:label'] || item.label || item.name || item.title || getExistingDrawingPhysicalId(item);
@@ -1332,14 +1334,21 @@ const openExistingDrawingDialogFromChildrenTable = () => {
 
 	console.log('[PartDetailView] 调用 dsSearchInput 搜索工程图，precond:', precond);
 
-	dsSearchInput('', 'product', 'PSE', '', async value => {
-		try {
-			await relateExistingDrawings(value as ExistingDrawingSearchItem[]);
-		} catch (error) {
-			console.error('[PartDetailView] 关联现有图纸失败:', error);
-			ElMessage.error('关联现有图纸失败');
-		}
-	}, { precond });
+	dsSearchInput(
+		'',
+		'product',
+		'PSE',
+		'',
+		async value => {
+			try {
+				await relateExistingDrawings(value as ExistingDrawingSearchItem[]);
+			} catch (error) {
+				console.error('[PartDetailView] 关联现有图纸失败:', error);
+				ElMessage.error('关联现有图纸失败');
+			}
+		},
+		{ precond }
+	);
 };
 
 // 打开材料搜索对话框
@@ -1437,12 +1446,7 @@ const openExistingMaterialSearchDialog = () => {
 };
 
 // 处理现有原材料确认
-const handleExistingMaterialConfirm = async (data: {
-	materialPhysicalId: string;
-	quantity?: string;
-	unit?: string;
-	asRequired: boolean;
-}) => {
+const handleExistingMaterialConfirm = async (data: { materialPhysicalId: string; quantity?: string; unit?: string; asRequired: boolean }) => {
 	if (!pendingExistingMaterial.value) return;
 
 	try {
@@ -1499,9 +1503,7 @@ const handleExistingMaterialConfirm = async (data: {
 			// 关联成功后刷新
 			if (selectedChildrenRows.value.length > 0) {
 				// 勾选了行 → 强制展开勾选的行
-				await Promise.all(
-					selectedChildrenRows.value.map(row => reloadAndExpandRow(row))
-				);
+				await Promise.all(selectedChildrenRows.value.map(row => reloadAndExpandRow(row)));
 			} else {
 				// 没有勾选 → 强制刷新根节点
 				if (currentPhysicalId.value) {
@@ -1514,6 +1516,166 @@ const handleExistingMaterialConfirm = async (data: {
 	} catch (error: any) {
 		console.error('[PartDetailView] 关联原材料失败:', error);
 		ElMessage.error(error?.error || error?.message || '关联原材料失败');
+	}
+};
+
+// 导出 CSV 功能
+const handleExportCSV = async () => {
+	// 即使没有子节点，只要有根节点就可以导出
+	if (!partInfo.value) {
+		ElMessage.warning('没有可导出的数据');
+		return;
+	}
+
+	exportDialogVisible.value = true;
+	exportPercentage.value = 0;
+	exportStatusText.value = '准备导出...';
+
+	try {
+		// 定义导出列（按顺序）
+		const exportColumns: { key: string; title: string; isRoot?: boolean }[] = [
+			{ key: 'level', title: '级别' },
+			{ key: 'label', title: '标题' },
+			{ key: 'partNumber', title: '企业项目编号' },
+			{ key: 'revision', title: '修订版' },
+			{ key: 'instanceLabel', title: '标题(实例)' },
+			{ key: 'isLastRevision', title: '最新修订版' },
+			{ key: 'status', title: '成熟度状态' },
+			{ key: 'owner', title: '所有者' },
+			{ key: 'reserved', title: '锁定' },
+			{ key: 'modified', title: '修改日期' },
+			{ key: 'globalType', title: '类型' },
+			{ key: 'identifier', title: '名称' }
+		];
+
+		const headers = exportColumns.map(col => col.title);
+
+		// 添加 BOM 以支持中文
+		const BOM = '\uFEFF';
+
+		// 构建所有行数据
+		const allRows: { level: number; data: Record<string, any> }[] = [];
+
+		// 1. 添加根节点（级别 0）
+		const rootData: Record<string, any> = {
+			label: partInfo.value['ds6w:label'] || '',
+			partNumber: partInfo.value['ds6wg:EnterpriseExtension.V_PartNumber'] || '',
+			revision: partInfo.value['ds6wg:revision'] || '',
+			instanceLabel: '',
+			isLastRevision: partInfo.value['ds6w:isLastRevision'] || '',
+			status: partInfo.value['ds6w:status'] || '',
+			owner: partInfo.value['owner'] || '',
+			reserved: partInfo.value['ds6w:reserved'] || '',
+			modified: partInfo.value['ds6w:modified'] || '',
+			globalType: partInfo.value['ds6w:globalType'] || '',
+			identifier: partInfo.value['ds6w:identifier'] || ''
+		};
+		allRows.push({ level: 0, data: rootData });
+
+		// 2. 添加子节点（通过 childrenData 树结构递归计算层级）
+		// 创建一个映射：节点 id -> 层级
+		const nodeLevelMap = new Map<string, number>();
+
+		// 递归遍历树形结构，记录每个节点的层级
+		// childrenData 是根节点的子节点，所以层级从 1 开始
+		const calculateLevels = (nodes: TreeNode[], parentLevel: number = 1) => {
+			for (const node of nodes) {
+				nodeLevelMap.set(node.id, parentLevel);
+				if (node.children?.length) {
+					calculateLevels(node.children, parentLevel + 1);
+				}
+			}
+		};
+		calculateLevels(childrenData.value);
+
+		const childrenRows = flattenChildrenData.value.map(row => ({
+			level: nodeLevelMap.get(row.id) ?? 0,
+			data: {
+				label: row.label || '',
+				partNumber: row.partNumber || '',
+				revision: row.revision || '',
+				instanceLabel: row.instanceLabel || '',
+				isLastRevision: row.isLastRevision ?? '',
+				status: row.status || '',
+				owner: row.owner || '',
+				reserved: row.reserved ?? false,
+				modified: row.modified || '',
+				globalType: row.globalType || '',
+				identifier: row.identifier || ''
+			}
+		}));
+		allRows.push(...childrenRows);
+
+		// 构建 CSV 行
+		const csvRows: string[][] = [];
+		const totalRows = allRows.length;
+
+		for (let i = 0; i < totalRows; i++) {
+			const rowInfo = allRows[i];
+			const rowValues = exportColumns.map(col => {
+				let value = '';
+				if (col.key === 'level') {
+					value = String(rowInfo.level);
+				} else {
+					const rawValue = rowInfo.data[col.key];
+					// 处理特殊字段
+					if (col.key === 'isLastRevision') {
+						const boolVal = typeof rawValue === 'boolean' ? rawValue : rawValue === 'true';
+						value = boolVal ? '是' : '否';
+					} else if (col.key === 'reserved') {
+						const boolVal = typeof rawValue === 'boolean' ? rawValue : rawValue === 'true';
+						value = boolVal ? '锁定' : '已解锁';
+					} else {
+						value = String(rawValue ?? '');
+					}
+				}
+				// 转义 CSV 特殊字符
+				if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+					value = `"${value.replace(/"/g, '""')}"`;
+				}
+				return value;
+			});
+			csvRows.push(rowValues);
+
+			// 更新进度
+			if (i % 100 === 0 || i === totalRows - 1) {
+				exportPercentage.value = Math.round(((i + 1) / totalRows) * 100);
+				exportStatusText.value = `正在导出: ${i + 1}/${totalRows}`;
+				// 让 UI 有机会更新
+				await new Promise(resolve => setTimeout(resolve, 0));
+			}
+		}
+
+		exportStatusText.value = '生成文件...';
+
+		// 构建 CSV 字符串
+		const headerRow = headers.join(',');
+		const dataRows = csvRows.map(row => row.join(',')).join('\n');
+		const csvContent = BOM + headerRow + '\n' + dataRows;
+
+		// 创建下载
+		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = `导出_${partInfo.value['ds6w:label'] || '数据'}_${new Date().toISOString().slice(0, 10)}.csv`;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		URL.revokeObjectURL(url);
+
+		exportPercentage.value = 100;
+		exportStatusText.value = '导出完成!';
+
+		// 延迟关闭对话框
+		setTimeout(() => {
+			exportDialogVisible.value = false;
+			ElMessage.success('导出成功');
+		}, 1000);
+	} catch (error) {
+		console.error('[PartDetailView] 导出 CSV 失败:', error);
+		exportDialogVisible.value = false;
+		ElMessage.error('导出失败: ' + (error as Error).message);
 	}
 };
 
@@ -1667,13 +1829,7 @@ const handleUploadDocumentSubmit = async (data: {
 
 	try {
 		// 调用文档上传API
-		const response = await documentApi.uploadDocument(
-			data.file,
-			data.title,
-			data.description,
-			parentId,
-			data.remark
-		);
+		const response = await documentApi.uploadDocument(data.file, data.title, data.description, parentId, data.remark);
 
 		// 处理响应结果
 		if (response.success) {
@@ -1723,9 +1879,7 @@ const refreshCurrentPartDetail = async () => {
 	// 如果有选中的子行，刷新对应的子行
 	if (selectedChildrenRows.value.length > 0) {
 		// 刷新选中的行
-		await Promise.all(
-			selectedChildrenRows.value.map(row => reloadAndExpandRow(row))
-		);
+		await Promise.all(selectedChildrenRows.value.map(row => reloadAndExpandRow(row)));
 	} else {
 		// 刷新当前零件详情
 		const physicalId = currentPhysicalId.value;
@@ -1765,8 +1919,12 @@ const flattenTreeNodes = (nodes: TreeNode[]): TreeNode[] =>
 
 const flattenChildrenData = computed(() => flattenTreeNodes(childrenData.value));
 
-const isAllVisibleChildrenSelected = computed(() => !!flattenChildrenData.value.length && flattenChildrenData.value.every(row => isChildrenRowSelected(row)));
-const isSomeVisibleChildrenSelected = computed(() => flattenChildrenData.value.some(row => isChildrenRowSelected(row)) && !isAllVisibleChildrenSelected.value);
+const isAllVisibleChildrenSelected = computed(
+	() => !!flattenChildrenData.value.length && flattenChildrenData.value.every(row => isChildrenRowSelected(row))
+);
+const isSomeVisibleChildrenSelected = computed(
+	() => flattenChildrenData.value.some(row => isChildrenRowSelected(row)) && !isAllVisibleChildrenSelected.value
+);
 
 const getChildrenV2RowClass = ({ rowData, rowIndex }: { rowData: TreeNode; rowIndex: number }) =>
 	[
@@ -1803,25 +1961,25 @@ const toChildDragItem = (row: TreeNode): ChildDragItem => {
 	const sourceParentRow = findParentRowByChildRowId(childrenData.value, row.id);
 
 	return {
-		objectId: row.resourceid,
-		physicalId: row.resourceid,
-		physicalid: row.resourceid,
+		'objectId': row.resourceid,
+		'physicalId': row.resourceid,
+		'physicalid': row.resourceid,
 		displayName,
-		title: displayName,
-		name: row.identifier || row.label,
-		objectName: row.identifier || row.label,
-		type: objectType,
+		'title': displayName,
+		'name': row.identifier || row.label,
+		'objectName': row.identifier || row.label,
+		'type': objectType,
 		objectType,
-		displayType: row.typeDisplayName || 'Physical Product',
-		typeName: objectType,
+		'displayType': row.typeDisplayName || 'Physical Product',
+		'typeName': objectType,
 		'ds6w:type': objectType,
 		'ds6w:label': row.label,
 		'ds6wg:revision': row.revision,
-		cestamp: row.revision,
-		relationId: row.relationId,
-		path: row.path,
-		sourceParentRowId: sourceParentRow?.id,
-		rowId: row.id
+		'cestamp': row.revision,
+		'relationId': row.relationId,
+		'path': row.path,
+		'sourceParentRowId': sourceParentRow?.id,
+		'rowId': row.id
 	};
 };
 
@@ -1883,10 +2041,10 @@ const handleChildRowDragEnd = () => {
 };
 
 const getChildrenV2RowProps = ({ rowData }: { rowData: TreeNode }) => ({
-	draggable: true,
+	'draggable': true,
 	'data-child-row-id': rowData.id,
-	onDragstart: (event: DragEvent) => handleChildRowDragStart(event, rowData),
-	onDragend: handleChildRowDragEnd
+	'onDragstart': (event: DragEvent) => handleChildRowDragStart(event, rowData),
+	'onDragend': handleChildRowDragEnd
 });
 
 const startColumnResize = (event: MouseEvent, key: string) => {
@@ -1936,47 +2094,55 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 		class: 'selection-column-cell',
 		headerClass: 'selection-column-header',
 		headerCellRenderer: () =>
-			h('div', {
-				class: 'resizable-header-cell selection-header-cell',
-				style: {
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					width: '100%',
-					height: '100%',
-					padding: '0',
-					backgroundColor: '#f2f3f5'
-				}
-			}, [
-				h(ElCheckbox, {
-					modelValue: isAllVisibleChildrenSelected.value,
-					indeterminate: isSomeVisibleChildrenSelected.value,
-					onChange: (checked: string | number | boolean) => toggleAllVisibleChildrenSelection(!!checked)
-				}),
-				h('span', {
-					class: 'column-resize-handle',
-					onMousedown: (event: MouseEvent) => startColumnResize(event, 'selection')
-				})
-			]),
+			h(
+				'div',
+				{
+					class: 'resizable-header-cell selection-header-cell',
+					style: {
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						width: '100%',
+						height: '100%',
+						padding: '0',
+						backgroundColor: '#f2f3f5'
+					}
+				},
+				[
+					h(ElCheckbox, {
+						modelValue: isAllVisibleChildrenSelected.value,
+						indeterminate: isSomeVisibleChildrenSelected.value,
+						onChange: (checked: string | number | boolean) => toggleAllVisibleChildrenSelection(!!checked)
+					}),
+					h('span', {
+						class: 'column-resize-handle',
+						onMousedown: (event: MouseEvent) => startColumnResize(event, 'selection')
+					})
+				]
+			),
 		cellRenderer: ({ rowData }) =>
-			h('div', {
-				class: 'selection-cell',
-				style: {
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					width: '100%',
-					height: '30px',
-					padding: '0',
-					backgroundColor: '#f2f3f5'
-				}
-			}, [
-				h(ElCheckbox, {
-					modelValue: isChildrenRowSelected(rowData),
-					onChange: (checked: string | number | boolean) => toggleChildrenRowSelection(rowData, !!checked),
-					onClick: (event: MouseEvent) => event.stopPropagation()
-				})
-			])
+			h(
+				'div',
+				{
+					class: 'selection-cell',
+					style: {
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						width: '100%',
+						height: '30px',
+						padding: '0',
+						backgroundColor: '#f2f3f5'
+					}
+				},
+				[
+					h(ElCheckbox, {
+						modelValue: isChildrenRowSelected(rowData),
+						onChange: (checked: string | number | boolean) => toggleChildrenRowSelection(rowData, !!checked),
+						onClick: (event: MouseEvent) => event.stopPropagation()
+					})
+				]
+			)
 	},
 	{
 		key: 'label',
@@ -2008,7 +2174,9 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 						rowData.hasChildren || rowData.isExpanded
 							? isRowExpanding(rowData)
 								? [h(ElIcon, { class: 'expand-loading-icon' }, () => [h(Loading)])]
-								: rowData.isExpanded ? '-' : '+'
+								: rowData.isExpanded
+									? '-'
+									: '+'
 							: ''
 					),
 					h(ElImage, {
@@ -2036,7 +2204,13 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 				getChildEnterpriseCode(rowData)
 			)
 	},
-	{ key: 'revision', dataKey: 'revision', title: '修订版', width: columnWidths.value.revision, headerCellRenderer: () => createResizableHeader('revision', '修订版') },
+	{
+		key: 'revision',
+		dataKey: 'revision',
+		title: '修订版',
+		width: columnWidths.value.revision,
+		headerCellRenderer: () => createResizableHeader('revision', '修订版')
+	},
 	{
 		key: 'instanceLabel',
 		dataKey: 'instanceLabel',
@@ -2050,7 +2224,8 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 		title: '最新修订版',
 		width: columnWidths.value.isLastRevision,
 		headerCellRenderer: () => createResizableHeader('isLastRevision', '最新修订版'),
-		cellRenderer: ({ rowData }) => h(ElIcon, { color: rowData.isLastRevision ? '#67C23A' : '#F56C6C' }, () => [h(rowData.isLastRevision ? Check : Close)])
+		cellRenderer: ({ rowData }) =>
+			h(ElIcon, { color: rowData.isLastRevision ? '#67C23A' : '#F56C6C' }, () => [h(rowData.isLastRevision ? Check : Close)])
 	},
 	{
 		key: 'status',
@@ -2070,7 +2245,13 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 				() => rowData.status
 			)
 	},
-	{ key: 'owner', dataKey: 'owner', title: '所有者', width: columnWidths.value.owner, headerCellRenderer: () => createResizableHeader('owner', '所有者') },
+	{
+		key: 'owner',
+		dataKey: 'owner',
+		title: '所有者',
+		width: columnWidths.value.owner,
+		headerCellRenderer: () => createResizableHeader('owner', '所有者')
+	},
 	{
 		key: 'reserved',
 		dataKey: 'reserved',
@@ -2079,9 +2260,27 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 		headerCellRenderer: () => createResizableHeader('reserved', '锁定'),
 		cellRenderer: ({ rowData }) => h('span', rowData.reserved ? '锁定' : '已解锁')
 	},
-	{ key: 'modified', dataKey: 'modified', title: '修改日期', width: columnWidths.value.modified, headerCellRenderer: () => createResizableHeader('modified', '修改日期') },
-	{ key: 'globalType', dataKey: 'globalType', title: '类型', width: columnWidths.value.globalType, headerCellRenderer: () => createResizableHeader('globalType', '类型') },
-	{ key: 'identifier', dataKey: 'identifier', title: '名称', width: columnWidths.value.identifier, headerCellRenderer: () => createResizableHeader('identifier', '名称') }
+	{
+		key: 'modified',
+		dataKey: 'modified',
+		title: '修改日期',
+		width: columnWidths.value.modified,
+		headerCellRenderer: () => createResizableHeader('modified', '修改日期')
+	},
+	{
+		key: 'globalType',
+		dataKey: 'globalType',
+		title: '类型',
+		width: columnWidths.value.globalType,
+		headerCellRenderer: () => createResizableHeader('globalType', '类型')
+	},
+	{
+		key: 'identifier',
+		dataKey: 'identifier',
+		title: '名称',
+		width: columnWidths.value.identifier,
+		headerCellRenderer: () => createResizableHeader('identifier', '名称')
+	}
 ]);
 
 const createChildrenTableColumns = (tableWidth: number) => {
@@ -2471,10 +2670,7 @@ const loadPartDetail = async (physicalId: string) => {
 		if (isDbMode) {
 			// 数据库模式：使用 enoauthoring/expand 同时获取零件详情和子级展开，同时获取关联文档
 			console.log('[PartDetailView] 使用数据库模式查询');
-			const [expandResponse, docs] = await Promise.all([
-				expandApi.getExpandDataDbMode(physicalId),
-				expandApi.getSpecificationDocuments(physicalId)
-			]);
+			const [expandResponse, docs] = await Promise.all([expandApi.getExpandDataDbMode(physicalId), expandApi.getSpecificationDocuments(physicalId)]);
 			console.log('[PartDetailView] DB模式 展开数据响应:', expandResponse);
 			console.log('[PartDetailView] DB模式 文档数据响应:', docs);
 
@@ -4442,6 +4638,17 @@ body.is-resizing-column {
 	}
 	to {
 		transform: rotate(360deg);
+	}
+}
+
+// 导出进度对话框样式
+.export-progress-content {
+	padding: 20px 10px;
+	.export-status-text {
+		margin-top: 16px;
+		text-align: center;
+		color: #606266;
+		font-size: 14px;
 	}
 }
 </style>
