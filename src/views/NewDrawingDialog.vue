@@ -907,15 +907,15 @@ const handleSubmit = async () => {
 							console.warn('获取工程图详情失败:', fetchError);
 						}
 
-					// 调用 getMultipleConfigurationContextInfo 获取配置上下文信息
-					try {
-						console.log('开始调用 getMultipleConfigurationContextInfo');
-						// TODO: 后续需要添加到 ModelerAPI 中
-						// const configContextResponse = await ModelerAPI.getMultipleConfigurationContextInfo({...});
-						// console.log('getMultipleConfigurationContextInfo 响应:', configContextResponse);
-					} catch (configError) {
-						console.warn('获取配置上下文信息失败:', configError);
-					}
+						// 调用 getMultipleConfigurationContextInfo 获取配置上下文信息
+						try {
+							console.log('开始调用 getMultipleConfigurationContextInfo');
+							// TODO: 后续需要添加到 ModelerAPI 中
+							// const configContextResponse = await ModelerAPI.getMultipleConfigurationContextInfo({...});
+							// console.log('getMultipleConfigurationContextInfo 响应:', configContextResponse);
+						} catch (configError) {
+							console.warn('获取配置上下文信息失败:', configError);
+						}
 
 						console.log('开始调用 widget-instances/edit');
 						// 1. 调用 widget-instances/edit 更新 Widget 状态
@@ -961,8 +961,8 @@ const handleSubmit = async () => {
 									isWorkUnderWIP: widgetData.isWorkUnderWIP || false,
 									WorkUnderConfigData: widgetData.WorkUnderConfigData || '',
 									ap_custoParams:
-										widgetData.ap_custoParams ||
-										'{"selectedExtensions":["XCADExtension","EnterpriseExtension","MaterialUsageExtension"],"selectedTypes":["VPMReference","VPMInstance","VPMRepReference","3DShape"]}',
+										widgetData.ap_custoParams
+										|| '{"selectedExtensions":["XCADExtension","EnterpriseExtension","MaterialUsageExtension"],"selectedTypes":["VPMReference","VPMInstance","VPMRepReference","3DShape"]}',
 									ap_custo: widgetData.ap_custo || ''
 								}
 							});

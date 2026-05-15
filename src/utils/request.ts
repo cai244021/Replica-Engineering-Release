@@ -2,7 +2,7 @@ import axios, { AxiosHeaders } from 'axios';
 
 import { isDev, baseApi } from './env';
 import { ref } from 'vue';
-let prdUrl: any = ref(window.localStorage.getItem('spaceUrl'));
+const prdUrl: any = ref(window.localStorage.getItem('spaceUrl'));
 import { ElMessage } from 'element-plus';
 
 const service = axios.create({

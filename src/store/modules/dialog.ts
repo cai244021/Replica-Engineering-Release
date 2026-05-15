@@ -15,7 +15,9 @@ export const useDialogStore = defineStore('dialog', {
 		createContextRowIds: ref<string[]>([]),
 		createContextTypeNames: ref<string[]>([]),
 		createContextVersion: ref(0),
-		lastCreatedInfo: ref<{ physicalid: string; name: string; type: string; repeat?: boolean; createType?: 'product' | 'part' | 'drawing' } | null>(null),
+		lastCreatedInfo: ref<{ physicalid: string; name: string; type: string; repeat?: boolean; createType?: 'product' | 'part' | 'drawing' } | null>(
+			null
+		),
 		lastCreatedVersion: ref(0)
 	}),
 	actions: {

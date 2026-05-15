@@ -163,15 +163,18 @@ const dialogVisible = computed({
 });
 
 // 监听对话框打开，自动填充初始文件
-watch(() => props.modelValue, (newVal) => {
-	if (newVal && props.initialFile) {
-		formData.file = props.initialFile;
-		formData.fileName = props.initialFile.name;
-		// 自动填充标题（不含扩展名）
-		const fileNameWithoutExt = props.initialFile.name.replace(/\.[^/.]+$/, '');
-		formData.title = fileNameWithoutExt;
+watch(
+	() => props.modelValue,
+	newVal => {
+		if (newVal && props.initialFile) {
+			formData.file = props.initialFile;
+			formData.fileName = props.initialFile.name;
+			// 自动填充标题（不含扩展名）
+			const fileNameWithoutExt = props.initialFile.name.replace(/\.[^/.]+$/, '');
+			formData.title = fileNameWithoutExt;
+		}
 	}
-});
+);
 
 // 表单引用
 const formRef = ref<FormInstance>();
@@ -208,18 +211,10 @@ const formData = reactive<UploadDocumentData>({
 
 // 表单验证规则
 const formRules: FormRules = {
-	title: [
-		{ required: true, message: '请输入标题', trigger: 'blur' }
-	],
-	type: [
-		{ required: true, message: '请选择类型', trigger: 'change' }
-	],
-	collaborativeSpace: [
-		{ required: true, message: '请选择合作区', trigger: 'change' }
-	],
-	file: [
-		{ required: true, message: '请选择文件', trigger: 'change' }
-	]
+	title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
+	type: [{ required: true, message: '请选择类型', trigger: 'change' }],
+	collaborativeSpace: [{ required: true, message: '请选择合作区', trigger: 'change' }],
+	file: [{ required: true, message: '请选择文件', trigger: 'change' }]
 };
 
 // 触发文件选择
@@ -267,7 +262,7 @@ const resetForm = () => {
 const handleSubmit = async () => {
 	if (!formRef.value) return;
 
-	await formRef.value.validate((valid) => {
+	await formRef.value.validate(valid => {
 		if (valid) {
 			emit('submit', { ...formData });
 		}

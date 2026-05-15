@@ -39,7 +39,8 @@ function dsSearchInput(
 ) {
 	'use strict';
 
-	const openSearchFilter = 'flattenedtaxonomies:"types/VPMReference" OR flattenedtaxonomies:"types/VPMRepReference" OR flattenedtaxonomies:"types/ENOStrRefinementSpecification"';
+	const openSearchFilter =
+		'flattenedtaxonomies:"types/VPMReference" OR flattenedtaxonomies:"types/VPMRepReference" OR flattenedtaxonomies:"types/ENOStrRefinementSpecification"';
 	const precond = ` (flattenedtaxonomies:"types/VPMReference" OR (flattenedtaxonomies:"types/VPMRepReference"))`;
 	const precondFilter = ` (flattenedtaxonomies:"types/ENOStrRefinementSpecification")`;
 	const showTitle = openType === 'content' ? '打开内容' : openType === 'product' ? '打开产品' : openType === 'filter' ? '打开过滤器' : '打开内容'; // 搜索栏上方标题

@@ -51,7 +51,7 @@ widget.addEvent('onRefresh', () => {
 	// we could reload the frame [ window.location.reload() ], but this is not a good practice, since it reset preferences
 });
 if (!isDev) {
-	//@ts-ignore
+	// @ts-ignore
 	widget.setPreferences([
 		{
 			disabled: true,
@@ -111,8 +111,6 @@ if (!isDev) {
  */
 
 widget &&
-	// @ts-ignore
-	widget.setMetas &&
 	// @ts-ignore
 	widget.setMetas({
 		autoRefresh: -1

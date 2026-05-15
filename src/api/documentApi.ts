@@ -309,13 +309,7 @@ class DocumentAPI {
 	 * @param parentId 父对象ID
 	 * @param fileComments 文件备注
 	 */
-	async uploadDocument(
-		file: File,
-		title: string,
-		description: string,
-		parentId: string,
-		fileComments: string = ''
-	): Promise<CreateDocumentResponse> {
+	async uploadDocument(file: File, title: string, description: string, parentId: string, fileComments: string = ''): Promise<CreateDocumentResponse> {
 		console.log('[DocumentAPI] 开始文档上传流程');
 
 		try {
@@ -394,11 +388,7 @@ class DocumentAPI {
 	 * @param parentId 父对象ID
 	 * @param csrfToken CSRF Token
 	 */
-	async relateDocuments(
-		documentIds: string[],
-		parentId: string,
-		csrfToken: string
-	): Promise<RelateDocumentsResponse> {
+	async relateDocuments(documentIds: string[], parentId: string, csrfToken: string): Promise<RelateDocumentsResponse> {
 		const baseInfoStore = useBaseInfoStore();
 
 		if (!baseInfoStore.spaceUrl) {
@@ -423,10 +413,12 @@ class DocumentAPI {
 				id: docId,
 				updateAction: 'NONE',
 				relateddata: {
-					parents: [{
-						id: parentId,
-						updateAction: 'CONNECT'
-					}]
+					parents: [
+						{
+							id: parentId,
+							updateAction: 'CONNECT'
+						}
+					]
 				}
 			}))
 		};
@@ -441,7 +433,7 @@ class DocumentAPI {
 			if (error && typeof error === 'object' && error.error !== undefined) {
 				return error as RelateDocumentsResponse;
 			}
-			const errorMessage = typeof error === 'string' ? error : (error?.message || '关联文档失败');
+			const errorMessage = typeof error === 'string' ? error : error?.message || '关联文档失败';
 			return {
 				success: false,
 				statusCode: 400,

@@ -240,6 +240,92 @@
 							</div>
 						</template>
 					</el-dropdown>
+					<!-- 展开/折叠菜单按钮 -->
+					<el-dropdown
+						trigger="click"
+						@command="handleExpandMenuCommand"
+						popper-class="expand-menu-dropdown">
+						<el-button
+							size="small"
+							circle
+							:class="['expand-menu-btn', { 'is-active': expandMenuActive }]"
+							title="展开/折叠">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+								<circle cx="5" cy="5" r="2"/>
+								<circle cx="5" cy="19" r="2"/>
+								<circle cx="12" cy="12" r="2"/>
+								<circle cx="19" cy="5" r="2"/>
+								<circle cx="19" cy="12" r="2"/>
+								<path d="M7 5h10"/>
+								<path d="M7 19l5-5"/>
+								<path d="M14 12l5-5"/>
+							</svg>
+						</el-button>
+						<template #dropdown>
+							<el-dropdown-menu>
+								<el-dropdown-item command="expand">
+									<svg class="expand-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+										<rect x="2" y="2" width="8" height="6" rx="1"/>
+										<rect x="14" y="2" width="8" height="6" rx="1"/>
+										<rect x="2" y="16" width="8" height="6" rx="1"/>
+										<rect x="14" y="16" width="8" height="6" rx="1"/>
+										<path d="M10 5h4"/>
+										<path d="M6 8v8"/>
+										<path d="M18 8v8"/>
+										<path d="M10 19h4"/>
+									</svg>
+									<span>展开</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="expandAll">
+									<svg class="expand-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+										<rect x="2" y="2" width="8" height="6" rx="1"/>
+										<rect x="14" y="2" width="8" height="6" rx="1"/>
+										<rect x="2" y="16" width="8" height="6" rx="1"/>
+										<rect x="14" y="16" width="8" height="6" rx="1"/>
+										<path d="M10 5h4"/>
+										<path d="M6 8v8"/>
+										<path d="M18 8v8"/>
+										<path d="M10 19h4"/>
+										<circle cx="20" cy="20" r="3" fill="currentColor" stroke="none"/>
+										<path d="M20 18.5v3M18.5 20h3" stroke="white" stroke-width="1"/>
+									</svg>
+									<span>全部展开</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="expandN">
+									<svg class="expand-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+										<rect x="2" y="2" width="8" height="6" rx="1"/>
+										<rect x="14" y="2" width="8" height="6" rx="1"/>
+										<rect x="2" y="16" width="8" height="6" rx="1"/>
+										<rect x="14" y="16" width="8" height="6" rx="1"/>
+										<path d="M10 5h4"/>
+										<path d="M6 8v8"/>
+										<path d="M18 8v8"/>
+										<path d="M10 19h4"/>
+										<circle cx="20" cy="20" r="3" fill="currentColor" stroke="none"/>
+										<text x="20" y="21" text-anchor="middle" fill="white" font-size="4" font-weight="bold">N</text>
+									</svg>
+									<span>展开 N 层</span>
+								</el-dropdown-item>
+								<el-dropdown-item
+									divided
+									command="collapseAll">
+									<svg class="expand-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+										<rect x="2" y="2" width="8" height="6" rx="1"/>
+										<rect x="14" y="2" width="8" height="6" rx="1"/>
+										<rect x="2" y="16" width="8" height="6" rx="1"/>
+										<rect x="14" y="16" width="8" height="6" rx="1"/>
+										<path d="M10 5h4"/>
+										<path d="M6 8v8"/>
+										<path d="M18 8v8"/>
+										<path d="M10 19h4"/>
+										<circle cx="20" cy="20" r="3" fill="currentColor" stroke="none"/>
+										<path d="M18.5 20h3" stroke="white" stroke-width="1"/>
+									</svg>
+									<span>全部折叠</span>
+								</el-dropdown-item>
+							</el-dropdown-menu>
+						</template>
+					</el-dropdown>
 					<el-button
 						size="small"
 						circle
@@ -247,7 +333,7 @@
 						@click="handleExportCSV">
 						<img
 							src="@/assets/images/I_Export_CSV.png"
-							style="width: 14px; height: 14px; object-fit: contain;" />
+							style="width: 14px; height: 14px; object-fit: contain" />
 					</el-button>
 				</div>
 			</div>
@@ -269,25 +355,48 @@
 						fixed />
 				</template>
 			</el-auto-resizer>
-	</div>
-	<!-- 导出进度对话框 -->
-	<el-dialog
-		v-model="exportDialogVisible"
-		title="导出 CSV"
-		width="400px"
-		:close-on-click-modal="false">
-		<div class="export-progress-content">
-			<el-progress
-				:percentage="exportPercentage"
-				:status="exportPercentage >= 100 ? 'success' : undefined"
-				:stroke-width="10" />
-			<div class="export-status-text">
-				{{ exportStatusText }}
-			</div>
 		</div>
-	</el-dialog>
-	<el-dialog
-		v-model="enterpriseDialogVisible"
+		<!-- 导出进度对话框 -->
+		<el-dialog
+			v-model="exportDialogVisible"
+			title="导出 CSV"
+			width="400px"
+			:close-on-click-modal="false">
+			<div class="export-progress-content">
+				<el-progress
+					:percentage="exportPercentage"
+					:status="exportPercentage >= 100 ? 'success' : undefined"
+					:stroke-width="10" />
+				<div class="export-status-text">
+					{{ exportStatusText }}
+				</div>
+			</div>
+		</el-dialog>
+		<!-- 展开 N 层对话框 -->
+		<el-dialog
+			v-model="expandNDialogVisible"
+			title="展开层级"
+			width="300px"
+			:close-on-click-modal="false">
+			<div class="expand-n-content">
+				<el-input
+					v-model.number="expandNLevel"
+					type="number"
+					min="1"
+					placeholder="请输入展开层数（例如：2）"
+					style="margin-bottom: 15px" />
+			</div>
+			<template #footer>
+				<el-button @click="expandNDialogVisible = false">取消</el-button>
+				<el-button
+					type="primary"
+					@click="handleConfirmExpandN">
+					确认
+				</el-button>
+			</template>
+		</el-dialog>
+		<el-dialog
+			v-model="enterpriseDialogVisible"
 			:title="`企业项目编号 - ${enterpriseCodeRows.length} 个对象`"
 			width="790px"
 			class="enterprise-code-dialog">
@@ -510,7 +619,27 @@
 <script setup lang="ts">
 import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ArrowDown, Plus, Minus, View, Filter, Sort, Refresh, List, Download, Check, Close, Loading, HomeFilled } from '@element-plus/icons-vue';
+import {
+	ArrowDown,
+	Plus,
+	Minus,
+	View,
+	Filter,
+	Sort,
+	Refresh,
+	List,
+	Download,
+	Check,
+	Close,
+	Loading,
+	HomeFilled,
+	Share,
+	Fold,
+	ArrowRight,
+	CirclePlus,
+	Expand,
+	ArrowLeft
+} from '@element-plus/icons-vue';
 import { ElCheckbox, ElIcon, ElImage, ElMessage, ElMessageBox, ElTag } from 'element-plus';
 import type { Column } from 'element-plus';
 import partDetailApi from '@/api/partDetailApi';
@@ -644,6 +773,12 @@ const exportPercentage = ref(0);
 const exportStatusText = ref('准备导出...');
 const enterpriseCodeRows = ref<EnterpriseCodeRow[]>([]);
 const selectedChildrenRows = ref<TreeNode[]>([]);
+
+// 展开菜单相关数据（独立功能，不混合原有逻辑）
+const expandMenuActive = ref(false);
+const expandNDialogVisible = ref(false);
+const expandNLevel = ref(2);
+const expandMenuLoading = ref(false);
 const selectedEnterpriseRows = ref<EnterpriseCodeRow[]>([]);
 const maturityDialogVisible = ref(false);
 const maturityLoading = ref(false);
@@ -2850,6 +2985,297 @@ const reloadAndExpandRow = async (row: TreeNode) => {
 		setRowExpanding(row, false);
 	}
 };
+
+// ============================================================
+// 展开菜单功能（独立方法，不混合原有逻辑）
+// ============================================================
+
+/**
+ * 处理展开菜单命令
+ * 独立方法，不混合原有 reloadAndExpandRow 逻辑
+ */
+const handleExpandMenuCommand = async (command: string) => {
+	console.log('[PartDetailView] 展开菜单命令:', command);
+	expandMenuActive.value = true;
+
+	try {
+		switch (command) {
+			case 'expand':
+				await handleExpandSelected();
+				break;
+			case 'expandAll':
+				await handleExpandAll();
+				break;
+			case 'expandN':
+				expandNDialogVisible.value = true;
+				break;
+			case 'collapseAll':
+				await handleCollapseAll();
+				break;
+		}
+	} catch (error) {
+		console.error('[PartDetailView] 展开菜单命令执行失败:', error);
+		ElMessage.error('展开操作失败');
+	}
+};
+
+/**
+ * 处理展开选中行
+ * 独立方法，不混合原有 reloadAndExpandRow 逻辑
+ */
+const handleExpandSelected = async () => {
+	const rootPhysicalId = currentPhysicalId.value;
+	if (!rootPhysicalId) {
+		ElMessage.warning('当前没有加载零件');
+		return;
+	}
+
+	expandMenuLoading.value = true;
+	try {
+		// 判断是否有勾选的行
+		const hasSelectedRows = selectedChildrenRows.value.length > 0;
+		const selectedRows = hasSelectedRows ? selectedChildrenRows.value : null;
+
+		console.log('[PartDetailView] 展开选中行 - 根节点:', rootPhysicalId, '选中行数:', selectedRows?.length || 0);
+
+		// 构建请求参数
+		const params = expandApi.buildExpandRequestParams(rootPhysicalId, selectedRows, 1);
+
+		// 调用 API
+		const response = await expandApi.expandWithParams(params);
+
+		// 更新表格数据
+		await updateTableDataAfterExpand(response, selectedRows);
+
+		ElMessage.success('展开成功');
+	} catch (error) {
+		console.error('[PartDetailView] 展开选中行失败:', error);
+		ElMessage.error('展开失败');
+	} finally {
+		expandMenuLoading.value = false;
+	}
+};
+
+/**
+ * 处理全部展开
+ * 独立方法，不混合原有 reloadAndExpandRow 逻辑
+ * 如果有选中的行，则只展开选中的行；否则展开根节点
+ */
+const handleExpandAll = async () => {
+	const rootPhysicalId = currentPhysicalId.value;
+	if (!rootPhysicalId) {
+		ElMessage.warning('当前没有加载零件');
+		return;
+	}
+
+	expandMenuLoading.value = true;
+	try {
+		// 检查是否有选中的行
+		const hasSelectedRows = selectedChildrenRows.value.length > 0;
+		const selectedRows = hasSelectedRows ? selectedChildrenRows.value : null;
+
+		console.log('[PartDetailView] 全部展开 - 根节点:', rootPhysicalId, '选中行数:', selectedRows?.length || 0);
+
+		// 使用较大的层级数实现全部展开效果
+		const params = expandApi.buildExpandRequestParams(rootPhysicalId, selectedRows, 10);
+		const response = await expandApi.expandWithParams(params);
+
+		// 更新表格数据（全部展开）
+		await updateTableDataAfterExpandAll(response, selectedRows);
+
+		ElMessage.success('全部展开成功');
+	} catch (error) {
+		console.error('[PartDetailView] 全部展开失败:', error);
+		ElMessage.error('全部展开失败');
+	} finally {
+		expandMenuLoading.value = false;
+	}
+};
+
+/**
+ * 处理确认展开 N 层
+ * 独立方法，不混合原有 reloadAndExpandRow 逻辑
+ */
+const handleConfirmExpandN = async () => {
+	const rootPhysicalId = currentPhysicalId.value;
+	if (!rootPhysicalId) {
+		ElMessage.warning('当前没有加载零件');
+		return;
+	}
+
+	const level = expandNLevel.value;
+	if (!level || level < 1) {
+		ElMessage.warning('请输入有效的层数');
+		return;
+	}
+
+	expandNDialogVisible.value = false;
+	expandMenuLoading.value = true;
+	try {
+		console.log('[PartDetailView] 展开 N 层 - 根节点:', rootPhysicalId, '层数:', level);
+
+		// 判断是否有勾选的行
+		const hasSelectedRows = selectedChildrenRows.value.length > 0;
+		const selectedRows = hasSelectedRows ? selectedChildrenRows.value : null;
+
+		const params = expandApi.buildExpandRequestParams(rootPhysicalId, selectedRows, level);
+		const response = await expandApi.expandWithParams(params);
+
+		await updateTableDataAfterExpand(response, selectedRows);
+
+		ElMessage.success(`展开 ${level} 层成功`);
+	} catch (error) {
+		console.error('[PartDetailView] 展开 N 层失败:', error);
+		ElMessage.error('展开失败');
+	} finally {
+		expandMenuLoading.value = false;
+	}
+};
+
+/**
+ * 处理全部折叠
+ * 独立方法，不混合原有逻辑
+ */
+const handleCollapseAll = async () => {
+	console.log('[PartDetailView] 全部折叠');
+
+	// 递归折叠所有节点
+	const collapseNodes = (nodes: TreeNode[]) => {
+		nodes.forEach(node => {
+			node.isExpanded = false;
+			if (node.children?.length) {
+				collapseNodes(node.children);
+			}
+		});
+	};
+
+	collapseNodes(childrenData.value);
+
+	// 清空展开状态集合
+	expandingRowIds.value = new Set();
+
+	ElMessage.success('全部折叠成功');
+};
+
+/**
+ * 更新表格数据（展开后）- 用于【展开】按钮
+ * 独立方法，将展开返回的数据合并到现有树结构中
+ * 使用 parseExpandDataRecursive 递归解析数据，支持去掉前缀路径（多层展开）
+ */
+const updateTableDataAfterExpand = async (response: any, selectedRows: TreeNode[] | null) => {
+	if (!response || !response.results) {
+		console.warn('[PartDetailView] 展开响应为空');
+		return;
+	}
+
+	// 解析展开数据
+	const rootPhysicalId = currentPhysicalId.value;
+	if (!rootPhysicalId) return;
+
+	if (selectedRows && selectedRows.length > 0) {
+		// 有选中行：将新数据合并到选中行的子节点（多层展开）
+		for (const selectedRow of selectedRows) {
+			// 设置选中行为展开状态
+			selectedRow.isExpanded = true;
+			selectedRow.hasChildren = true;
+
+			// 使用选中行的 path 作为前缀路径
+			const prefixPath = selectedRow.path || [rootPhysicalId];
+			console.log('[PartDetailView] 更新选中行子节点 - 前缀路径:', prefixPath);
+
+			// 使用 parseExpandDataRecursive 递归解析数据（多层展开）
+			const newChildren = expandApi.parseExpandDataRecursive(response, rootPhysicalId, prefixPath);
+
+			if (newChildren.length > 0) {
+				// 递归解析的 level 是相对于去掉前缀后的路径的，需要加上父节点的 level
+				const parentLevel = selectedRow.level || 0;
+				const adjustLevel = (nodes: TreeNode[]): TreeNode[] => {
+					return nodes.map(node => ({
+						...node,
+						level: node.level + parentLevel + 1,
+						children: node.children && node.children.length > 0 ? adjustLevel(node.children) : []
+					}));
+				};
+				selectedRow.children = adjustLevel(newChildren);
+			}
+		}
+	} else {
+		// 无选中行：更新根节点的子节点（多层展开）
+		// 使用根节点作为前缀路径
+		const prefixPath = [rootPhysicalId];
+		console.log('[PartDetailView] 更新根节点子节点 - 前缀路径:', prefixPath);
+
+		// 使用 parseExpandDataRecursive 递归解析数据（多层展开）
+		const newChildren = expandApi.parseExpandDataRecursive(response, rootPhysicalId, prefixPath);
+
+		if (newChildren.length > 0) {
+			childrenData.value = newChildren.map(child => ({
+				...child,
+				level: 0
+			}));
+		}
+	}
+};
+
+/**
+ * 更新表格数据（全部展开后）- 用于【全部展开】按钮
+ * 独立方法，将展开返回的数据合并到现有树结构中
+ * 使用 parseExpandDataRecursive 递归解析多层数据（根节点和选中行都支持多层）
+ */
+const updateTableDataAfterExpandAll = async (response: any, selectedRows: TreeNode[] | null) => {
+	if (!response || !response.results) {
+		console.warn('[PartDetailView] 全部展开响应为空');
+		return;
+	}
+
+	// 解析展开数据
+	const rootPhysicalId = currentPhysicalId.value;
+	if (!rootPhysicalId) return;
+
+	if (selectedRows && selectedRows.length > 0) {
+		// 有选中行：将新数据合并到选中行的子节点（多层展开）
+		for (const selectedRow of selectedRows) {
+			// 设置选中行为展开状态
+			selectedRow.isExpanded = true;
+			selectedRow.hasChildren = true;
+
+			// 使用选中行的 path 作为前缀路径
+			const prefixPath = selectedRow.path || [rootPhysicalId];
+			console.log('[PartDetailView] 全部展开 - 更新选中行子节点 - 前缀路径:', prefixPath);
+
+			// 使用 parseExpandDataRecursive 递归解析多层数据
+			const newChildren = expandApi.parseExpandDataRecursive(response, rootPhysicalId, prefixPath);
+
+			if (newChildren.length > 0) {
+				// 先清空现有子节点，再赋值新子节点
+				// 递归解析的 level 是相对于去掉前缀后的路径的，需要加上父节点的 level
+				const parentLevel = selectedRow.level || 0;
+				const adjustLevel = (nodes: TreeNode[]): TreeNode[] => {
+					return nodes.map(node => ({
+						...node,
+						level: node.level + parentLevel + 1,
+						children: node.children && node.children.length > 0 ? adjustLevel(node.children) : []
+					}));
+				};
+				selectedRow.children = [];
+				selectedRow.children = adjustLevel(newChildren);
+			}
+		}
+	} else {
+		// 无选中行：更新根节点的子节点（多层展开）
+		// 使用根节点作为前缀路径
+		const prefixPath = [rootPhysicalId];
+		console.log('[PartDetailView] 全部展开 - 更新根节点子节点 - 前缀路径:', prefixPath);
+
+		// 使用 parseExpandDataRecursive 递归解析多层数据
+		const newChildren = expandApi.parseExpandDataRecursive(response, rootPhysicalId, prefixPath);
+
+		if (newChildren.length > 0) {
+			childrenData.value = newChildren;
+		}
+	}
+};
+
 const findRowsByIds = (nodes: TreeNode[], ids: string[]): TreeNode[] => {
 	const idSet = new Set(ids);
 	const rows: TreeNode[] = [];
@@ -4639,6 +5065,39 @@ body.is-resizing-column {
 	to {
 		transform: rotate(360deg);
 	}
+}
+
+// 展开菜单按钮样式
+.expand-menu-btn.is-active {
+	color: #409eff !important;
+	border-color: #409eff !important;
+}
+
+// 展开菜单下拉框样式
+.expand-menu-dropdown {
+	.el-dropdown-menu__item {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 0 16px;
+		font-size: 13px;
+
+		.el-icon {
+			font-size: 14px;
+		}
+
+		.expand-menu-icon {
+			width: 16px;
+			height: 16px;
+			color: #606266;
+			flex-shrink: 0;
+		}
+	}
+}
+
+// 展开 N 层对话框样式
+.expand-n-content {
+	padding: 10px 0;
 }
 
 // 导出进度对话框样式

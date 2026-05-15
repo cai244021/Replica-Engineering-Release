@@ -9,7 +9,7 @@ class API extends BaseAPI {
 	async getFileData(params: any) {
 		const response = await this.post(`xxx/xxx`, params);
 		return response;
-  }
+	}
 }
 
 export default new API();

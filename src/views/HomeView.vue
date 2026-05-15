@@ -156,9 +156,7 @@
 															disabled>
 															打开方式
 														</el-dropdown-item>
-														<el-dropdown-item command="setEnterpriseCode">
-															设置企业项目编号
-														</el-dropdown-item>
+														<el-dropdown-item command="setEnterpriseCode">设置企业项目编号</el-dropdown-item>
 														<el-dropdown-item
 															command="editContext"
 															disabled>
@@ -297,237 +295,235 @@
 				<div
 					v-else
 					class="list-view">
-				<el-table
-					ref="productTableRef"
-					:data="productList"
-					style="width: 100%"
-					stripe
-					border
-					row-key="id"
-					:row-class-name="getProductRowClassName"
-					@row-dblclick="handleRowDoubleClick">
-					<el-table-column
-						prop="name"
-						label="名称"
-						min-width="250"
-						resizable>
-						<template #default="{ row }">
-							<div class="list-item-name">
-								<img
-									:src="row.thumbnail || defaultThumbnail"
-									class="list-thumbnail"
-									alt="thumbnail" />
-								<div class="name-info">
-									<div class="name-text">{{ row.name }}</div>
-									<div
-										v-if="row.description"
-										class="description-text">
-										{{ row.description }}
+					<el-table
+						ref="productTableRef"
+						:data="productList"
+						style="width: 100%"
+						stripe
+						border
+						row-key="id"
+						:row-class-name="getProductRowClassName"
+						@row-dblclick="handleRowDoubleClick">
+						<el-table-column
+							prop="name"
+							label="名称"
+							min-width="250"
+							resizable>
+							<template #default="{ row }">
+								<div class="list-item-name">
+									<img
+										:src="row.thumbnail || defaultThumbnail"
+										class="list-thumbnail"
+										alt="thumbnail" />
+									<div class="name-info">
+										<div class="name-text">{{ row.name }}</div>
+										<div
+											v-if="row.description"
+											class="description-text">
+											{{ row.description }}
+										</div>
 									</div>
 								</div>
-							</div>
-						</template>
-					</el-table-column>
-					<el-table-column
-						prop="identifier"
-						label="编号"
-						width="180"
-						resizable />
-					<el-table-column
-						prop="revision"
-						label="版本"
-						width="80"
-						resizable />
-					<el-table-column
-						prop="status"
-						label="状态"
-						width="100"
-						resizable>
-						<template #default="{ row }">
-							<el-tag
-								:size="'small'"
-								:type="getStatusType(row.status)">
-								{{ row.status }}
-							</el-tag>
-						</template>
-					</el-table-column>
-					<el-table-column
-						prop="owner"
-						label="所有者"
-						width="150"
-						resizable />
-					<el-table-column
-						prop="date"
-						label="修改日期"
-						width="120"
-						resizable />
-					<el-table-column
-						label="操作"
-						width="80"
-						fixed="right"
-						resizable>
-						<template #default="{ row }">
-							<el-dropdown
-								trigger="click"
-								placement="bottom-end"
-								popper-class="card-dropdown-menu"
-								:teleported="true"
-								@command="(cmd: string) => handleCardCommand(cmd, row)">
-								<el-icon class="dropdown-icon">
-									<ArrowDown />
-								</el-icon>
-								<template #dropdown>
-									<el-dropdown-menu>
-										<el-dropdown-item command="open">
-											<el-icon>
-												<Document />
-											</el-icon>
-											打开
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="openWith"
-											disabled>
-											打开方式
-										</el-dropdown-item>
-										<el-dropdown-item command="setEnterpriseCode">
-											设置企业项目编号
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="editContext"
-											disabled>
-											编辑配置上下文
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="delete"
-											disabled>
-											删除
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="revision"
-											disabled>
-											修订版
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="newRevision"
-											disabled>
-											新修订版
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="newBranch"
-											disabled>
-											新建分支
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="newRevisionSource"
-											disabled>
-											新修订版源
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="copy"
-											disabled>
-											复制
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="compare"
-											disabled>
-											比较
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="maturity"
-											disabled>
-											成熟度
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="lock"
-											disabled>
-											锁定
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="unlock"
-											disabled>
-											解锁
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="move"
-											disabled>
-											移动
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="share"
-											disabled>
-											共享
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="relationship"
-											disabled>
-											关系
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="relatedChanges"
-											disabled>
-											相关更改
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="subscribe"
-											disabled>
-											订阅
-										</el-dropdown-item>
-										<el-dropdown-item
-											command="info"
-											disabled>
-											信息
-										</el-dropdown-item>
-									</el-dropdown-menu>
-								</template>
-							</el-dropdown>
-						</template>
-					</el-table-column>
-				</el-table>
+							</template>
+						</el-table-column>
+						<el-table-column
+							prop="identifier"
+							label="编号"
+							width="180"
+							resizable />
+						<el-table-column
+							prop="revision"
+							label="版本"
+							width="80"
+							resizable />
+						<el-table-column
+							prop="status"
+							label="状态"
+							width="100"
+							resizable>
+							<template #default="{ row }">
+								<el-tag
+									:size="'small'"
+									:type="getStatusType(row.status)">
+									{{ row.status }}
+								</el-tag>
+							</template>
+						</el-table-column>
+						<el-table-column
+							prop="owner"
+							label="所有者"
+							width="150"
+							resizable />
+						<el-table-column
+							prop="date"
+							label="修改日期"
+							width="120"
+							resizable />
+						<el-table-column
+							label="操作"
+							width="80"
+							fixed="right"
+							resizable>
+							<template #default="{ row }">
+								<el-dropdown
+									trigger="click"
+									placement="bottom-end"
+									popper-class="card-dropdown-menu"
+									:teleported="true"
+									@command="(cmd: string) => handleCardCommand(cmd, row)">
+									<el-icon class="dropdown-icon">
+										<ArrowDown />
+									</el-icon>
+									<template #dropdown>
+										<el-dropdown-menu>
+											<el-dropdown-item command="open">
+												<el-icon>
+													<Document />
+												</el-icon>
+												打开
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="openWith"
+												disabled>
+												打开方式
+											</el-dropdown-item>
+											<el-dropdown-item command="setEnterpriseCode">设置企业项目编号</el-dropdown-item>
+											<el-dropdown-item
+												command="editContext"
+												disabled>
+												编辑配置上下文
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="delete"
+												disabled>
+												删除
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="revision"
+												disabled>
+												修订版
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="newRevision"
+												disabled>
+												新修订版
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="newBranch"
+												disabled>
+												新建分支
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="newRevisionSource"
+												disabled>
+												新修订版源
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="copy"
+												disabled>
+												复制
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="compare"
+												disabled>
+												比较
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="maturity"
+												disabled>
+												成熟度
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="lock"
+												disabled>
+												锁定
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="unlock"
+												disabled>
+												解锁
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="move"
+												disabled>
+												移动
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="share"
+												disabled>
+												共享
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="relationship"
+												disabled>
+												关系
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="relatedChanges"
+												disabled>
+												相关更改
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="subscribe"
+												disabled>
+												订阅
+											</el-dropdown-item>
+											<el-dropdown-item
+												command="info"
+												disabled>
+												信息
+											</el-dropdown-item>
+										</el-dropdown-menu>
+									</template>
+								</el-dropdown>
+							</template>
+						</el-table-column>
+					</el-table>
 				</div>
 			</div>
 		</div>
 
 		<!-- 企业项目编号对话框 -->
-	<el-dialog
-		v-model="enterpriseDialogVisible"
-		:title="`企业项目编号 - ${enterpriseCodeRows.length} 个对象`"
-		width="790px"
-		class="enterprise-code-dialog">
-		<el-table
-			ref="enterpriseTableRef"
-			:data="enterpriseCodeRows"
-			border
-			height="270"
-			row-key="id"
-			@selection-change="handleEnterpriseDialogSelectionChange">
-			<el-table-column
-				type="selection"
-				width="44" />
-			<el-table-column
-				prop="label"
-				label="标题"
-				min-width="260" />
-			<el-table-column
-				prop="partNumber"
-				label="企业项目编号"
-				min-width="360">
-				<template #default="{ row }">
-					<el-input
-						v-model="row.partNumber"
-						placeholder="无"
-						size="small" />
-				</template>
-			</el-table-column>
-		</el-table>
-		<template #footer>
-			<el-button
-				type="primary"
-				@click="handleSetEnterpriseCode">
-				设置
-			</el-button>
-			<el-button @click="enterpriseDialogVisible = false">取消</el-button>
-		</template>
-	</el-dialog>
+		<el-dialog
+			v-model="enterpriseDialogVisible"
+			:title="`企业项目编号 - ${enterpriseCodeRows.length} 个对象`"
+			width="790px"
+			class="enterprise-code-dialog">
+			<el-table
+				ref="enterpriseTableRef"
+				:data="enterpriseCodeRows"
+				border
+				height="270"
+				row-key="id"
+				@selection-change="handleEnterpriseDialogSelectionChange">
+				<el-table-column
+					type="selection"
+					width="44" />
+				<el-table-column
+					prop="label"
+					label="标题"
+					min-width="260" />
+				<el-table-column
+					prop="partNumber"
+					label="企业项目编号"
+					min-width="360">
+					<template #default="{ row }">
+						<el-input
+							v-model="row.partNumber"
+							placeholder="无"
+							size="small" />
+					</template>
+				</el-table-column>
+			</el-table>
+			<template #footer>
+				<el-button
+					type="primary"
+					@click="handleSetEnterpriseCode">
+					设置
+				</el-button>
+				<el-button @click="enterpriseDialogVisible = false">取消</el-button>
+			</template>
+		</el-dialog>
 	</div>
 </template>
 
@@ -575,21 +571,21 @@ const productTableRef = ref<any>(null);
 const draggingProductId = ref('');
 
 interface ProductDragItem {
-	objectId: string;
-	physicalId: string;
-	physicalid: string;
-	displayName: string;
-	title: string;
-	name: string;
-	objectName: string;
-	type: string;
-	objectType: string;
-	displayType: string;
-	typeName: string;
+	'objectId': string;
+	'physicalId': string;
+	'physicalid': string;
+	'displayName': string;
+	'title': string;
+	'name': string;
+	'objectName': string;
+	'type': string;
+	'objectType': string;
+	'displayType': string;
+	'typeName': string;
 	'ds6w:type': string;
 	'ds6w:label': string;
 	'ds6wg:revision': string;
-	cestamp?: string;
+	'cestamp'?: string;
 }
 
 let productDragSequence = 0;
@@ -601,21 +597,21 @@ const toProductDragItem = (product: any): ProductDragItem => {
 	const displayName = `${product.name || product.identifier || product.id} ${product.revision || ''}`.trim();
 
 	return {
-		objectId: product.id,
-		physicalId: product.id,
-		physicalid: product.id,
+		'objectId': product.id,
+		'physicalId': product.id,
+		'physicalid': product.id,
 		displayName,
-		title: displayName,
-		name: product.identifier || product.name,
-		objectName: product.identifier || product.name,
-		type: objectType,
+		'title': displayName,
+		'name': product.identifier || product.name,
+		'objectName': product.identifier || product.name,
+		'type': objectType,
 		objectType,
-		displayType: product.type || 'Physical Product',
-		typeName: objectType,
+		'displayType': product.type || 'Physical Product',
+		'typeName': objectType,
 		'ds6w:type': objectType,
 		'ds6w:label': product.name,
 		'ds6wg:revision': product.revision || '',
-		cestamp: product.revision || ''
+		'cestamp': product.revision || ''
 	};
 };
 

@@ -7,8 +7,8 @@ const i18n = createI18n({
 	locale: localStorage.getItem('language') || 'zh',
 	fallbackLocale: 'zh-CN',
 	messages: {
-		'zh': zh,
-		'en': en
+		zh: zh,
+		en: en
 	}
 });
 

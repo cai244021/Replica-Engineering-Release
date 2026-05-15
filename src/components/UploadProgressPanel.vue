@@ -71,10 +71,10 @@ const toggleExpand = () => {
 
 const getStatusText = (status: UploadStatus): string => {
 	const statusMap: Record<UploadStatus, string> = {
-		'pending': '未决',
-		'uploading': '上传中',
-		'completed': '上传完成',
-		'error': '上传失败'
+		pending: '未决',
+		uploading: '上传中',
+		completed: '上传完成',
+		error: '上传失败'
 	};
 	return statusMap[status];
 };

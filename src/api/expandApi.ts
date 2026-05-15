@@ -640,6 +640,449 @@ class ExpandAPI {
 	}
 
 	/**
+	 * 【独立方法】解析展开数据为树形结构（用于展开菜单功能）
+	 * 与 parseExpandData 的区别：支持去掉前缀路径，只返回真正的子级
+	 * @param response 展开接口响应
+	 * @param rootPhysicalId 根节点 physicalId
+	 * @param prefixPath 请求参数中的前缀路径（用于去掉前缀）
+	 * @returns 树形结构数据
+	 */
+	parseExpandDataForMenu(response: ExpandResponse, rootPhysicalId: string, prefixPath: string[] = [rootPhysicalId]): TreeNode[] {
+		if (!response || !response.results || response.results.length === 0) {
+			return [];
+		}
+
+		// 分离节点、关系和路径
+		const nodes: Map<string, ExpandNode> = new Map();
+		const relations: Map<string, ExpandRelation> = new Map();
+		const paths: string[][] = [];
+
+		response.results.forEach(item => {
+			if ('Path' in item) {
+				// 这是路径数据
+				paths.push(item.Path);
+			} else if ('resourceid' in item) {
+				// 判断是节点还是关系
+				const record = item as any;
+				if (record.from && record.to) {
+					// 这是关系（VPMInstance）
+					relations.set(record.resourceid, record as ExpandRelation);
+				} else {
+					// 这是节点（VPMReference）
+					nodes.set(record.resourceid, record as ExpandNode);
+				}
+			}
+		});
+
+		console.log('[ExpandAPI] 菜单展开 - 解析节点数量:', nodes.size);
+		console.log('[ExpandAPI] 菜单展开 - 解析关系数量:', relations.size);
+		console.log('[ExpandAPI] 菜单展开 - 解析路径数量:', paths.length);
+		console.log('[ExpandAPI] 菜单展开 - 前缀路径:', prefixPath);
+
+		// 构建树形结构
+		const treeNodes: TreeNode[] = [];
+
+		// 去掉前缀路径，只保留真正的子级路径
+		const childPaths = paths.map(path => {
+			// 检查路径是否以 prefixPath 开头
+			const isPrefixMatch = prefixPath.every((id, index) => path[index] === id);
+			if (!isPrefixMatch) {
+				return null;
+			}
+			// 去掉前缀部分
+			return path.slice(prefixPath.length);
+		}).filter((path): path is string[] => path !== null && path.length >= 2);
+
+		console.log('[ExpandAPI] 菜单展开 - 过滤后的子路径数量:', childPaths.length);
+
+		// 找到所有直接子节点（过滤后的路径中第一个位置是关系ID，第二个是子节点ID）
+		const processedChildIds = new Set<string>();
+
+		childPaths.forEach(path => {
+			const relationId = path[0]; // 关系ID（VPMInstance）
+			const childId = path[1]; // 子节点ID（VPMReference）
+
+			// 避免重复添加同一子节点
+			if (processedChildIds.has(childId)) {
+				return;
+			}
+			processedChildIds.add(childId);
+
+			const node = nodes.get(childId);
+			const relation = relations.get(relationId);
+
+			if (node) {
+				// 构建完整路径（前缀 + 子路径）
+				const fullPath = [...prefixPath, ...path];
+				const treeNode = this.createTreeNode(node, relation, 0, fullPath);
+				treeNodes.push(treeNode);
+			}
+		});
+
+		return treeNodes;
+	}
+
+	/**
+	 * 【独立方法】自定义展开请求（用于展开菜单功能）
+	 * 不混合原有 getExpandData 逻辑
+	 * @param params 自定义展开请求参数
+	 * @returns 展开结构数据
+	 */
+	async expandWithParams(params: ExpandRequestParams): Promise<ExpandResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			console.log('[ExpandAPI] 3DSpace URL 为空，先获取 URL');
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			console.log('[ExpandAPI] SecurityContext 为空，先获取');
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext;
+		const endpoint = '/cvservlet/progressiveexpand/v2';
+		const url = `${endpoint}?tenant=OnPremise&SecurityContext=${encodeURIComponent(securityContext || '')}&output_format=cvjson`;
+
+		console.log('[ExpandAPI] 自定义展开请求 URL:', url);
+		console.log('[ExpandAPI] 自定义展开请求参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.post(url, params as unknown as Record<string, unknown>);
+			console.log('[ExpandAPI] 自定义展开响应:', response);
+			return response as ExpandResponse;
+		} catch (error) {
+			console.error('[ExpandAPI] 自定义展开请求失败:', error);
+			throw error;
+		}
+	}
+
+	/**
+	 * 【独立方法】构建展开请求参数（用于展开菜单功能）
+	 * 支持多种场景：根节点展开、单选展开、多选展开
+	 * @param rootPhysicalId 根节点物理ID
+	 * @param selectedRows 选中的行（null 表示未勾选）
+	 * @param expandLevel 展开层级
+	 * @returns 展开请求参数
+	 */
+	buildExpandRequestParams(rootPhysicalId: string, selectedRows: TreeNode[] | null, expandLevel: number): ExpandRequestParams {
+		const baseInfoStore = useBaseInfoStore();
+		const currentUser = baseInfoStore.currentUser || 'admin_platform';
+
+		// 构建 prefix_filter
+		let prefixFilter: any;
+		// 构建 aggregation_processors 中的 prefix_filter
+		let aggregationPrefixFilter: any;
+
+		if (!selectedRows || selectedRows.length === 0) {
+			// 场景1：未勾选任何行，使用根节点物理ID
+			prefixFilter = {
+				prefix_filter: {
+					prefix_path: [
+						{
+							physical_id_path: [rootPhysicalId]
+						}
+					]
+				}
+			};
+			aggregationPrefixFilter = {
+				prefix_filter: {
+					prefix_path: [
+						{
+							physical_id_path: [rootPhysicalId]
+						}
+					]
+				}
+			};
+		} else if (selectedRows.length === 1) {
+			// 场景2：单选一行，使用该行的 path
+			const path = selectedRows[0].path || [rootPhysicalId];
+			prefixFilter = {
+				prefix_filter: {
+					prefix_path: [
+						{
+							physical_id_path: path
+						}
+					]
+				}
+			};
+			aggregationPrefixFilter = {
+				prefix_filter: {
+					prefix_path: [
+						{
+							physical_id_path: path
+						}
+					]
+				}
+			};
+		} else {
+			// 场景3：多选多行，使用 or 条件包裹多个 prefix_filter
+			const orFilters = selectedRows.map(row => ({
+				prefix_filter: {
+					prefix_path: [
+						{
+							physical_id_path: row.path || [rootPhysicalId]
+						}
+					]
+				}
+			}));
+			prefixFilter = {
+				or: {
+					filters: orFilters
+				}
+			};
+			// aggregation_processors 也需要使用 or 包裹多个 prefix_filter
+			aggregationPrefixFilter = {
+				or: {
+					filters: orFilters
+				}
+			};
+		}
+
+		// 构建 filter
+		const filter: any = {
+			and: {
+				filters: [
+					prefixFilter,
+					{
+						and: {
+							filters: [
+								{
+									sequence_filter: {
+										sequence: [
+											{
+												uql: '((flattenedtaxonomies:"reltypes/VPMInstance") OR (flattenedtaxonomies:"reltypes/VPMRepInstance") OR (flattenedtaxonomies:"reltypes/SpecificationDocument")) AND (NOT (ds6wg_58_synchroebomext_46_v_95_inebomuser:"FALSE" ))'
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				]
+			}
+		};
+
+		// 未勾选任何行时，如果 expandLevel 是默认值 1，则设置为 2（根节点展开到第二层）
+		// 如果 expandLevel 明确指定了（如全部展开传入 10），则使用指定的值
+		const actualExpandLevel = (!selectedRows || selectedRows.length === 0) && expandLevel === 1 ? 2 : expandLevel;
+
+		return {
+			batch: {
+				expands: [
+					{
+						filter,
+						root: {
+							physical_id: rootPhysicalId
+						},
+						label: `xEngineer-${currentUser}-${Date.now()}`,
+						graph: {
+							descending_condition_relation: {
+								uql: 'NOT (flattenedtaxonomies:"reltypes/XCADBaseDependency") AND ((flattenedtaxonomies:"reltypes/VPMInstance") OR (flattenedtaxonomies:"reltypes/VPMRepInstance") OR (flattenedtaxonomies:"reltypes/SpecificationDocument"))'
+							},
+							descending_condition_object: {
+								uql: '(flattenedtaxonomies:"types/Drawing") OR ds6w_58_globaltype:"ds6w:Part" OR (flattenedtaxonomies:"types/Document") OR (flattenedtaxonomies:"types/CONTROLLED DOCUMENTS")'
+							}
+						},
+						aggregation_processors: [
+							{
+								truncate: {
+									max_distance_from_prefix: actualExpandLevel,
+									...aggregationPrefixFilter
+								}
+							}
+						]
+					}
+				]
+			},
+			outputs: {
+				hits: {
+					predefined_computation: ['icons', 'urlstream|thumbnail_2d|2dthb|allrefs']
+				},
+				select_object: [
+					'ds6w:label', 'ds6w:modified', 'ds6w:created', 'ds6w:description', 'ds6wg:revision',
+					'ds6w:cadMaster', 'ds6w:responsible', 'owner', 'ds6w:status', 'ds6w:type',
+					'ds6wg:EnterpriseExtension.V_PartNumber', 'ds6wg:MaterialUsageExtension.DeclaredQuantity',
+					'ds6wg:DELFmiContQuantity_Mass.V_ContQuantity', 'ds6wg:DELFmiContQuantity_Volume.V_ContQuantity',
+					'ds6wg:raw_material.v_dimensiontype', 'type', 'physicalid', 'ds6w:policy',
+					'ds6w:reservedBy', 'ds6w:globalType', 'ds6w:manufacturable', 'pathsr',
+					'ds6w:isLastRevision', 'ds6w:reserved', 'ds6w:identifier', 'ds6w:docextension',
+					'islastrevision', 'policy', 'current'
+				],
+				select_relation: [
+					'ds6w:label', 'ds6w:type', 'ds6wg:SynchroEBOMExt.V_InEBOMUser', 'physicalid',
+					'ro.plminstance.V_treeorder', 'ds6wg:raw_material.v_dimensiontype',
+					'ro.madefromquantity_length.V_ContQuantity', 'ro.madefromquantity_mass.V_ContQuantity',
+					'ro.madefromquantity_area.V_ContQuantity', 'ro.madefromquantity_volume.V_ContQuantity',
+					'ro.madefromquantity_AsRequired.AsRequired', 'ro.MadeFromQuantity_Rectangular.Length',
+					'ro.MadeFromQuantity_Rectangular.Width', 'ro.VPMInstanceQuantity_Area.V_ContQuantity',
+					'ro.VPMInstanceQuantity_Mass.V_ContQuantity', 'ro.VPMInstanceQuantity_Volume.V_ContQuantity',
+					'ro.VPMInstanceQuantity_Length.V_ContQuantity', 'ro.VPMInstanceQuantity_AsRequired.AsRequired',
+					'ro.VPMInstanceQuantity_Rectangular.Length', 'ro.VPMInstanceQuantity_Rectangular.Width',
+					'ds6w:reservedBy', 'type'
+				],
+				format: 'entity_relation_occurrence'
+			}
+		};
+	}
+
+	/**
+	 * 【独立方法】递归解析多层展开数据为树形结构（用于展开菜单功能）
+	 * 支持根节点展开多层、全部展开、展开N层等场景
+	 * @param response 展开接口响应
+	 * @param rootPhysicalId 根节点 physicalId
+	 * @param prefixPath 请求参数中的前缀路径（用于去掉前缀，如 [根节点] 或 [根节点, 关系, 选中节点]）
+	 * @returns 树形结构数据
+	 */
+	parseExpandDataRecursive(response: ExpandResponse, rootPhysicalId: string, prefixPath: string[] = [rootPhysicalId]): TreeNode[] {
+		if (!response || !response.results || response.results.length === 0) {
+			return [];
+		}
+
+		// 分离节点、关系和路径
+		const nodes: Map<string, ExpandNode> = new Map();
+		const relations: Map<string, ExpandRelation> = new Map();
+		const paths: string[][] = [];
+
+		response.results.forEach(item => {
+			if ('Path' in item) {
+				// 这是路径数据
+				paths.push(item.Path);
+			} else if ('resourceid' in item) {
+				// 判断是节点还是关系
+				const record = item as any;
+				if (record.from && record.to) {
+					// 这是关系（VPMInstance）
+					relations.set(record.resourceid, record as ExpandRelation);
+				} else {
+					// 这是节点（VPMReference）
+					nodes.set(record.resourceid, record as ExpandNode);
+				}
+			}
+		});
+
+		console.log('[ExpandAPI] 递归解析 - 节点数量:', nodes.size);
+		console.log('[ExpandAPI] 递归解析 - 关系数量:', relations.size);
+		console.log('[ExpandAPI] 递归解析 - 路径数量:', paths.length);
+		console.log('[ExpandAPI] 递归解析 - 前缀路径:', prefixPath);
+		console.log('[ExpandAPI] 递归解析 - 示例路径:', paths.slice(0, 2));
+
+		// 去掉前缀路径，只保留真正的子级路径
+		// 前缀路径可能是 [根节点] 或 [根节点, 关系, 选中节点]
+		const childPaths = paths.map(path => {
+			// 检查路径是否以 prefixPath 开头
+			if (path.length < prefixPath.length) {
+				return null;
+			}
+			const isPrefixMatch = prefixPath.every((id, index) => path[index] === id);
+			if (!isPrefixMatch) {
+				return null;
+			}
+			// 去掉前缀部分，保留真正的子节点路径
+			const remainingPath = path.slice(prefixPath.length);
+			// 剩余路径至少包含 [关系, 节点]（即长度 >= 2）
+			if (remainingPath.length < 2) {
+				return null;
+			}
+			return remainingPath;
+		}).filter((path): path is string[] => path !== null);
+
+		// 提取所有中间路径（用于递归构建树形结构）
+		// 路径格式：[relation, node, relation, node, ...]
+		const allPaths = new Set<string>();
+		childPaths.forEach(path => {
+			// 添加中间路径（每2个元素为一组，即 [relation, node]）
+			// 例如：[r1, n1, r2, n2, r3, n3] 应该提取：
+			// - [r1, n1] (Level 0)
+			// - [r1, n1, r2, n2] (Level 1)
+			// - [r1, n1, r2, n2, r3, n3] (Level 2, 完整路径)
+			for (let i = 2; i <= path.length; i += 2) {
+				const subPath = path.slice(0, i);
+				if (subPath.length > 0) {
+					allPaths.add(subPath.join(','));
+				}
+			}
+		});
+
+		// 将 Set 转换回数组
+		const expandedChildPaths = Array.from(allPaths).map(pathStr => pathStr.split(','));
+
+		// 构建树形结构（递归）
+		const buildTree = (parentPath: string[], currentLevel: number): TreeNode[] => {
+			const result: TreeNode[] = [];
+			const processedChildIds = new Set<string>();
+
+			// 找到当前层级的直接子节点
+			// parentPath 是去掉前缀后的路径，所以直接比较长度即可
+			const directChildPaths = expandedChildPaths.filter(path => {
+				// 检查是否以 parentPath 开头
+				if (parentPath.length > 0) {
+					for (let i = 0; i < parentPath.length; i++) {
+						if (path[i] !== parentPath[i]) {
+							return false;
+						}
+					}
+				}
+				// 只取直接子节点（当前路径长度 = parentPath长度 + 2）
+				return path.length === parentPath.length + 2;
+			});
+
+			console.log('[ExpandAPI] 递归解析 - Level:', currentLevel, 'parentPath:', parentPath, '直接子节点数:', directChildPaths.length);
+			console.log('[ExpandAPI] 递归解析 - 所有expandedChildPaths:', expandedChildPaths.map(p => p.join(',')));
+			console.log('[ExpandAPI] 递归解析 - 匹配的directChildPaths:', directChildPaths.map(p => p.join(',')));
+
+			directChildPaths.forEach(path => {
+				// path 结构: [relationId, childId] 或 [relationId, childId, relationId2, childId2, ...]
+				// 当前层级的 relationId 和 childId
+				const relationId = path[parentPath.length]; // 关系ID
+				const childId = path[parentPath.length + 1]; // 子节点ID
+
+				console.log('[ExpandAPI] 递归解析 - 处理路径:', path, 'relationId:', relationId, 'childId:', childId);
+
+				// 避免重复添加同一子节点
+				if (processedChildIds.has(childId)) {
+					console.log('[ExpandAPI] 递归解析 - 跳过重复子节点:', childId);
+					return;
+				}
+				processedChildIds.add(childId);
+
+				const node = nodes.get(childId);
+				const relation = relations.get(relationId);
+
+				console.log('[ExpandAPI] 递归解析 - 查找节点:', childId, '找到:', !!node, '查找关系:', relationId, '找到:', !!relation);
+
+				if (node) {
+					// 构建完整路径（prefixPath + 当前 path）
+					const fullPath = [...prefixPath, ...path];
+					const treeNode = this.createTreeNode(node, relation, currentLevel, fullPath);
+
+					// 递归构建子节点（传入当前 path 作为 parentPath）
+					const childNodes = buildTree(path, currentLevel + 1);
+					if (childNodes.length > 0) {
+						treeNode.children = childNodes;
+						treeNode.isExpanded = true; // 有子节点则标记为已展开
+					}
+
+					result.push(treeNode);
+				}
+			});
+
+			return result;
+		};
+
+		const result = buildTree([], 0);
+		console.log('[ExpandAPI] 递归解析 - 最终返回的树节点数量:', result.length);
+		console.log('[ExpandAPI] 递归解析 - 最终返回的树结构:', JSON.stringify(result, (key, value) => {
+			if (key === 'children' && Array.isArray(value)) {
+				return `[${value.length} children]`;
+			}
+			return value;
+		}, 2));
+		return result;
+	}
+
+	/**
 	 * 创建树节点
 	 */
 	private createTreeNode(node: ExpandNode, relation: ExpandRelation | undefined, level: number, path: string[]): TreeNode {
