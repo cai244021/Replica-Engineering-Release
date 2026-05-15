@@ -250,76 +250,244 @@
 							circle
 							:class="['expand-menu-btn', { 'is-active': expandMenuActive }]"
 							title="展开/折叠">
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-								<circle cx="5" cy="5" r="2"/>
-								<circle cx="5" cy="19" r="2"/>
-								<circle cx="12" cy="12" r="2"/>
-								<circle cx="19" cy="5" r="2"/>
-								<circle cx="19" cy="12" r="2"/>
-								<path d="M7 5h10"/>
-								<path d="M7 19l5-5"/>
-								<path d="M14 12l5-5"/>
+							<svg
+								width="16"
+								height="16"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round">
+								<circle
+									cx="5"
+									cy="5"
+									r="2" />
+								<circle
+									cx="5"
+									cy="19"
+									r="2" />
+								<circle
+									cx="12"
+									cy="12"
+									r="2" />
+								<circle
+									cx="19"
+									cy="5"
+									r="2" />
+								<circle
+									cx="19"
+									cy="12"
+									r="2" />
+								<path d="M7 5h10" />
+								<path d="M7 19l5-5" />
+								<path d="M14 12l5-5" />
 							</svg>
 						</el-button>
 						<template #dropdown>
 							<el-dropdown-menu>
 								<el-dropdown-item command="expand">
-									<svg class="expand-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-										<rect x="2" y="2" width="8" height="6" rx="1"/>
-										<rect x="14" y="2" width="8" height="6" rx="1"/>
-										<rect x="2" y="16" width="8" height="6" rx="1"/>
-										<rect x="14" y="16" width="8" height="6" rx="1"/>
-										<path d="M10 5h4"/>
-										<path d="M6 8v8"/>
-										<path d="M18 8v8"/>
-										<path d="M10 19h4"/>
+									<svg
+										class="expand-menu-icon"
+										width="18"
+										height="18"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round">
+										<rect
+											x="2"
+											y="2"
+											width="8"
+											height="6"
+											rx="1" />
+										<rect
+											x="14"
+											y="2"
+											width="8"
+											height="6"
+											rx="1" />
+										<rect
+											x="2"
+											y="16"
+											width="8"
+											height="6"
+											rx="1" />
+										<rect
+											x="14"
+											y="16"
+											width="8"
+											height="6"
+											rx="1" />
+										<path d="M10 5h4" />
+										<path d="M6 8v8" />
+										<path d="M18 8v8" />
+										<path d="M10 19h4" />
 									</svg>
 									<span>展开</span>
 								</el-dropdown-item>
 								<el-dropdown-item command="expandAll">
-									<svg class="expand-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-										<rect x="2" y="2" width="8" height="6" rx="1"/>
-										<rect x="14" y="2" width="8" height="6" rx="1"/>
-										<rect x="2" y="16" width="8" height="6" rx="1"/>
-										<rect x="14" y="16" width="8" height="6" rx="1"/>
-										<path d="M10 5h4"/>
-										<path d="M6 8v8"/>
-										<path d="M18 8v8"/>
-										<path d="M10 19h4"/>
-										<circle cx="20" cy="20" r="3" fill="currentColor" stroke="none"/>
-										<path d="M20 18.5v3M18.5 20h3" stroke="white" stroke-width="1"/>
+									<svg
+										class="expand-menu-icon"
+										width="18"
+										height="18"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round">
+										<rect
+											x="2"
+											y="2"
+											width="8"
+											height="6"
+											rx="1" />
+										<rect
+											x="14"
+											y="2"
+											width="8"
+											height="6"
+											rx="1" />
+										<rect
+											x="2"
+											y="16"
+											width="8"
+											height="6"
+											rx="1" />
+										<rect
+											x="14"
+											y="16"
+											width="8"
+											height="6"
+											rx="1" />
+										<path d="M10 5h4" />
+										<path d="M6 8v8" />
+										<path d="M18 8v8" />
+										<path d="M10 19h4" />
+										<circle
+											cx="20"
+											cy="20"
+											r="3"
+											fill="currentColor"
+											stroke="none" />
+										<path
+											d="M20 18.5v3M18.5 20h3"
+											stroke="white"
+											stroke-width="1" />
 									</svg>
 									<span>全部展开</span>
 								</el-dropdown-item>
 								<el-dropdown-item command="expandN">
-									<svg class="expand-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-										<rect x="2" y="2" width="8" height="6" rx="1"/>
-										<rect x="14" y="2" width="8" height="6" rx="1"/>
-										<rect x="2" y="16" width="8" height="6" rx="1"/>
-										<rect x="14" y="16" width="8" height="6" rx="1"/>
-										<path d="M10 5h4"/>
-										<path d="M6 8v8"/>
-										<path d="M18 8v8"/>
-										<path d="M10 19h4"/>
-										<circle cx="20" cy="20" r="3" fill="currentColor" stroke="none"/>
-										<text x="20" y="21" text-anchor="middle" fill="white" font-size="4" font-weight="bold">N</text>
+									<svg
+										class="expand-menu-icon"
+										width="18"
+										height="18"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round">
+										<rect
+											x="2"
+											y="2"
+											width="8"
+											height="6"
+											rx="1" />
+										<rect
+											x="14"
+											y="2"
+											width="8"
+											height="6"
+											rx="1" />
+										<rect
+											x="2"
+											y="16"
+											width="8"
+											height="6"
+											rx="1" />
+										<rect
+											x="14"
+											y="16"
+											width="8"
+											height="6"
+											rx="1" />
+										<path d="M10 5h4" />
+										<path d="M6 8v8" />
+										<path d="M18 8v8" />
+										<path d="M10 19h4" />
+										<circle
+											cx="20"
+											cy="20"
+											r="3"
+											fill="currentColor"
+											stroke="none" />
+										<text
+											x="20"
+											y="21"
+											text-anchor="middle"
+											fill="white"
+											font-size="4"
+											font-weight="bold">
+											N
+										</text>
 									</svg>
 									<span>展开 N 层</span>
 								</el-dropdown-item>
 								<el-dropdown-item
 									divided
 									command="collapseAll">
-									<svg class="expand-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-										<rect x="2" y="2" width="8" height="6" rx="1"/>
-										<rect x="14" y="2" width="8" height="6" rx="1"/>
-										<rect x="2" y="16" width="8" height="6" rx="1"/>
-										<rect x="14" y="16" width="8" height="6" rx="1"/>
-										<path d="M10 5h4"/>
-										<path d="M6 8v8"/>
-										<path d="M18 8v8"/>
-										<path d="M10 19h4"/>
-										<circle cx="20" cy="20" r="3" fill="currentColor" stroke="none"/>
-										<path d="M18.5 20h3" stroke="white" stroke-width="1"/>
+									<svg
+										class="expand-menu-icon"
+										width="18"
+										height="18"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round">
+										<rect
+											x="2"
+											y="2"
+											width="8"
+											height="6"
+											rx="1" />
+										<rect
+											x="14"
+											y="2"
+											width="8"
+											height="6"
+											rx="1" />
+										<rect
+											x="2"
+											y="16"
+											width="8"
+											height="6"
+											rx="1" />
+										<rect
+											x="14"
+											y="16"
+											width="8"
+											height="6"
+											rx="1" />
+										<path d="M10 5h4" />
+										<path d="M6 8v8" />
+										<path d="M18 8v8" />
+										<path d="M10 19h4" />
+										<circle
+											cx="20"
+											cy="20"
+											r="3"
+											fill="currentColor"
+											stroke="none" />
+										<path
+											d="M18.5 20h3"
+											stroke="white"
+											stroke-width="1" />
 									</svg>
 									<span>全部折叠</span>
 								</el-dropdown-item>
