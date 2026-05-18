@@ -22,7 +22,7 @@ export interface ExpandRequestParams {
 					uql: string;
 				};
 			};
-			aggregation_processors: Array<any>;
+			aggregation_processors?: Array<any>;
 		}>;
 	};
 	outputs: {
@@ -286,6 +286,149 @@ class ExpandAPI {
 			return response as ExpandResponse;
 		} catch (error) {
 			console.error('[ExpandAPI] 获取展开数据失败:', error);
+			throw error;
+		}
+	}
+
+	async getFlatExpandData(physicalId: string): Promise<ExpandResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			console.log('[ExpandAPI] 扁平结构 3DSpace URL 为空，先获取 URL');
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			console.log('[ExpandAPI] 扁平结构 SecurityContext 为空，先获取');
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const currentUser = baseInfoStore.currentUser || 'admin_platform';
+		const securityContext = baseInfoStore.securityContext;
+		const endpoint = '/cvservlet/progressiveexpand/v2';
+		const url = `${endpoint}?tenant=OnPremise&SecurityContext=${encodeURIComponent(securityContext || '')}&output_format=cvjson`;
+		const params: ExpandRequestParams = {
+			batch: {
+				expands: [
+					{
+						filter: {
+							and: {
+								filters: [
+									{
+										prefix_filter: {
+											prefix_path: [
+												{
+													physical_id_path: [physicalId]
+												}
+											]
+										}
+									},
+									{
+										and: {
+											filters: [
+												{
+													sequence_filter: {
+														sequence: [
+															{
+																uql: '((flattenedtaxonomies:"reltypes/VPMInstance") OR (flattenedtaxonomies:"reltypes/VPMRepInstance") OR (flattenedtaxonomies:"reltypes/SpecificationDocument")) AND (NOT (ds6wg_58_synchroebomext_46_v_95_inebomuser:"FALSE" ))'
+															}
+														]
+													}
+												}
+											]
+										}
+									}
+								]
+							}
+						},
+						root: {
+							physical_id: physicalId
+						},
+						label: `xEngineer-${currentUser}-${Date.now()}`,
+						graph: {
+							descending_condition_relation: {
+								uql: 'NOT (flattenedtaxonomies:"reltypes/XCADBaseDependency") AND ((flattenedtaxonomies:"reltypes/VPMInstance") OR (flattenedtaxonomies:"reltypes/VPMRepInstance") OR (flattenedtaxonomies:"reltypes/SpecificationDocument"))'
+							},
+							descending_condition_object: {
+								uql: '(flattenedtaxonomies:"types/Drawing") OR ds6w_58_globaltype:"ds6w:Part" OR (flattenedtaxonomies:"types/Document") OR (flattenedtaxonomies:"types/CONTROLLED DOCUMENTS")'
+							}
+						}
+					}
+				]
+			},
+			outputs: {
+				hits: {
+					predefined_computation: ['icons', 'urlstream|thumbnail_2d|2dthb|allrefs']
+				},
+				select_object: [
+					'ds6w:label',
+					'ds6w:modified',
+					'ds6w:created',
+					'ds6w:description',
+					'ds6wg:revision',
+					'ds6w:cadMaster',
+					'ds6w:responsible',
+					'owner',
+					'ds6w:status',
+					'ds6w:type',
+					'ds6wg:EnterpriseExtension.V_PartNumber',
+					'ds6wg:MaterialUsageExtension.DeclaredQuantity',
+					'ds6wg:DELFmiContQuantity_Mass.V_ContQuantity',
+					'ds6wg:DELFmiContQuantity_Volume.V_ContQuantity',
+					'ds6wg:raw_material.v_dimensiontype',
+					'type',
+					'physicalid',
+					'ds6w:policy',
+					'ds6w:reservedBy',
+					'ds6w:globalType',
+					'ds6w:manufacturable',
+					'pathsr',
+					'ds6w:isLastRevision',
+					'ds6w:reserved',
+					'ds6w:identifier',
+					'ds6w:docextension',
+					'islastrevision',
+					'policy',
+					'current'
+				],
+				select_relation: [
+					'ds6w:label',
+					'ds6w:type',
+					'ds6wg:SynchroEBOMExt.V_InEBOMUser',
+					'physicalid',
+					'ro.plminstance.V_treeorder',
+					'ds6wg:raw_material.v_dimensiontype',
+					'ro.madefromquantity_length.V_ContQuantity',
+					'ro.madefromquantity_mass.V_ContQuantity',
+					'ro.madefromquantity_area.V_ContQuantity',
+					'ro.madefromquantity_volume.V_ContQuantity',
+					'ro.madefromquantity_AsRequired.AsRequired',
+					'ro.MadeFromQuantity_Rectangular.Length',
+					'ro.MadeFromQuantity_Rectangular.Width',
+					'ro.VPMInstanceQuantity_Area.V_ContQuantity',
+					'ro.VPMInstanceQuantity_Mass.V_ContQuantity',
+					'ro.VPMInstanceQuantity_Volume.V_ContQuantity',
+					'ro.VPMInstanceQuantity_Length.V_ContQuantity',
+					'ro.VPMInstanceQuantity_AsRequired.AsRequired',
+					'ro.VPMInstanceQuantity_Rectangular.Length',
+					'ro.VPMInstanceQuantity_Rectangular.Width',
+					'ds6w:reservedBy',
+					'type'
+				],
+				format: 'entity_relation_occurrence'
+			}
+		};
+
+		console.log('[ExpandAPI] 扁平结构请求 URL:', url);
+		console.log('[ExpandAPI] 扁平结构 physicalId:', physicalId);
+		console.log('[ExpandAPI] 扁平结构请求参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.post(url, params as unknown as Record<string, unknown>);
+			console.log('[ExpandAPI] 扁平结构响应:', response);
+			return response as ExpandResponse;
+		} catch (error) {
+			console.error('[ExpandAPI] 扁平结构请求失败:', error);
 			throw error;
 		}
 	}
@@ -1080,6 +1223,75 @@ class ExpandAPI {
 			return value;
 		}, 2));
 		return result;
+	}
+
+	parseFlatExpandData(response: ExpandResponse, rootPhysicalId: string): TreeNode[] {
+		if (!response || !response.results || response.results.length === 0) {
+			return [];
+		}
+
+		return response.results
+			.filter((item): item is ExpandNode => {
+				const record = item as any;
+				const hasResourceId = !!record.resourceid;
+				const isNotRoot = record.resourceid !== rootPhysicalId;
+				const hasIdentifier = !!record['ds6w:identifier'];
+				const isObjectNode = !record.from && !record.to && !('Path' in record);
+				return hasResourceId && isNotRoot && hasIdentifier && isObjectNode;
+			})
+			.map((node, index) => {
+				const statusRaw = node['ds6w:status'] || '';
+				let statusText = '工作中';
+				if (statusRaw.includes('IN_WORK')) {
+					statusText = '工作中';
+				} else if (statusRaw.includes('RELEASED')) {
+					statusText = '已发布';
+				} else if (statusRaw.includes('FROZEN')) {
+					statusText = '已冻结';
+				} else if (statusRaw.includes('OBSOLETE')) {
+					statusText = '废弃';
+				} else if (statusRaw.includes('PRIVATE')) {
+					statusText = '私有';
+				}
+
+				let modifiedText = '-';
+				if (node['ds6w:modified']) {
+					try {
+						const date = new Date(node['ds6w:modified']);
+						modifiedText = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+					} catch {
+						modifiedText = node['ds6w:modified'];
+					}
+				}
+
+				return {
+					id: `flat-${node.resourceid}-${index}`,
+					resourceid: node.resourceid,
+					label: node['ds6w:label'] || '-',
+					partNumber: node['ds6wg:EnterpriseExtension.V_PartNumber'] || '无',
+					revision: node['ds6wg:revision'] || '-',
+					instanceLabel: '-',
+					isLastRevision: String(node['ds6w:isLastRevision'] || node.islastrevision || '').toLowerCase() === 'true',
+					status: statusText,
+					statusRaw,
+					owner: node['ds6w:responsible'] || '-',
+					reserved: node['ds6w:reserved'] === 'TRUE' || node['ds6w:reserved'] === 'true',
+					modified: modifiedText,
+					globalType: node['ds6w:type'] || '-',
+					identifier: node['ds6w:identifier'] || '-',
+					icon: node.icon || '',
+					type_icon_url: node.type_icon_url || node.thumbnail_2d || '',
+					policy: node['ds6w:policy'] || node.policy || '',
+					cadMaster: node['ds6w:cadMaster'] || '',
+					typeDisplayName: node['ds6w:globalType'] || node['ds6w:type'] || '',
+					level: 0,
+					children: [],
+					isExpanded: false,
+					hasChildren: false,
+					path: [node.resourceid],
+					isDocument: node['ds6w:type'] === 'Document' || node.type === 'Document'
+				};
+			});
 	}
 
 	/**

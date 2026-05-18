@@ -158,6 +158,85 @@ export interface InsertExistingProductResponse {
 	results?: InsertExistingProductResult[];
 }
 
+export interface UpdateInstanceQuantityOperation {
+	parent: {
+		isInstanceOf?: string;
+		children?: string[];
+		cacheId: number;
+	};
+	child: {
+		isInstanceOf?: string;
+		cacheId: number;
+	};
+}
+
+export interface UpdateInstanceQuantityParams {
+	version: '1.0';
+	bAllOrNothing: boolean;
+	operations: UpdateInstanceQuantityOperation[];
+}
+
+export interface UpdateInstanceQuantityResponse {
+	status?: string;
+	results?: Array<{ status?: string; messages?: string[] }>;
+	[key: string]: unknown;
+}
+
+export interface UnparentResponseResult {
+	status: string;
+	parent?: string;
+	child?: string;
+	instance?: string;
+	instanceName?: string;
+	messages?: string[];
+}
+
+export interface UnparentResponse {
+	status: string;
+	results?: UnparentResponseResult[];
+}
+
+export interface VersionGraphVersion {
+	id: string;
+	label?: string;
+	code?: string;
+	isLastVersion?: boolean | string;
+}
+
+export interface VersionGraphResponse {
+	graphs?: Array<{
+		item?: {
+			vid?: string;
+			code?: string;
+		};
+		versions?: VersionGraphVersion[];
+	}>;
+}
+
+export interface ReplaceByLatestRevisionOperation {
+	hasParent: string;
+	instance: string;
+	isInstanceOf: string;
+	oldName: string;
+	newName: string;
+}
+
+export interface ReplaceByLatestRevisionResult {
+	status: string;
+	parent?: string;
+	oldInstance?: string;
+	newReference?: string;
+	newInstance?: string;
+	oldName?: string;
+	newName?: string;
+	messages?: string[];
+}
+
+export interface ReplaceByLatestRevisionResponse {
+	status: string;
+	results?: ReplaceByLatestRevisionResult[];
+}
+
 export interface DuplicateProductItem {
 	physicalid: string;
 	name: string;
@@ -616,6 +695,148 @@ class PartDetailAPI {
 			console.error('[PartDetailAPI] 插入现有产品失败:', error);
 			throw error;
 		}
+	}
+
+	async updateInstanceQuantity(operations: UpdateInstanceQuantityOperation[]): Promise<UpdateInstanceQuantityResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			console.log('[PartDetailAPI] 3DSpace URL 为空，先获取 URL');
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			console.log('[PartDetailAPI] SecurityContext 为空，先获取');
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/product/instances/';
+		const url = `${endpoint}?tenant=OnPremise`;
+		const params: UpdateInstanceQuantityParams = {
+			version: '1.0',
+			bAllOrNothing: true,
+			operations
+		};
+
+		console.log('[PartDetailAPI] 更新实例数量 URL:', url);
+		console.log('[PartDetailAPI] 更新实例数量 SecurityContext:', securityContext);
+		console.log('[PartDetailAPI] 更新实例数量参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.post(url, params as unknown as Record<string, unknown>, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 更新实例数量响应:', response);
+			return response as UpdateInstanceQuantityResponse;
+		} catch (error) {
+			console.error('[PartDetailAPI] 更新实例数量失败:', error);
+			throw error;
+		}
+	}
+
+	async unparentInstances(instances: string[]): Promise<UnparentResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			console.log('[PartDetailAPI] 3DSpace URL 为空，先获取 URL');
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			console.log('[PartDetailAPI] SecurityContext 为空，先获取');
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/product/authoring/unparent';
+		const url = `${endpoint}?securityContext=${encodeURIComponent(securityContext)}&tenant=OnPremise`;
+		const params = {
+			version: '1.0',
+			bAllOrNothing: false,
+			instances
+		};
+
+		console.log('[PartDetailAPI] 拆离 URL:', url);
+		console.log('[PartDetailAPI] 拆离参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.post(url, params, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 拆离响应:', response);
+			return response as UnparentResponse;
+		} catch (error) {
+			console.error('[PartDetailAPI] 拆离失败:', error);
+			throw error;
+		}
+	}
+
+	async getVersionGraph(physicalId: string): Promise<VersionGraphResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			console.log('[PartDetailAPI] 3DSpace URL 为空，先获取 URL');
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			console.log('[PartDetailAPI] SecurityContext 为空，先获取');
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/v1/dslc/versiongraph';
+		const url = `${endpoint}?withIsLastVersion=1&validIntents=E&securityContext=${encodeURIComponent(securityContext)}&tenant=OnPremise`;
+		const params = {
+			graphRequests: [
+				{
+					id: physicalId
+				}
+			]
+		};
+
+		console.log('[PartDetailAPI] 获取版本图 URL:', url);
+		console.log('[PartDetailAPI] 获取版本图参数:', JSON.stringify(params, null, 2));
+
+		const response = await http.post(url, params, {
+			SecurityContext: securityContext
+		});
+		console.log('[PartDetailAPI] 获取版本图响应:', response);
+		return response as VersionGraphResponse;
+	}
+
+	async replaceByLatestRevision(operations: ReplaceByLatestRevisionOperation[]): Promise<ReplaceByLatestRevisionResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			console.log('[PartDetailAPI] 3DSpace URL 为空，先获取 URL');
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			console.log('[PartDetailAPI] SecurityContext 为空，先获取');
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/product/authoring/replace';
+		const url = `${endpoint}?securityContext=${encodeURIComponent(securityContext)}&tenant=OnPremise`;
+		const params = {
+			version: '1.0',
+			bAllOrNothing: false,
+			lockConnectionAsParent: false,
+			operations
+		};
+
+		console.log('[PartDetailAPI] 替换为最新修订版 URL:', url);
+		console.log('[PartDetailAPI] 替换为最新修订版参数:', JSON.stringify(params, null, 2));
+
+		const response = await http.post(url, params, {
+			SecurityContext: securityContext
+		});
+		console.log('[PartDetailAPI] 替换为最新修订版响应:', response);
+		return response as ReplaceByLatestRevisionResponse;
 	}
 
 	async duplicateProducts(data: DuplicateProductItem[]): Promise<DuplicateProductOptionsResponse> {

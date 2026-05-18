@@ -161,9 +161,98 @@
 			<div class="section-header">
 				<div class="header-left">
 					<span class="section-title">子级</span>
-					<span class="data-count">({{ childrenData.length }})</span>
+					<span class="data-count">({{ flattenChildrenData.length }})</span>
 				</div>
 				<div class="toolbar">
+					<div
+						v-if="selectedChildrenRows.length && !isFlatStructureView"
+						class="selected-actions-wrap">
+						<el-dropdown
+							trigger="click"
+							:hide-on-click="false"
+							popper-class="selected-actions-dropdown"
+							@command="handleSelectedActionCommand">
+							<span class="selected-actions-trigger">
+								<svg
+									width="20"
+									height="20"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+									stroke-linejoin="round">
+									<path d="M4 3l15 7-7 2-3 7z" />
+									<rect
+										x="14"
+										y="14"
+										width="6"
+										height="6"
+										rx="1" />
+									<path d="M15.5 17l1.2 1.2 2-2.4" />
+								</svg>
+								<el-icon class="selected-actions-arrow"><ArrowDown /></el-icon>
+								<span class="selected-actions-count">{{ selectedChildrenRows.length }}</span>
+							</span>
+							<template #dropdown>
+								<el-dropdown-menu>
+									<el-dropdown-item command="setEnterpriseCode">
+										<span class="selected-action-icon">↔</span>
+										<span>设置企业编码</span>
+									</el-dropdown-item>
+									<div
+										class="selected-action-submenu"
+										@mouseenter="selectedReplaceSubmenuVisible = true"
+										@mouseleave="selectedReplaceSubmenuVisible = false">
+										<div class="selected-action-submenu-trigger">
+											<span class="selected-action-icon">⇄</span>
+											<span>替换为...</span>
+											<el-icon><ArrowRight /></el-icon>
+										</div>
+										<div
+											v-show="selectedReplaceSubmenuVisible"
+											class="selected-action-submenu-panel">
+											<div
+												class="selected-action-submenu-item"
+												@click="handleSelectedActionCommand('replaceLatest')">
+												<span class="selected-action-icon">⇄</span>
+												<span>替换为最新修订版</span>
+											</div>
+											<div
+												class="selected-action-submenu-item"
+												@click="handleSelectedActionCommand('replaceExisting')">
+												<span class="selected-action-icon">⇄</span>
+												<span>替换为现有项</span>
+											</div>
+											<div
+												class="selected-action-submenu-item"
+												@click="handleSelectedActionCommand('replaceRevision')">
+												<span class="selected-action-icon">⇄</span>
+												<span>用修订版替换</span>
+											</div>
+											<div
+												class="selected-action-submenu-item"
+												@click="handleSelectedActionCommand('replaceDuplicate')">
+												<span class="selected-action-icon">⇄</span>
+												<span>替换为重复项</span>
+											</div>
+										</div>
+									</div>
+									<el-dropdown-item
+										v-if="selectedChildrenRows.length === 1"
+										command="instanceQuantity">
+										<span class="selected-action-icon">＋</span>
+										<span>实例数量</span>
+									</el-dropdown-item>
+									<el-dropdown-item command="unparent">
+										<span class="selected-action-icon">拆</span>
+										<span>拆离</span>
+									</el-dropdown-item>
+								</el-dropdown-menu>
+							</template>
+						</el-dropdown>
+						<span class="toolbar-divider"></span>
+					</div>
 					<el-dropdown
 						trigger="click"
 						placement="bottom-start"
@@ -243,12 +332,14 @@
 					<!-- 展开/折叠菜单按钮 -->
 					<el-dropdown
 						trigger="click"
+						:disabled="isFlatStructureView"
 						@command="handleExpandMenuCommand"
 						popper-class="expand-menu-dropdown">
 						<el-button
 							size="small"
 							circle
-							:class="['expand-menu-btn', { 'is-active': expandMenuActive }]"
+							:disabled="isFlatStructureView"
+							:class="['expand-menu-btn', { 'is-active': expandMenuActive, 'is-disabled': isFlatStructureView }]"
 							title="展开/折叠">
 							<svg
 								width="16"
@@ -494,6 +585,168 @@
 							</el-dropdown-menu>
 						</template>
 					</el-dropdown>
+					<!-- 结构视图菜单按钮 -->
+					<el-dropdown
+						trigger="click"
+						@command="handleStructureViewCommand"
+						popper-class="structure-view-dropdown">
+						<el-button
+							size="small"
+							circle
+							:class="['structure-view-btn', { 'is-active': structureViewActive }]"
+							title="结构视图">
+							<svg
+								width="16"
+								height="16"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round">
+								<path d="M4 4h7" />
+								<path d="M7 4v12" />
+								<path d="M7 10h6" />
+								<path d="M7 16h6" />
+								<path d="M12 8h3v4h-3z" />
+								<path d="M12 14h3v4h-3z" />
+								<circle
+									cx="18"
+									cy="17"
+									r="2.2" />
+								<path d="M18 12.5v1.2" />
+								<path d="M18 20.3v1.2" />
+								<path d="M13.5 17h1.2" />
+								<path d="M21.3 17h1.2" />
+								<path d="M14.8 13.8l.8.8" />
+								<path d="M20.4 19.4l.8.8" />
+								<path d="M21.2 13.8l-.8.8" />
+								<path d="M15.6 19.4l-.8.8" />
+							</svg>
+						</el-button>
+						<template #dropdown>
+							<el-dropdown-menu>
+								<el-dropdown-item command="indented">
+									<svg
+										class="structure-view-icon"
+										width="18"
+										height="18"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round">
+										<path d="M7 5h13" />
+										<path d="M7 9h13" />
+										<path d="M7 13h10" />
+										<path d="M7 17h7" />
+										<line
+											x1="3"
+											y1="5"
+											x2="5"
+											y2="5" />
+										<line
+											x1="3"
+											y1="9"
+											x2="5"
+											y2="9" />
+										<line
+											x1="3"
+											y1="13"
+											x2="5"
+											y2="13" />
+										<line
+											x1="3"
+											y1="17"
+											x2="5"
+											y2="17" />
+									</svg>
+									<span>缩进的产品结构</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="flat">
+									<svg
+										class="structure-view-icon"
+										width="18"
+										height="18"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round">
+										<rect
+											x="2"
+											y="2"
+											width="20"
+											height="20"
+											rx="2" />
+										<path d="M6 8h4" />
+										<path d="M6 12h4" />
+										<path d="M6 16h4" />
+										<path d="M14 8h4" />
+										<path d="M14 12h4" />
+										<path d="M14 16h4" />
+									</svg>
+									<span>扁平产品结构</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="leaf">
+									<svg
+										class="structure-view-icon"
+										width="18"
+										height="18"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round">
+										<path d="M12 2c0 0-3 5-3 9s3 6 3 6 3-2 3-6-3-9-3-9z" />
+										<path d="M12 17c0 0 0 4 0 5" />
+									</svg>
+									<span>产品叶</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="material">
+									<svg
+										class="structure-view-icon"
+										width="18"
+										height="18"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round">
+										<rect
+											x="3"
+											y="3"
+											width="7"
+											height="7"
+											rx="1" />
+										<rect
+											x="14"
+											y="3"
+											width="7"
+											height="7"
+											rx="1" />
+										<rect
+											x="14"
+											y="14"
+											width="7"
+											height="7"
+											rx="1" />
+										<rect
+											x="3"
+											y="14"
+											width="7"
+											height="7"
+											rx="1" />
+									</svg>
+									<span>产品原材料</span>
+								</el-dropdown-item>
+							</el-dropdown-menu>
+						</template>
+					</el-dropdown>
 					<el-button
 						size="small"
 						circle
@@ -601,6 +854,110 @@
 					设置
 				</el-button>
 				<el-button @click="enterpriseDialogVisible = false">取消</el-button>
+			</template>
+		</el-dialog>
+		<el-dialog
+			v-model="instanceQuantityDialogVisible"
+			:title="instanceQuantityDialogTitle"
+			width="1000px"
+			class="instance-quantity-dialog"
+			:close-on-click-modal="false">
+			<div class="instance-quantity-tabs">
+				<span class="instance-quantity-tab is-active">总数量</span>
+			</div>
+			<div class="instance-quantity-toolbar">
+				<span>编辑数量:</span>
+				<el-input-number
+					v-model="instanceQuantityValue"
+					:min="instanceQuantityBaseRows.length"
+					:size="'small'"
+					@change="handleInstanceQuantityValueChange" />
+				<span
+					v-if="instanceQuantityAddedCount > 0"
+					class="instance-quantity-added-tip">
+					将添加 {{ instanceQuantityAddedCount }} 个项目
+				</span>
+			</div>
+			<div class="instance-quantity-table-wrap">
+				<el-table
+					:data="instanceQuantityRows"
+					border
+					height="280"
+					row-key="id">
+					<el-table-column
+						type="index"
+						width="36" />
+					<el-table-column
+						prop="instanceLabel"
+						label="标题 (实例)"
+						width="240" />
+					<el-table-column
+						label="移除"
+						width="84"
+						align="center">
+						<template #default="{ row }">
+							<el-button
+								text
+								circle
+								:disabled="!row.editable"
+								@click="removeInstanceQuantityRow(row)">
+								<el-icon><Minus /></el-icon>
+							</el-button>
+						</template>
+					</el-table-column>
+					<el-table-column
+						prop="editStatus"
+						label="编辑状态"
+						width="110" />
+					<el-table-column
+						label="冻结"
+						width="80" />
+					<el-table-column
+						prop="label"
+						label="标题"
+						width="180" />
+					<el-table-column
+						prop="partNumber"
+						label="企业项目编号"
+						width="140" />
+					<el-table-column
+						prop="revision"
+						label="修订版"
+						width="90" />
+					<el-table-column
+						prop="isLastRevision"
+						label="是最新修订版"
+						width="120" />
+					<el-table-column
+						prop="owner"
+						label="所有者"
+						width="120" />
+					<el-table-column
+						prop="reserved"
+						label="锁定"
+						width="90" />
+					<el-table-column
+						prop="modified"
+						label="修改日期"
+						width="150" />
+					<el-table-column
+						prop="globalType"
+						label="类型"
+						width="130" />
+					<el-table-column
+						prop="identifier"
+						label="名称"
+						width="150" />
+				</el-table>
+			</div>
+			<template #footer>
+				<el-button
+					type="primary"
+					:loading="instanceQuantitySubmitting"
+					@click="handleConfirmInstanceQuantity">
+					确定
+				</el-button>
+				<el-button @click="instanceQuantityDialogVisible = false">取消</el-button>
 			</template>
 		</el-dialog>
 		<el-dialog
@@ -781,6 +1138,18 @@
 		<UploadProgressPanel
 			v-model="uploadProgressVisible"
 			:upload-list="uploadProgressList" />
+		<UnparentConfirmDialog
+			v-model="unparentDialogVisible"
+			:count="selectedChildrenRows.length"
+			:loading="unparentSubmitting"
+			:report-visible="unparentReportVisible"
+			:success-messages="unparentSuccessMessages"
+			:failure-messages="unparentFailureMessages"
+			@confirm="handleConfirmUnparent" />
+		<ReplaceLatestRevisionReportDialog
+			v-model="replaceLatestReportVisible"
+			:title="replaceReportTitle"
+			:messages="replaceLatestReportMessages" />
 	</div>
 </template>
 
@@ -821,7 +1190,9 @@ import type {
 	PromoteMaturityParams,
 	StateTransition,
 	PartInfo,
-	ReparentSourceItem
+	ReparentSourceItem,
+	UnparentResponseResult,
+	VersionGraphVersion
 } from '@/api/partDetailApi';
 import { useBaseInfoStore } from '@/store';
 import { useDialogStore } from '@/store/modules/dialog';
@@ -836,6 +1207,8 @@ import ExistingMaterialDialog from './ExistingMaterialDialog.vue';
 import UploadProgressPanel from '@/components/UploadProgressPanel.vue';
 import type { UploadItem } from '@/components/UploadProgressPanel.vue';
 import documentApi from '@/api/documentApi';
+import UnparentConfirmDialog from './UnparentConfirmDialog.vue';
+import ReplaceLatestRevisionReportDialog from './ReplaceLatestRevisionReportDialog.vue';
 
 // 路由
 const route = useRoute();
@@ -921,7 +1294,36 @@ interface ExistingProductParentContext {
 	children: string[];
 }
 
+interface InstanceQuantityRow {
+	id: string;
+	sourceRowId?: string;
+	relationId?: string;
+	parentPhysicalId: string;
+	childPhysicalId: string;
+	instanceLabel: string;
+	editable: boolean;
+	editStatus: string;
+	label: string;
+	partNumber: string;
+	revision: string;
+	isLastRevision: boolean;
+	status: string;
+	owner: string;
+	reserved: boolean;
+	modified: string;
+	globalType: string;
+	identifier: string;
+}
+
 type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger';
+type SelectedActionCommand =
+	| 'setEnterpriseCode'
+	| 'instanceQuantity'
+	| 'unparent'
+	| 'replaceLatest'
+	| 'replaceExisting'
+	| 'replaceRevision'
+	| 'replaceDuplicate';
 type CreateMenuCommand =
 	| 'newProduct'
 	| 'existingProduct'
@@ -941,9 +1343,28 @@ const exportPercentage = ref(0);
 const exportStatusText = ref('准备导出...');
 const enterpriseCodeRows = ref<EnterpriseCodeRow[]>([]);
 const selectedChildrenRows = ref<TreeNode[]>([]);
+const structureViewMode = ref<'indented' | 'flat'>('indented');
+const hoveredChildrenColumnKey = ref<string>('');
+const instanceQuantityDialogVisible = ref(false);
+const instanceQuantitySubmitting = ref(false);
+const instanceQuantityRows = ref<InstanceQuantityRow[]>([]);
+const instanceQuantityBaseRows = ref<InstanceQuantityRow[]>([]);
+const instanceQuantitySelectedRow = ref<TreeNode | null>(null);
+const instanceQuantityValue = ref(1);
+const selectedReplaceSubmenuVisible = ref(false);
+const unparentDialogVisible = ref(false);
+const unparentSubmitting = ref(false);
+const unparentReportVisible = ref(false);
+const unparentSuccessMessages = ref<string[]>([]);
+const unparentFailureMessages = ref<string[]>([]);
+const unparentSelectedRowsSnapshot = ref<TreeNode[]>([]);
+const replaceLatestReportVisible = ref(false);
+const replaceLatestReportMessages = ref<string[]>([]);
+const replaceReportTitle = ref('替换为最新修订版报告');
 
 // 展开菜单相关数据（独立功能，不混合原有逻辑）
 const expandMenuActive = ref(false);
+const structureViewActive = ref(false);
 const expandNDialogVisible = ref(false);
 const expandNLevel = ref(2);
 const expandMenuLoading = ref(false);
@@ -972,6 +1393,12 @@ const duplicateDialogTitle = computed(() => {
 	const target = duplicateTargets.value[0];
 	if (!target) return '';
 	return `${target.typeDisplayName || '物理产品'}${target.name || ''} ${target.revision || ''}`.trim();
+});
+const instanceQuantityAddedCount = computed(() => Math.max(0, instanceQuantityRows.value.filter(row => row.editable).length));
+const instanceQuantityDialogTitle = computed(() => {
+	const row = instanceQuantitySelectedRow.value;
+	if (!row) return '数量';
+	return `数量 - ${row.label || row.identifier || ''} ${row.revision || ''} (${instanceQuantityRows.value.length})`.trim();
 });
 const deformDialogVisible = ref(false);
 const deformSubmitting = ref(false);
@@ -1076,9 +1503,13 @@ const getChildEnterpriseCode = (row: TreeNode) => {
 };
 
 const isChildrenRowSelected = (row: TreeNode) => selectedChildrenRows.value.some(item => item.id === row.id);
+const isFlatStructureView = computed(() => structureViewMode.value === 'flat');
 
 // 判断+号菜单是否可用（当勾选了非VPMReference类型的零件时禁用）
 const isCreateMenuDisabled = computed(() => {
+	if (isFlatStructureView.value) {
+		return true;
+	}
 	if (selectedChildrenRows.value.length === 0) {
 		return false;
 	}
@@ -1232,7 +1663,7 @@ const showInsertExistingReport = async (
 
 const getInsertExistingFailureMessage = (response: { results?: Array<{ messages?: string[] }> }) => {
 	const messages = response.results?.flatMap(item => item.messages || []).filter(Boolean) || [];
-	return [...new Set(messages)].join('；');
+	return [...new Set(messages)].map(getCatflMessage).join('；');
 };
 
 const refreshAfterExistingProductInsert = async (parents: ExistingProductParentContext[]) => {
@@ -1342,6 +1773,63 @@ const insertExistingProducts = async (selectedProducts: ExistingProductSearchIte
 	await refreshAfterExistingProductInsert(parents);
 };
 
+const replaceWithExistingProduct = async (selectedProducts: ExistingProductSearchItem[]) => {
+	const replacement = selectedProducts
+		.map(item => ({
+			physicalId: getExistingProductPhysicalId(item),
+			name: getExistingProductName(item)
+		}))
+		.find(item => !!item.physicalId);
+	if (!replacement) {
+		ElMessage.warning('未选择现有产品');
+		return;
+	}
+
+	const rows = [...selectedChildrenRows.value];
+	if (!rows.length) {
+		ElMessage.warning('未选择要替换的数据');
+		return;
+	}
+
+	const operations = [];
+	for (const row of rows) {
+		if (!row.relationId || !row.resourceid) {
+			ElMessage.error('未获取到选中对象的物理ID或关系ID');
+			return;
+		}
+		const parentPhysicalId = getInstanceQuantityParentPhysicalId(row);
+		if (!parentPhysicalId) {
+			ElMessage.error('未获取到选中对象的父节点');
+			return;
+		}
+		operations.push({
+			hasParent: parentPhysicalId,
+			instance: row.relationId,
+			isInstanceOf: replacement.physicalId,
+			oldName: row.label || row.instanceLabel || row.identifier || row.resourceid,
+			newName: replacement.name
+		});
+	}
+
+	const response = await partDetailApi.replaceByLatestRevision(operations);
+	if (String(response.status).toLowerCase() !== 'success') {
+		ElMessage.error(getInsertExistingFailureMessage(response) || '替换为现有项失败');
+		return;
+	}
+
+	const successResults = (response.results || []).filter(result => String(result.status).toLowerCase() === 'success');
+	replaceReportTitle.value = '替换为现有项报告';
+	replaceLatestReportMessages.value = successResults.length
+		? successResults.map(result => `成功将 ${result.oldName || ''} 替换为 ${result.newName || ''}。`)
+		: operations.map(operation => `成功将 ${operation.oldName} 替换为 ${operation.newName}。`);
+	replaceLatestReportVisible.value = true;
+	selectedChildrenRows.value = [];
+	queryModeStore.switchToDbMode();
+	if (currentPhysicalId.value) {
+		await loadPartDetail(currentPhysicalId.value);
+	}
+};
+
 const openExistingProductDialogFromChildrenTable = () => {
 	dsSearchInput('', 'product', 'PSE', '', async value => {
 		try {
@@ -1349,6 +1837,17 @@ const openExistingProductDialogFromChildrenTable = () => {
 		} catch (error) {
 			console.error('[PartDetailView] 插入现有产品失败:', error);
 			ElMessage.error('插入现有产品失败');
+		}
+	});
+};
+
+const openReplaceExistingProductDialog = () => {
+	dsSearchInput('', 'product', 'PSE', '', async value => {
+		try {
+			await replaceWithExistingProduct(value as ExistingProductSearchItem[]);
+		} catch (error) {
+			console.error('[PartDetailView] 替换为现有项失败:', error);
+			ElMessage.error('替换为现有项失败');
 		}
 	});
 };
@@ -2328,6 +2827,10 @@ const setChildRowDragImage = (event: DragEvent, dragRows: TreeNode[], dragRow: T
 };
 
 const handleChildRowDragStart = (event: DragEvent, row: TreeNode) => {
+	if (isFlatStructureView.value) {
+		event.preventDefault();
+		return;
+	}
 	const dragRows = getChildDragRows(row);
 	const payload = buildChildRowDragPayload(dragRows);
 	draggingChildRowId.value = row.id;
@@ -2344,7 +2847,7 @@ const handleChildRowDragEnd = () => {
 };
 
 const getChildrenV2RowProps = ({ rowData }: { rowData: TreeNode }) => ({
-	'draggable': true,
+	'draggable': !isFlatStructureView.value,
 	'data-child-row-id': rowData.id,
 	'onDragstart': (event: DragEvent) => handleChildRowDragStart(event, rowData),
 	'onDragend': handleChildRowDragEnd
@@ -2378,13 +2881,23 @@ const startColumnResize = (event: MouseEvent, key: string) => {
 };
 
 const createResizableHeader = (key: string, title: string) =>
-	h('div', { class: 'resizable-header-cell' }, [
+	h('div', { class: ['resizable-header-cell', hoveredChildrenColumnKey.value === key ? 'is-hovered-column' : ''] }, [
 		h('span', { class: 'resizable-header-title' }, title),
 		h('span', {
 			class: 'column-resize-handle',
 			onMousedown: (event: MouseEvent) => startColumnResize(event, key)
 		})
 	]);
+
+const createChildrenCellProps = (key: string, className?: string) => ({
+	class: [className || '', hoveredChildrenColumnKey.value === key ? 'is-hovered-column' : ''],
+	onMouseenter: () => {
+		hoveredChildrenColumnKey.value = key;
+	},
+	onMouseleave: () => {
+		hoveredChildrenColumnKey.value = '';
+	}
+});
 
 const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 	{
@@ -2400,7 +2913,7 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 			h(
 				'div',
 				{
-					class: 'resizable-header-cell selection-header-cell',
+					class: ['resizable-header-cell selection-header-cell', hoveredChildrenColumnKey.value === 'selection' ? 'is-hovered-column' : ''],
 					style: {
 						display: 'flex',
 						alignItems: 'center',
@@ -2423,11 +2936,17 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 					})
 				]
 			),
-		cellRenderer: ({ rowData }) =>
+		cellRenderer: ({ rowData, rowIndex }) =>
 			h(
 				'div',
 				{
-					class: 'selection-cell',
+					class: ['selection-cell', isChildrenRowSelected(rowData) ? 'is-selected' : '', isFlatStructureView.value ? 'is-disabled' : ''],
+					onMouseenter: () => {
+						hoveredChildrenColumnKey.value = 'selection';
+					},
+					onMouseleave: () => {
+						hoveredChildrenColumnKey.value = '';
+					},
 					style: {
 						display: 'flex',
 						alignItems: 'center',
@@ -2439,6 +2958,7 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 					}
 				},
 				[
+					h('span', { class: 'selection-row-index' }, String(rowIndex + 1)),
 					h(ElCheckbox, {
 						modelValue: isChildrenRowSelected(rowData),
 						onChange: (checked: string | number | boolean) => toggleChildrenRowSelection(rowData, !!checked),
@@ -2454,27 +2974,25 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 		width: columnWidths.value.label,
 		fixed: true,
 		headerCellRenderer: () => createResizableHeader('label', '标题'),
-		cellRenderer: ({ rowData }) =>
-			h(
+		cellRenderer: ({ rowData }) => {
+			const canExpand = !isFlatStructureView.value && (rowData.hasChildren || rowData.isExpanded);
+			return h(
 				'div',
 				{
-					class: 'name-cell',
-					style: { paddingLeft: `${(rowData.level || 0) * 20}px` }
+					...createChildrenCellProps('label', 'name-cell'),
+					style: { paddingLeft: `${(isFlatStructureView.value ? 0 : rowData.level || 0) * 20}px` }
 				},
 				[
 					h(
 						'span',
 						{
-							class: [
-								rowData.hasChildren || rowData.isExpanded ? 'custom-tree-icon' : 'tree-icon-placeholder',
-								isRowExpanding(rowData) ? 'is-loading' : ''
-							],
+							class: [canExpand ? 'custom-tree-icon' : 'tree-icon-placeholder', isRowExpanding(rowData) ? 'is-loading' : ''],
 							onClick: (event: MouseEvent) => {
 								event.stopPropagation();
-								if (!isRowExpanding(rowData) && (rowData.hasChildren || rowData.isExpanded)) toggleRowExpand(rowData);
+								if (!isRowExpanding(rowData) && canExpand) toggleRowExpand(rowData);
 							}
 						},
-						rowData.hasChildren || rowData.isExpanded
+						canExpand
 							? isRowExpanding(rowData)
 								? [h(ElIcon, { class: 'expand-loading-icon' }, () => [h(Loading)])]
 								: rowData.isExpanded
@@ -2489,7 +3007,8 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 					}),
 					h('span', { class: 'name-text' }, rowData.label)
 				]
-			)
+			);
+		}
 	},
 	{
 		key: 'partNumber',
@@ -2501,7 +3020,7 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 			h(
 				'span',
 				{
-					class: 'enterprise-code-link',
+					...createChildrenCellProps('partNumber', 'enterprise-code-link'),
 					onClick: () => openEnterpriseCodeDialogForChild(rowData)
 				},
 				getChildEnterpriseCode(rowData)
@@ -2528,7 +3047,9 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 		width: columnWidths.value.isLastRevision,
 		headerCellRenderer: () => createResizableHeader('isLastRevision', '最新修订版'),
 		cellRenderer: ({ rowData }) =>
-			h(ElIcon, { color: rowData.isLastRevision ? '#67C23A' : '#F56C6C' }, () => [h(rowData.isLastRevision ? Check : Close)])
+			h('span', createChildrenCellProps('isLastRevision', 'boolean-cell'), [
+				h(ElIcon, { color: rowData.isLastRevision ? '#67C23A' : '#F56C6C' }, () => [h(rowData.isLastRevision ? Check : Close)])
+			])
 	},
 	{
 		key: 'status',
@@ -2540,9 +3061,9 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 			h(
 				ElTag,
 				{
+					...createChildrenCellProps('status', 'status-tag'),
 					type: getStatusType(rowData.statusRaw),
 					size: 'small',
-					class: 'status-tag',
 					onClick: () => openMaturityDialogForChild(rowData)
 				},
 				() => rowData.status
@@ -2561,7 +3082,7 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 		title: '锁定',
 		width: columnWidths.value.reserved,
 		headerCellRenderer: () => createResizableHeader('reserved', '锁定'),
-		cellRenderer: ({ rowData }) => h('span', rowData.reserved ? '锁定' : '已解锁')
+		cellRenderer: ({ rowData }) => h('span', createChildrenCellProps('reserved'), rowData.reserved ? '锁定' : '已解锁')
 	},
 	{
 		key: 'modified',
@@ -2587,7 +3108,14 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 ]);
 
 const createChildrenTableColumns = (tableWidth: number) => {
-	const columns = childrenTableColumns.value.map(column => ({ ...column }));
+	const columns = childrenTableColumns.value.map(column => {
+		const nextColumn = { ...column };
+		if (!nextColumn.cellRenderer && typeof nextColumn.dataKey === 'string') {
+			nextColumn.cellRenderer = ({ cellData }) =>
+				h('span', createChildrenCellProps(String(nextColumn.key)), cellData == null ? '' : String(cellData));
+		}
+		return nextColumn;
+	});
 	const totalWidth = columns.reduce((sum, column) => sum + Number(column.width || 0), 0);
 	const extraWidth = Math.max(0, tableWidth - totalWidth);
 	const lastColumn = columns[columns.length - 1];
@@ -2626,6 +3154,296 @@ const openEnterpriseCodeDialogForChild = (row: TreeNode) => {
 	}));
 	selectedEnterpriseRows.value = [...enterpriseCodeRows.value];
 	enterpriseDialogVisible.value = true;
+};
+
+const openEnterpriseCodeDialogForSelectedRows = () => {
+	if (!selectedChildrenRows.value.length) return;
+	const firstRow = selectedChildrenRows.value[0];
+	openEnterpriseCodeDialogForChild(firstRow);
+};
+
+const findParentNodeByChildId = (nodes: TreeNode[], childId: string, parent?: TreeNode): TreeNode | null => {
+	for (const node of nodes) {
+		if (node.id === childId) return parent || null;
+		const foundParent = findParentNodeByChildId(node.children || [], childId, node);
+		if (foundParent) return foundParent;
+	}
+	return null;
+};
+
+const getInstanceQuantityParentPhysicalId = (row: TreeNode) => {
+	const parentNode = findParentNodeByChildId(childrenData.value, row.id);
+	return parentNode?.resourceid || currentPhysicalId.value;
+};
+
+const createInstanceQuantityRow = (source: TreeNode, editable: boolean, index: number): InstanceQuantityRow => ({
+	id: editable ? `new-${source.resourceid}-${Date.now()}-${index}` : source.id,
+	sourceRowId: source.id,
+	relationId: editable ? undefined : source.relationId,
+	parentPhysicalId: getInstanceQuantityParentPhysicalId(source),
+	childPhysicalId: source.resourceid,
+	instanceLabel: editable ? 'New Instance' : source.instanceLabel || `${source.label}.${index + 1}`,
+	editable,
+	editStatus: editable ? '新建' : '',
+	label: source.label,
+	partNumber: source.partNumber,
+	revision: source.revision,
+	isLastRevision: source.isLastRevision,
+	status: source.status,
+	owner: source.owner,
+	reserved: source.reserved,
+	modified: source.modified,
+	globalType: source.globalType,
+	identifier: source.identifier
+});
+
+const openInstanceQuantityDialog = () => {
+	const selectedRow = selectedChildrenRows.value[0];
+	if (!selectedRow) return;
+	const sameInstanceRows = flattenChildrenData.value.filter(row => row.resourceid === selectedRow.resourceid);
+	const baseRows = sameInstanceRows.map((row, index) => createInstanceQuantityRow(row, false, index));
+	instanceQuantitySelectedRow.value = selectedRow;
+	instanceQuantityBaseRows.value = baseRows;
+	instanceQuantityRows.value = [...baseRows];
+	instanceQuantityValue.value = baseRows.length;
+	instanceQuantityDialogVisible.value = true;
+};
+
+const handleInstanceQuantityValueChange = (value: number | undefined) => {
+	const baseCount = instanceQuantityBaseRows.value.length;
+	const inputCount = Number(value || baseCount);
+	if (inputCount < baseCount) {
+		ElMessage.warning('数量不能小于已经有的实例数量');
+		instanceQuantityValue.value = baseCount;
+		instanceQuantityRows.value = [...instanceQuantityBaseRows.value];
+		return;
+	}
+	const nextCount = inputCount;
+	instanceQuantityValue.value = nextCount;
+	const rows = [...instanceQuantityBaseRows.value];
+	const selectedRow = instanceQuantitySelectedRow.value;
+	if (selectedRow) {
+		for (let index = rows.length; index < nextCount; index += 1) {
+			rows.push(createInstanceQuantityRow(selectedRow, true, index));
+		}
+	}
+	instanceQuantityRows.value = rows;
+};
+
+const removeInstanceQuantityRow = (row: InstanceQuantityRow) => {
+	if (!row.editable) return;
+	instanceQuantityRows.value = instanceQuantityRows.value.filter(item => item.id !== row.id);
+	instanceQuantityValue.value = instanceQuantityRows.value.length;
+};
+
+const openUnparentDialog = () => {
+	if (selectedChildrenRows.value.some(row => !row.relationId)) {
+		ElMessage.error('未获取到选中对象的关系ID');
+		return;
+	}
+	unparentReportVisible.value = false;
+	unparentSuccessMessages.value = [];
+	unparentFailureMessages.value = [];
+	unparentSelectedRowsSnapshot.value = [...selectedChildrenRows.value];
+	unparentDialogVisible.value = true;
+};
+
+const getCatflMessage = (messageKey: string) => {
+	const nls = ((navigator.language || '').toLowerCase().startsWith('zh') ? zhCatflNls : enCatflNls) as Record<string, string>;
+	return (nls[messageKey] || messageKey).replace(/<br\s*\/?>/gi, '\n');
+};
+
+const getRowDisplayName = (row: TreeNode) => `${row.label || row.identifier || row.resourceid} ${row.revision || ''}`.trim();
+
+const isLastVersionValue = (value: unknown) => String(value).toLowerCase() === 'true';
+
+const getLatestVersion = (versions: VersionGraphVersion[]) => versions.find(version => isLastVersionValue(version.isLastVersion));
+
+const handleReplaceLatestRevision = async () => {
+	const rows = [...selectedChildrenRows.value];
+	if (!rows.length) return;
+
+	const operations = [];
+	const ignoredMessages: string[] = [];
+
+	try {
+		for (const row of rows) {
+			if (!row.resourceid || !row.relationId) {
+				ElMessage.error('未获取到选中对象的物理ID或关系ID');
+				return;
+			}
+			const parentPhysicalId = getInstanceQuantityParentPhysicalId(row);
+			if (!parentPhysicalId) {
+				ElMessage.error('未获取到选中对象的父ID');
+				return;
+			}
+			const versionGraph = await partDetailApi.getVersionGraph(row.resourceid);
+			const latestVersion = getLatestVersion(versionGraph.graphs?.[0]?.versions || []);
+			if (!latestVersion?.id) {
+				ElMessage.warning(`未找到对象 ${getRowDisplayName(row)} 的最新修订版`);
+				continue;
+			}
+			const oldName = getRowDisplayName(row);
+			const newName = `${latestVersion.label || row.label || row.identifier || latestVersion.id} ${latestVersion.code || ''}`.trim();
+			if (latestVersion.id === row.resourceid) {
+				ignoredMessages.push(`替换操作已被忽略，因为对象 ${oldName} 已是最新修订版。`);
+				continue;
+			}
+			operations.push({
+				hasParent: parentPhysicalId,
+				instance: row.relationId,
+				isInstanceOf: latestVersion.id,
+				oldName,
+				newName
+			});
+		}
+
+		if (!operations.length) {
+			if (ignoredMessages.length) {
+				ElMessage.info(ignoredMessages.join('\n'));
+			}
+			return;
+		}
+
+		const response = await partDetailApi.replaceByLatestRevision(operations);
+		const successResults = (response.results || []).filter(result => String(result.status).toLowerCase() === 'success');
+		replaceReportTitle.value = '替换为最新修订版报告';
+		replaceLatestReportMessages.value = successResults.length
+			? successResults.map(result => `成功将 ${result.oldName || ''} 替换为 ${result.newName || ''}。`)
+			: operations.map(operation => `成功将 ${operation.oldName} 替换为 ${operation.newName}。`);
+		replaceLatestReportVisible.value = true;
+		selectedChildrenRows.value = [];
+		queryModeStore.switchToDbMode();
+		if (currentPhysicalId.value) {
+			await loadPartDetail(currentPhysicalId.value);
+		}
+	} catch (error) {
+		console.error('[PartDetailView] 替换为最新修订版失败:', error);
+		ElMessage.error('替换为最新修订版失败');
+	}
+};
+
+const handleConfirmUnparent = async () => {
+	const selectedRows = unparentSelectedRowsSnapshot.value.length ? unparentSelectedRowsSnapshot.value : selectedChildrenRows.value;
+	const instances = selectedRows.map(row => row.relationId).filter((relationId): relationId is string => !!relationId);
+	if (!instances.length) {
+		ElMessage.error('未获取到选中对象的关系ID');
+		return;
+	}
+	unparentSubmitting.value = true;
+	try {
+		const response = await partDetailApi.unparentInstances(instances);
+		const results: UnparentResponseResult[] = response.results || [];
+		const successResults = results.filter(result => String(result.status).toLowerCase() === 'success');
+		const failureResults = results.filter(result => String(result.status).toLowerCase() !== 'success');
+		if (String(response.status).toLowerCase() === 'success' && !successResults.length) {
+			unparentSuccessMessages.value = selectedRows.map(row => `成功拆离 ${row.instanceLabel || row.label || row.relationId || ''}。`);
+		} else {
+			unparentSuccessMessages.value = successResults.map((result, index) => {
+				const row = selectedRows.find(item => item.relationId === result.instance) || selectedRows[index];
+				const parentName = result.parent || partInfo.value?.['ds6w:label'] || partInfo.value?.['ds6w:identifier'] || '父对象';
+				const instanceName = result.instanceName || row?.instanceLabel || row?.label || result.instance || result.child || '实例';
+				return `成功从 ${parentName} 拆离 ${instanceName}。`;
+			});
+		}
+		unparentFailureMessages.value = failureResults.map(result => {
+			const messages = result.messages?.map(getCatflMessage).join('；') || '拆离失败';
+			return `${result.instance || ''} ${messages}`.trim();
+		});
+		unparentReportVisible.value = true;
+		if (response.status === 'success' || unparentSuccessMessages.value.length) {
+			selectedChildrenRows.value = [];
+			queryModeStore.switchToDbMode();
+			if (currentPhysicalId.value) {
+				await loadPartDetail(currentPhysicalId.value);
+			}
+		}
+	} catch (error) {
+		console.error('[PartDetailView] 拆离失败:', error);
+		unparentFailureMessages.value = ['拆离失败'];
+		unparentReportVisible.value = true;
+	} finally {
+		unparentSubmitting.value = false;
+	}
+};
+
+const handleSelectedActionCommand = (command: SelectedActionCommand) => {
+	switch (command) {
+		case 'setEnterpriseCode':
+			openEnterpriseCodeDialogForSelectedRows();
+			break;
+		case 'instanceQuantity':
+			openInstanceQuantityDialog();
+			break;
+		case 'replaceLatest':
+			handleReplaceLatestRevision();
+			break;
+		case 'replaceExisting':
+			openReplaceExistingProductDialog();
+			break;
+		case 'unparent':
+			openUnparentDialog();
+			break;
+		default:
+			ElMessage.info('替换功能接口后续接入');
+			break;
+	}
+};
+
+const handleConfirmInstanceQuantity = async () => {
+	if (instanceQuantityValue.value < instanceQuantityBaseRows.value.length) {
+		ElMessage.warning('数量不能小于已经有的实例数量');
+		instanceQuantityValue.value = instanceQuantityBaseRows.value.length;
+		return;
+	}
+	handleInstanceQuantityValueChange(instanceQuantityValue.value);
+	const newRows = instanceQuantityRows.value.filter(row => row.editable);
+	if (!newRows.length) {
+		instanceQuantityDialogVisible.value = false;
+		return;
+	}
+	const relationId = instanceQuantityBaseRows.value[0]?.relationId || instanceQuantitySelectedRow.value?.relationId;
+	if (!relationId) {
+		ElMessage.error('未获取到选中对象和父对象的关系ID');
+		return;
+	}
+
+	instanceQuantitySubmitting.value = true;
+	try {
+		const operations = newRows.map((row, index) => {
+			if (index === 0) {
+				return {
+					parent: {
+						isInstanceOf: row.parentPhysicalId,
+						children: [relationId],
+						cacheId: 0
+					},
+					child: {
+						isInstanceOf: row.childPhysicalId,
+						cacheId: 0
+					}
+				};
+			}
+			return {
+				parent: {
+					cacheId: 0
+				},
+				child: {
+					cacheId: 0
+				}
+			};
+		});
+		console.log('[PartDetailView] 更新实例数量 operations:', operations);
+		await partDetailApi.updateInstanceQuantity(operations);
+		ElMessage.success('实例数量已更新');
+		instanceQuantityDialogVisible.value = false;
+		await switchToDbModeAndRefresh();
+	} catch (error) {
+		console.error('[PartDetailView] 更新实例数量失败:', error);
+		ElMessage.error('更新实例数量失败');
+	} finally {
+		instanceQuantitySubmitting.value = false;
+	}
 };
 
 const updateChildEnterpriseCode = (nodes: TreeNode[], id: string, partNumber: string): boolean => {
@@ -3163,6 +3981,7 @@ const reloadAndExpandRow = async (row: TreeNode) => {
  * 独立方法，不混合原有 reloadAndExpandRow 逻辑
  */
 const handleExpandMenuCommand = async (command: string) => {
+	if (isFlatStructureView.value) return;
 	console.log('[PartDetailView] 展开菜单命令:', command);
 	expandMenuActive.value = true;
 
@@ -3184,6 +4003,68 @@ const handleExpandMenuCommand = async (command: string) => {
 	} catch (error) {
 		console.error('[PartDetailView] 展开菜单命令执行失败:', error);
 		ElMessage.error('展开操作失败');
+	}
+};
+
+/**
+ * 处理结构视图菜单命令
+ */
+const handleStructureViewCommand = async (command: string) => {
+	console.log('[PartDetailView] 结构视图命令:', command);
+	structureViewActive.value = true;
+
+	switch (command) {
+		case 'indented':
+			await handleIndentedStructureView();
+			break;
+		case 'flat':
+			await handleFlatStructureView();
+			break;
+		case 'leaf':
+			ElMessage.info('切换到产品叶视图');
+			// TODO: 实现产品叶视图逻辑
+			break;
+		case 'material':
+			ElMessage.info('切换到产品原材料视图');
+			// TODO: 实现产品原材料视图逻辑
+			break;
+	}
+};
+
+const handleIndentedStructureView = async () => {
+	const rootPhysicalId = currentPhysicalId.value;
+	if (!rootPhysicalId) {
+		ElMessage.warning('当前没有加载零件');
+		return;
+	}
+
+	structureViewMode.value = 'indented';
+	selectedChildrenRows.value = [];
+	expandingRowIds.value = new Set();
+	await loadExpandData(rootPhysicalId);
+	ElMessage.success('已切换到缩进的产品结构视图');
+};
+
+const handleFlatStructureView = async () => {
+	const rootPhysicalId = currentPhysicalId.value;
+	if (!rootPhysicalId) {
+		ElMessage.warning('当前没有加载零件');
+		return;
+	}
+
+	childrenLoading.value = true;
+	try {
+		structureViewMode.value = 'flat';
+		selectedChildrenRows.value = [];
+		expandingRowIds.value = new Set();
+		const response = await expandApi.getFlatExpandData(rootPhysicalId);
+		childrenData.value = expandApi.parseFlatExpandData(response, rootPhysicalId);
+		ElMessage.success('已切换到扁平产品结构视图');
+	} catch (error) {
+		console.error('[PartDetailView] 切换扁平产品结构视图失败:', error);
+		ElMessage.error('切换扁平产品结构视图失败');
+	} finally {
+		childrenLoading.value = false;
 	}
 };
 
@@ -4302,6 +5183,50 @@ onUnmounted(() => {
 				align-items: center;
 				gap: 8px;
 
+				.selected-actions-wrap {
+					display: inline-flex;
+					align-items: center;
+					gap: 10px;
+				}
+
+				.selected-actions-trigger {
+					position: relative;
+					display: inline-flex;
+					align-items: center;
+					justify-content: center;
+					width: 50px;
+					height: 28px;
+					color: #5f6b7a;
+					cursor: pointer;
+				}
+
+				.selected-actions-trigger:hover {
+					color: #2f6fab;
+				}
+
+				.selected-actions-arrow {
+					margin-left: 2px;
+					color: #1684d8;
+					font-size: 15px;
+				}
+
+				.selected-actions-count {
+					position: absolute;
+					right: 8px;
+					bottom: -2px;
+					min-width: 12px;
+					color: #2f6fab;
+					font-size: 12px;
+					line-height: 12px;
+					text-align: center;
+				}
+
+				.toolbar-divider {
+					width: 1px;
+					height: 24px;
+					background-color: #dcdfe6;
+				}
+
 				.toolbar-create-trigger {
 					display: inline-flex;
 					align-items: center;
@@ -4460,17 +5385,50 @@ onUnmounted(() => {
 					display: flex;
 					align-items: center;
 					justify-content: center;
+					position: relative;
 					width: 100%;
 					height: 100%;
 					background-color: #f2f3f5;
+				}
+
+				:deep(.el-table-v2__row:hover .selection-cell) {
+					background-color: #e5e7eb !important;
+				}
+
+				:deep(.resizable-header-cell.is-hovered-column) {
+					background-color: #e5e7eb !important;
+				}
+
+				:deep(.is-hovered-column) {
+					background-color: #f3f4f6;
+				}
+
+				:deep(.selection-row-index) {
+					display: inline-flex;
+					align-items: center;
+					justify-content: center;
+					color: #606266;
+					font-size: 13px;
+					line-height: 1;
 				}
 
 				:deep(.selection-header-cell .el-checkbox),
 				:deep(.selection-cell .el-checkbox) {
 					height: 100%;
 					margin-right: 0;
-					display: inline-flex;
+					display: none;
 					align-items: center;
+				}
+
+				:deep(.el-table-v2__row:hover .selection-cell .selection-row-index),
+				:deep(.selection-cell.is-selected .selection-row-index) {
+					display: none;
+				}
+
+				:deep(.selection-header-cell .el-checkbox),
+				:deep(.el-table-v2__row:hover .selection-cell .el-checkbox),
+				:deep(.selection-cell.is-selected .el-checkbox) {
+					display: inline-flex;
 				}
 
 				:deep(.column-resize-handle) {
@@ -5235,10 +6193,140 @@ body.is-resizing-column {
 	}
 }
 
+.selected-actions-dropdown {
+	overflow: visible !important;
+
+	.el-scrollbar,
+	.el-scrollbar__wrap,
+	.el-scrollbar__view,
+	.el-dropdown-menu {
+		overflow: visible !important;
+	}
+
+	.el-dropdown-menu__item {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-width: 160px;
+		height: 28px;
+		line-height: 28px;
+	}
+
+	.selected-action-icon {
+		width: 18px;
+		color: #5f6b7a;
+		text-align: center;
+	}
+
+	.selected-action-submenu {
+		position: relative;
+	}
+
+	.selected-action-submenu-trigger {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-width: 160px;
+		height: 28px;
+		padding: 0 16px;
+		color: #606266;
+		cursor: pointer;
+		box-sizing: border-box;
+	}
+
+	.selected-action-submenu-trigger .el-icon {
+		margin-left: auto;
+	}
+
+	.selected-action-submenu-panel {
+		position: absolute;
+		top: 0;
+		left: 100%;
+		display: none;
+		min-width: 170px;
+		padding: 4px 0;
+		background: #fff;
+		border: 1px solid #dcdfe6;
+		box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+		z-index: 20;
+	}
+
+	.selected-action-submenu:hover .selected-action-submenu-panel {
+		display: block;
+	}
+
+	.selected-action-submenu-trigger:hover,
+	.selected-action-submenu-item:hover {
+		background-color: #ecf5ff;
+		color: #409eff;
+	}
+
+	.selected-action-submenu-item {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		height: 28px;
+		padding: 0 14px;
+		color: #606266;
+		cursor: pointer;
+		white-space: nowrap;
+		box-sizing: border-box;
+	}
+}
+
+.instance-quantity-dialog {
+	.instance-quantity-tabs {
+		display: flex;
+		justify-content: center;
+		gap: 36px;
+		border-bottom: 1px solid #dcdfe6;
+		margin: -8px -20px 10px;
+	}
+
+	.instance-quantity-tab {
+		padding: 8px 12px;
+		color: #606266;
+		border-bottom: 2px solid transparent;
+	}
+
+	.instance-quantity-tab.is-active {
+		color: #303133;
+		border-bottom-color: #409eff;
+	}
+
+	.instance-quantity-toolbar {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 8px;
+	}
+
+	.instance-quantity-added-tip {
+		margin-left: auto;
+		color: #606266;
+	}
+
+	.instance-quantity-table-wrap {
+		overflow: auto;
+		resize: both;
+		min-width: 760px;
+		min-height: 240px;
+		max-height: 520px;
+		border: 1px solid #ebeef5;
+	}
+}
+
 // 展开菜单按钮样式
 .expand-menu-btn.is-active {
 	color: #409eff !important;
 	border-color: #409eff !important;
+}
+
+.expand-menu-btn.is-disabled {
+	color: #c0c4cc !important;
+	border-color: #dcdfe6 !important;
+	background-color: #f5f7fa !important;
+	cursor: not-allowed !important;
 }
 
 // 展开菜单下拉框样式
