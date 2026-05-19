@@ -106,9 +106,10 @@ export interface ReparentOperation {
 		pathArray?: string[];
 	};
 	target: {
+		cacheId?: number;
 		children?: string[];
-		isInstanceOf: string;
-		pathArray: string[];
+		isInstanceOf?: string;
+		pathArray?: string[];
 	};
 	mode?: 'CutPaste';
 }
@@ -126,6 +127,28 @@ export interface ReparentSourceItem {
 	pathArray?: string[];
 	mode?: 'CutPaste';
 }
+
+export interface ReparentTargetItem {
+	physicalId: string;
+	children?: string[];
+	pathArray?: string[];
+}
+
+const buildReparentTargetOperation = (target: ReparentTargetItem, targetIndex: number, sourceIndex: number): ReparentOperation['target'] => {
+	if (sourceIndex !== 0) {
+		return {
+			cacheId: targetIndex
+		};
+	}
+	return {
+		isInstanceOf: target.physicalId,
+		pathArray: target.pathArray?.length ? target.pathArray : [target.physicalId],
+		cacheId: targetIndex
+	};
+};
+
+const shouldUseCutPasteMode = (sourceItem: ReparentSourceItem, targetCount: number, targetIndex: number) =>
+	!!sourceItem.mode && (targetCount === 1 || targetIndex > 0);
 
 export interface InsertExistingProductOperation {
 	parent: {
@@ -218,7 +241,7 @@ export interface ReplaceByLatestRevisionOperation {
 	instance: string;
 	isInstanceOf: string;
 	oldName: string;
-	newName: string;
+	newName?: string;
 }
 
 export interface ReplaceByLatestRevisionResult {
@@ -578,26 +601,20 @@ class PartDetailAPI {
 		console.log('[PartDetailAPI] 设置企业项目编号 SecurityContext:', securityContext);
 		console.log('[PartDetailAPI] 设置企业项目编号参数:', JSON.stringify(params, null, 2));
 
-		try {
-			const response = await http.put(url, params as unknown as Record<string, unknown>, {
-				SecurityContext: securityContext || ''
-			});
-			console.log('[PartDetailAPI] 设置企业项目编号响应:', response);
-			return response;
-		} catch (error) {
-			console.error('[PartDetailAPI] 设置企业项目编号失败:', error);
-			throw error;
-		}
+		const response = await http.put(url, params as unknown as Record<string, unknown>, {
+			SecurityContext: securityContext || ''
+		});
+		console.log('[PartDetailAPI] 设置企业项目编号响应:', response);
+		return response;
 	}
 
 	async reparentParts(
 		sourceItems: Array<string | ReparentSourceItem>,
-		targetPhysicalId: string,
+		targetPhysicalId: string | ReparentTargetItem[],
 		children: string[] = [],
 		targetPathArray?: string[]
 	): Promise<unknown> {
 		const baseInfoStore = useBaseInfoStore();
-
 		if (!baseInfoStore.spaceUrl) {
 			console.log('[PartDetailAPI] 3DSpace URL 为空，先获取 URL');
 			await baseInfoStore.fetchSpaceUrl();
@@ -611,30 +628,38 @@ class PartDetailAPI {
 		const securityContext = baseInfoStore.securityContext || '';
 		const endpoint = '/resources/product/authoring/reparent';
 		const url = `${endpoint}?securityContext=${encodeURIComponent(securityContext)}&tenant=OnPremise&xrequestedwith=xmlhttprequest`;
-		const operations: ReparentOperation[] = sourceItems.map(item => {
-			const sourceItem = typeof item === 'string' ? { physicalId: item } : item;
-			const operation: ReparentOperation = {
-				source: {
-					instance: sourceItem.instance || '',
-					isInstanceOf: sourceItem.physicalId
-				},
-				target: {
-					isInstanceOf: targetPhysicalId,
-					pathArray: targetPathArray?.length ? targetPathArray : [targetPhysicalId]
-				}
-			};
+		const targets: ReparentTargetItem[] = Array.isArray(targetPhysicalId)
+			? targetPhysicalId
+			: [
+					{
+						physicalId: targetPhysicalId,
+						children,
+						pathArray: targetPathArray
+					}
+				];
+		const sourceItemList = sourceItems.map(item => (typeof item === 'string' ? { physicalId: item } : item));
+		const operations: ReparentOperation[] = targets.flatMap((target, targetIndex) =>
+			sourceItemList.map((sourceItem, sourceIndex) => {
+				const operation: ReparentOperation = {
+					source: {
+						instance: sourceItem.instance || '',
+						isInstanceOf: sourceItem.physicalId
+					},
+					target: buildReparentTargetOperation(target, targetIndex, sourceIndex)
+				};
 
-			if (sourceItem.pathArray?.length) {
-				operation.source.pathArray = sourceItem.pathArray;
-			}
-			if (sourceItem.mode) {
-				operation.mode = sourceItem.mode;
-			}
-			if (!sourceItem.mode && children.length) {
-				operation.target.children = children;
-			}
-			return operation;
-		});
+				if (sourceItem.pathArray?.length) {
+					operation.source.pathArray = sourceItem.pathArray;
+				}
+				if (shouldUseCutPasteMode(sourceItem, targets.length, targetIndex)) {
+					operation.mode = sourceItem.mode;
+				}
+				if (target.children?.length && targetIndex === 0 && sourceIndex === 0) {
+					operation.target.children = target.children;
+				}
+				return operation;
+			})
+		);
 		const params: ReparentParams = {
 			bAllOrNothing: true,
 			lockConnectionAsParent: false,

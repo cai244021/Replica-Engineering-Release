@@ -9,6 +9,120 @@
 			<!-- 右上角控制区：模式切换 + 折叠箭头 -->
 			<div class="top-right-controls">
 				<div class="mode-switch-container">
+					<el-dropdown
+						popper-class="part-action-dropdown-popper"
+						trigger="click"
+						@command="handleHeaderActionCommand">
+						<el-button
+							:size="'small'"
+							circle
+							class="header-action-dropdown-btn"
+							title="更多操作">
+							<el-icon><ArrowDown /></el-icon>
+						</el-button>
+						<template #dropdown>
+							<el-dropdown-menu class="part-action-dropdown-menu">
+								<el-dropdown-item command="openMethod">
+									<span class="part-action-menu-icon">↪</span>
+									<span class="part-action-menu-label">打开方式</span>
+									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
+								</el-dropdown-item>
+								<el-dropdown-item command="setEnterpriseNumber">
+									<span class="part-action-menu-icon">▦</span>
+									<span class="part-action-menu-label">设置企业项目编号</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="delete">
+									<span class="part-action-menu-icon">⌫</span>
+									<span class="part-action-menu-label">删除</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="manageBrowsingStructure">
+									<span class="part-action-menu-icon">⌘</span>
+									<span class="part-action-menu-label">管理浏览结构定义</span>
+									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
+								</el-dropdown-item>
+								<el-dropdown-item
+									command="revision"
+									divided>
+									<span class="part-action-menu-icon">☷</span>
+									<span class="part-action-menu-label">修订版</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="newRevision">
+									<span class="part-action-menu-icon">↳</span>
+									<span class="part-action-menu-label">新修订版</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="newBranch">
+									<span class="part-action-menu-icon">⌘</span>
+									<span class="part-action-menu-label">新建分支</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="newRevisionSource">
+									<span class="part-action-menu-icon">⌁</span>
+									<span class="part-action-menu-label">新修订版源</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="updateRevision">
+									<span class="part-action-menu-icon">↯</span>
+									<span class="part-action-menu-label">更新修订版</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="updateRevisionAll">
+									<span class="part-action-menu-icon">▥</span>
+									<span class="part-action-menu-label">更新整个结构的修订版</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="copy">
+									<span class="part-action-menu-icon">⧉</span>
+									<span class="part-action-menu-label">复制</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="compare">
+									<span class="part-action-menu-icon">↔</span>
+									<span class="part-action-menu-label">比较</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="maturity">
+									<span class="part-action-menu-icon">♻</span>
+									<span class="part-action-menu-label">成熟度</span>
+								</el-dropdown-item>
+								<el-dropdown-item
+									command="lock"
+									divided>
+									<span class="part-action-menu-icon">🔒</span>
+									<span class="part-action-menu-label">锁定</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="unlock">
+									<span class="part-action-menu-icon">🔓</span>
+									<span class="part-action-menu-label">解锁</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="move">
+									<span class="part-action-menu-icon">⇥</span>
+									<span class="part-action-menu-label">移动</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="share">
+									<span class="part-action-menu-icon">↗</span>
+									<span class="part-action-menu-label">共享</span>
+								</el-dropdown-item>
+								<el-dropdown-item
+									command="relationship"
+									divided>
+									<span class="part-action-menu-icon">⚭</span>
+									<span class="part-action-menu-label">关系</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="relatedChange">
+									<span class="part-action-menu-icon">▤</span>
+									<span class="part-action-menu-label">相关更改</span>
+								</el-dropdown-item>
+								<el-dropdown-item command="subscribe">
+									<span class="part-action-menu-icon">☁</span>
+									<span class="part-action-menu-label">订阅</span>
+									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
+								</el-dropdown-item>
+								<el-dropdown-item command="exportMenu">
+									<span class="part-action-menu-icon">⇲</span>
+									<span class="part-action-menu-label">导出菜单</span>
+									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
+								</el-dropdown-item>
+								<el-dropdown-item command="customTitle">
+									<span class="part-action-menu-icon">⚙</span>
+									<span class="part-action-menu-label">自定义标题</span>
+								</el-dropdown-item>
+							</el-dropdown-menu>
+						</template>
+					</el-dropdown>
 					<el-button
 						:size="'small'"
 						circle
@@ -63,21 +177,51 @@
 			<div
 				v-show="!showHeader"
 				class="summary-bar">
-				<span class="summary-title">{{ partInfo?.['ds6w:label'] || '-' }}</span>
-				<span class="summary-revision">{{ partInfo?.['ds6wg:revision'] || '' }}</span>
-				<span
-					class="enterprise-code-link"
-					@click="openEnterpriseCodeDialogForParent">
-					{{ getParentEnterpriseCode() }}
-				</span>
-				<el-tag
-					:type="getStatusType(partInfo?.['ds6w:status'])"
-					size="small"
-					class="status-tag"
-					@click="openMaturityDialogForParent">
-					{{ formatStatus(partInfo?.['ds6w:status']) }}
-				</el-tag>
-				<span class="summary-owner">{{ partInfo?.['owner'] || '-' }}</span>
+				<el-icon
+					class="summary-home-icon"
+					title="主页"
+					@click="handleBack">
+					<HomeFilled />
+				</el-icon>
+				<img
+					class="summary-thumbnail"
+					:src="partInfo?.['preview_url'] || partInfo?.['thumbnail_2d'] || defaultThumbnail"
+					alt="零件缩略图" />
+				<div class="summary-main">
+					<span class="summary-title">{{ partInfo?.['ds6w:label'] || '-' }}</span>
+					<span class="summary-revision">{{ partInfo?.['ds6wg:revision'] || '' }}</span>
+				</div>
+				<div class="summary-field">
+					<span class="summary-label">企业项目编号：</span>
+					<span
+						class="enterprise-code-link"
+						@click="openEnterpriseCodeDialogForParent">
+						{{ getParentEnterpriseCode() }}
+					</span>
+				</div>
+				<div class="summary-field">
+					<span class="summary-label">成熟度状态：</span>
+					<el-tag
+						:type="getStatusType(partInfo?.['ds6w:status'])"
+						size="small"
+						class="status-tag"
+						@click="openMaturityDialogForParent">
+						{{ formatStatus(partInfo?.['ds6w:status']) }}
+					</el-tag>
+					<el-icon class="summary-dropdown-icon"><ArrowDown /></el-icon>
+				</div>
+				<div class="summary-field">
+					<span class="summary-label">所有者：</span>
+					<span class="summary-value">{{ partInfo?.['owner'] || '-' }}</span>
+				</div>
+				<div class="summary-field">
+					<span class="summary-label">修改日期：</span>
+					<span class="summary-value">{{ formatDateTime(partInfo?.['ds6w:modified']) }}</span>
+				</div>
+				<div class="summary-field">
+					<span class="summary-label">类型：</span>
+					<span class="summary-value">{{ partInfo?.['ds6w:type'] || '-' }}</span>
+				</div>
 			</div>
 			<!-- 信息区域容器（占70%） -->
 			<div
@@ -253,6 +397,48 @@
 						</el-dropdown>
 						<span class="toolbar-divider"></span>
 					</div>
+					<el-tooltip
+						content="剪切"
+						placement="top">
+						<span class="toolbar-copy-tooltip-wrapper">
+							<button
+								aria-label="剪切"
+								class="toolbar-copy-action"
+								:class="{ 'is-enabled': canCopyProductRows }"
+								:disabled="!canCopyProductRows"
+								@click.stop="handleCreateMenuCommand('cutProducts')">
+								<el-icon><Scissor /></el-icon>
+							</button>
+						</span>
+					</el-tooltip>
+					<el-tooltip
+						content="复制"
+						placement="top">
+						<span class="toolbar-copy-tooltip-wrapper">
+							<button
+								aria-label="复制"
+								class="toolbar-copy-action"
+								:class="{ 'is-enabled': canCopyProductRows }"
+								:disabled="!canCopyProductRows"
+								@click.stop="handleCreateMenuCommand('copyProducts')">
+								<el-icon><CopyDocument /></el-icon>
+							</button>
+						</span>
+					</el-tooltip>
+					<el-tooltip
+						content="粘贴您所选对象下复制或者剪切的对象"
+						placement="top">
+						<span class="toolbar-copy-tooltip-wrapper">
+							<button
+								aria-label="粘贴"
+								class="toolbar-copy-action"
+								:class="{ 'is-enabled': canPasteProductRows && !pasteProductsSubmitting }"
+								:disabled="!canPasteProductRows || pasteProductsSubmitting"
+								@click.stop="handleCreateMenuCommand('pasteProducts')">
+								<el-icon><DocumentChecked /></el-icon>
+							</button>
+						</span>
+					</el-tooltip>
 					<el-dropdown
 						trigger="click"
 						placement="bottom-start"
@@ -1016,9 +1202,43 @@
 		</el-dialog>
 		<el-dialog
 			v-model="duplicateDialogVisible"
-			:title="`插入重复项 - ${duplicateDialogTitle}`"
+			:title="duplicateDialogDisplayTitle"
 			width="690px"
 			class="duplicate-dialog">
+			<div
+				v-if="duplicateTargets.length > 1"
+				class="duplicate-target-list">
+				<div class="duplicate-target-header">
+					<span class="duplicate-target-cell duplicate-target-title">标题</span>
+					<span class="duplicate-target-cell duplicate-target-type">类型</span>
+					<span class="duplicate-target-cell duplicate-target-revision">修订版</span>
+					<span class="duplicate-target-cell duplicate-target-state">成熟度状态</span>
+				</div>
+				<div
+					v-for="target in duplicateTargets"
+					:key="target.physicalid"
+					class="duplicate-target-row">
+					<span class="duplicate-target-cell duplicate-target-title">
+						<img
+							v-if="target.imageUrl"
+							:src="target.imageUrl"
+							class="duplicate-target-icon" />
+						<span
+							v-else
+							class="duplicate-target-default-icon"></span>
+						<span>{{ target.name }}</span>
+					</span>
+					<span class="duplicate-target-cell duplicate-target-type">{{ target.typeDisplayName || '物理产品' }}</span>
+					<span class="duplicate-target-cell duplicate-target-revision">{{ target.revision }}</span>
+					<span class="duplicate-target-cell duplicate-target-state">
+						<el-tag
+							size="small"
+							type="info">
+							{{ target.current || '工作中' }}
+						</el-tag>
+					</span>
+				</div>
+			</div>
 			<div class="duplicate-form">
 				<div class="duplicate-form-row">
 					<span class="duplicate-form-label">添加前缀:</span>
@@ -1036,8 +1256,10 @@
 						size="small"
 						disabled>
 						<el-option
-							:label="duplicateSecurityContextLabel"
-							:value="duplicateSecurityContext" />
+							v-for="option in duplicateSecurityContextOptions"
+							:key="option.value"
+							:label="option.label"
+							:value="option.value" />
 					</el-select>
 				</div>
 			</div>
@@ -1168,10 +1390,13 @@ import {
 	Download,
 	Check,
 	Close,
+	CopyDocument,
+	DocumentChecked,
 	Loading,
 	HomeFilled,
 	Share,
 	Fold,
+	Scissor,
 	ArrowRight,
 	CirclePlus,
 	Expand,
@@ -1181,7 +1406,7 @@ import { ElCheckbox, ElIcon, ElImage, ElMessage, ElMessageBox, ElTag } from 'ele
 import type { Column } from 'element-plus';
 import partDetailApi from '@/api/partDetailApi';
 import expandApi, { type TreeNode } from '@/api/expandApi';
-import { ModelerAPI } from '@/api';
+import { ModelerAPI, VplmAPI } from '@/api';
 import type {
 	DeformableProductInfo,
 	DuplicateProductItem,
@@ -1191,6 +1416,8 @@ import type {
 	StateTransition,
 	PartInfo,
 	ReparentSourceItem,
+	ReparentTargetItem,
+	ReplaceByLatestRevisionOperation,
 	UnparentResponseResult,
 	VersionGraphVersion
 } from '@/api/partDetailApi';
@@ -1283,6 +1510,7 @@ interface ExistingProductSearchItem {
 	'ds6wg:revision'?: string;
 	'ds6w:type'?: string;
 	'ds6w:status'?: string;
+	'current'?: string;
 	'thumbnail_2d'?: string;
 	'icon'?: string;
 }
@@ -1292,6 +1520,12 @@ interface ExistingProductParentContext {
 	name: string;
 	row?: TreeNode;
 	children: string[];
+	pathArray: string[];
+}
+
+interface DuplicateSecurityContextOption {
+	value: string;
+	label: string;
 }
 
 interface InstanceQuantityRow {
@@ -1325,6 +1559,9 @@ type SelectedActionCommand =
 	| 'replaceRevision'
 	| 'replaceDuplicate';
 type CreateMenuCommand =
+	| 'cutProducts'
+	| 'copyProducts'
+	| 'pasteProducts'
 	| 'newProduct'
 	| 'existingProduct'
 	| 'insertDuplicate'
@@ -1383,9 +1620,19 @@ const duplicateDialogVisible = ref(false);
 const duplicateSubmitting = ref(false);
 const duplicatePrefix = ref('');
 const duplicateIncludeStructure = ref(true);
+const duplicateDialogMode = ref<'insert' | 'replace'>('insert');
 const duplicateSecurityContext = ref('');
+const duplicateSecurityContextOptions = ref<DuplicateSecurityContextOption[]>([]);
 const duplicateTargets = ref<DuplicateProductItem[]>([]);
+const replaceDuplicateSelectedRows = ref<TreeNode[]>([]);
+const copiedProductRows = ref<TreeNode[]>([]);
+const copiedProductMode = ref<'copy' | 'cut'>('copy');
+const pasteProductsSubmitting = ref(false);
+const canCopyProductRows = computed(() => !isFlatStructureView.value && selectedChildrenRows.value.length > 0);
+const canPasteProductRows = computed(() => !isFlatStructureView.value && copiedProductRows.value.length > 0);
 const duplicateSecurityContextLabel = computed(() => {
+	const selectedOption = duplicateSecurityContextOptions.value.find(option => option.value === duplicateSecurityContext.value);
+	if (selectedOption) return selectedOption.label;
 	const context = duplicateSecurityContext.value || baseInfoStore.securityContext || '';
 	return context.split('.').pop() || 'Common Space';
 });
@@ -1394,6 +1641,11 @@ const duplicateDialogTitle = computed(() => {
 	if (!target) return '';
 	return `${target.typeDisplayName || '物理产品'}${target.name || ''} ${target.revision || ''}`.trim();
 });
+const duplicateDialogDisplayTitle = computed(() =>
+	duplicateTargets.value.length > 1
+		? `${duplicateDialogMode.value === 'replace' ? '替换为重复项' : '插入重复项'} - ${duplicateTargets.value.length} 对象`
+		: `${duplicateDialogMode.value === 'replace' ? '替换为重复项' : '插入重复项'} - ${duplicateDialogTitle.value}`
+);
 const instanceQuantityAddedCount = computed(() => Math.max(0, instanceQuantityRows.value.filter(row => row.editable).length));
 const instanceQuantityDialogTitle = computed(() => {
 	const row = instanceQuantitySelectedRow.value;
@@ -1614,6 +1866,36 @@ const getParentChildrenIds = (row?: TreeNode) => {
 	return children.map(child => child.relationId).filter((relationId): relationId is string => !!relationId);
 };
 
+const parsePhysicalIdPath = (value?: string) => {
+	if (!value) return [];
+	const matchedIds = value.match(/[A-Fa-f0-9]{16,}/g);
+	return matchedIds || [];
+};
+
+const mergePhysicalIdPaths = (parentPath: string[], childPath: string[]) => {
+	if (!parentPath.length) return childPath;
+	if (!childPath.length) return parentPath;
+	const overlapIndex = childPath.findIndex(item => item === parentPath[parentPath.length - 1]);
+	if (overlapIndex >= 0) {
+		return [...parentPath, ...childPath.slice(overlapIndex + 1)];
+	}
+	return [...parentPath, ...childPath];
+};
+
+const getCurrentProductPathArray = () => {
+	const parentPhysicalId = getParentPhysicalId();
+	const parsedPath = parsePhysicalIdPath(partInfo.value?.pathsr);
+	if (parsedPath.length) return parsedPath;
+	return parentPhysicalId ? [parentPhysicalId] : [];
+};
+
+const getProductTargetPathArray = (row?: TreeNode) => {
+	const currentPath = getCurrentProductPathArray();
+	if (!row) return currentPath;
+	const rowPath = row.path?.length ? row.path : [row.resourceid];
+	return mergePhysicalIdPaths(currentPath, rowPath);
+};
+
 const getExistingProductParentContexts = (): ExistingProductParentContext[] => {
 	const selectedRows = [...selectedChildrenRows.value];
 	if (selectedRows.length) {
@@ -1622,7 +1904,8 @@ const getExistingProductParentContexts = (): ExistingProductParentContext[] => {
 				physicalId: row.resourceid,
 				name: row.instanceLabel || row.label || row.identifier || row.resourceid,
 				row,
-				children: getParentChildrenIds(row)
+				children: getParentChildrenIds(row),
+				pathArray: getProductTargetPathArray(row)
 			}))
 			.filter(item => !!item.physicalId);
 	}
@@ -1633,7 +1916,8 @@ const getExistingProductParentContexts = (): ExistingProductParentContext[] => {
 		{
 			physicalId: parentPhysicalId,
 			name: partInfo.value?.['ds6w:identifier'] || partInfo.value?.['ds6w:label'] || parentPhysicalId,
-			children: getParentChildrenIds()
+			children: getParentChildrenIds(),
+			pathArray: getProductTargetPathArray()
 		}
 	];
 };
@@ -1675,6 +1959,104 @@ const refreshAfterExistingProductInsert = async (parents: ExistingProductParentC
 	}
 	if (currentPhysicalId.value) {
 		await loadPartDetail(currentPhysicalId.value);
+	}
+};
+
+const refreshAfterProductPaste = async (parents: ExistingProductParentContext[], sourceRows: TreeNode[]) => {
+	if (copiedProductMode.value !== 'cut') {
+		await refreshAfterExistingProductInsert(parents);
+		return;
+	}
+	queryModeStore.switchToDbMode();
+	const rootPhysicalId = getParentPhysicalId();
+	const targetRows = parents.map(parent => parent.row).filter((row): row is TreeNode => !!row);
+	const sourceParentRows = sourceRows.map(row => findParentNodeByChildId(childrenData.value, row.id)).filter((row): row is TreeNode => !!row);
+	const rows = [...targetRows, ...sourceParentRows];
+	const uniqueRows = rows.filter((row, index, items) => items.findIndex(item => item.id === row.id) === index);
+	const shouldReloadRoot = sourceRows.some(row => childrenData.value.some(child => child.id === row.id)) || !targetRows.length;
+
+	if (shouldReloadRoot && rootPhysicalId) {
+		await loadPartDetail(rootPhysicalId);
+	}
+	if (uniqueRows.length) {
+		const latestRows = uniqueRows.map(row => flattenChildrenData.value.find(item => item.id === row.id) || row);
+		await Promise.all(latestRows.map(row => reloadAndExpandRow(row)));
+	}
+};
+
+const cacheSelectedProducts = (mode: 'copy' | 'cut') => {
+	const rows = [...selectedChildrenRows.value];
+	if (!rows.length) {
+		ElMessage.warning(mode === 'cut' ? '请先选择要剪切的数据' : '请先选择要复制的数据');
+		return;
+	}
+	copiedProductRows.value = rows;
+	copiedProductMode.value = mode;
+	const names = rows.map(row => row.label || row.instanceLabel || row.identifier || row.resourceid).join('、');
+	ElMessage.success(`已${mode === 'cut' ? '剪切' : '复制'} ${rows.length} 个对象：${names}`);
+};
+
+const handleCopyProducts = () => cacheSelectedProducts('copy');
+
+const handleCutProducts = () => cacheSelectedProducts('cut');
+
+const getCopiedProductSourceItems = (): Array<string | ReparentSourceItem> => {
+	if (copiedProductMode.value !== 'cut') {
+		return copiedProductRows.value.map(row => row.resourceid).filter(Boolean);
+	}
+	return copiedProductRows.value
+		.map(row => ({
+			physicalId: row.resourceid,
+			instance: row.relationId,
+			pathArray: row.relationId ? [row.relationId] : [],
+			mode: 'CutPaste' as const
+		}))
+		.filter(item => !!item.physicalId);
+};
+
+const getPasteProductTargetItems = (parents: ExistingProductParentContext[]): ReparentTargetItem[] =>
+	parents.map(parent => ({
+		physicalId: parent.physicalId,
+		children: parent.children,
+		pathArray: parent.pathArray
+	}));
+
+const handlePasteProducts = async () => {
+	if (pasteProductsSubmitting.value) return;
+	if (!copiedProductRows.value.length) {
+		ElMessage.warning('请先复制对象');
+		return;
+	}
+	const canInsert = await validateCurrentChildInsertParentContext('未获取到粘贴父节点');
+	if (!canInsert) return;
+	const parents = getExistingProductParentContexts();
+	if (!parents.length) {
+		ElMessage.warning('未获取到粘贴父节点');
+		return;
+	}
+	const sourceItems = getCopiedProductSourceItems();
+	const targetItems = getPasteProductTargetItems(parents);
+	const sourcePhysicalIds = copiedProductRows.value.map(row => row.resourceid).filter(Boolean);
+	if (!sourcePhysicalIds.length) {
+		ElMessage.warning('未获取到复制对象的物理ID');
+		return;
+	}
+	pasteProductsSubmitting.value = true;
+	childrenLoading.value = true;
+	try {
+		const response = (await partDetailApi.reparentParts(sourceItems, targetItems)) as ReparentResponse;
+		if (response?.status && response.status !== 'success') {
+			await showReparentFailureMessage(response);
+			return;
+		}
+		ElMessage.success(`粘贴 ${sourcePhysicalIds.length} 个对象成功`);
+		await refreshAfterProductPaste(parents, copiedProductRows.value);
+	} catch (error) {
+		console.error('[PartDetailView] 粘贴失败:', error);
+		await showReparentFailureMessage(error);
+	} finally {
+		pasteProductsSubmitting.value = false;
+		childrenLoading.value = false;
 	}
 };
 
@@ -1852,14 +2234,63 @@ const openReplaceExistingProductDialog = () => {
 	});
 };
 
+const getDuplicateMaturityStateLabel = (status?: string) => {
+	const normalizedStatus = status || 'IN_WORK';
+	if (normalizedStatus.includes('PRIVATE') || normalizedStatus.includes('草稿') || normalizedStatus.includes('私有')) return '草稿';
+	if (normalizedStatus.includes('IN_WORK') || normalizedStatus.includes('工作中')) return '工作中';
+	if (normalizedStatus.includes('FROZEN') || normalizedStatus.includes('冻结')) return '冻结';
+	if (normalizedStatus.includes('RELEASED') || normalizedStatus.includes('发布')) return '已发布';
+	if (normalizedStatus.includes('OBSOLETE') || normalizedStatus.includes('废弃') || normalizedStatus.includes('作废')) return '作废';
+	return normalizedStatus;
+};
+
 const toDuplicateProductItem = (item: ExistingProductSearchItem): DuplicateProductItem => ({
 	physicalid: getExistingProductPhysicalId(item),
 	name: getExistingProductName(item),
 	revision: item['ds6wg:revision'] || '',
-	typeDisplayName: item['ds6w:type'] || '',
-	current: item['ds6w:status'] || '',
+	typeDisplayName: item['ds6w:type'] || '物理产品',
+	current: getDuplicateMaturityStateLabel(item['ds6w:status'] || item.current),
 	imageUrl: item.thumbnail_2d || item.icon || ''
 });
+
+const setDuplicateSecurityContextFallback = () => {
+	duplicateSecurityContext.value = baseInfoStore.securityContext || '';
+	if (!duplicateSecurityContext.value) {
+		duplicateSecurityContextOptions.value = [];
+		return;
+	}
+	duplicateSecurityContextOptions.value = [
+		{
+			value: duplicateSecurityContext.value,
+			label: duplicateSecurityContextLabel.value
+		}
+	];
+};
+
+const loadDuplicateSecurityContext = async () => {
+	try {
+		const createContextRes = await VplmAPI.getCreateContext({
+			tenant: 'OnPremise',
+			type: 'VPMReference',
+			xrequestedwith: 'xmlhttprequest'
+		});
+		const options: DuplicateSecurityContextOption[] =
+			createContextRes.credentials?.map((credential: { ctxname: string; prjtitle?: string; ctxtitle?: string }) => ({
+				value: credential.ctxname,
+				label: credential.prjtitle || credential.ctxtitle || credential.ctxname
+			})) || [];
+		duplicateSecurityContextOptions.value = options;
+		if (options.length) {
+			const currentContext = baseInfoStore.securityContext || duplicateSecurityContext.value;
+			duplicateSecurityContext.value = options.find(option => option.value === currentContext)?.value || options[0].value;
+			return;
+		}
+		setDuplicateSecurityContextFallback();
+	} catch (error) {
+		console.error('[PartDetailView] 获取重复项合作区失败:', error);
+		setDuplicateSecurityContextFallback();
+	}
+};
 
 const openInsertDuplicateDialogFromChildrenTable = () => {
 	dsSearchInput('', 'product', 'PSE', '', async value => {
@@ -1868,15 +2299,137 @@ const openInsertDuplicateDialogFromChildrenTable = () => {
 			ElMessage.warning('未选择重复项');
 			return;
 		}
+		duplicateDialogMode.value = 'insert';
+		replaceDuplicateSelectedRows.value = [];
 		duplicateTargets.value = targets;
 		duplicatePrefix.value = '';
 		duplicateIncludeStructure.value = true;
-		duplicateSecurityContext.value = baseInfoStore.securityContext || '';
+		await loadDuplicateSecurityContext();
 		duplicateDialogVisible.value = true;
 	});
 };
 
+const openReplaceDuplicateDialog = async () => {
+	const rows = [...selectedChildrenRows.value];
+	if (!rows.length) {
+		ElMessage.warning('未选择要替换的数据');
+		return;
+	}
+	if (rows.some(row => !row.resourceid || !row.relationId)) {
+		ElMessage.error('未获取到选中对象的物理ID或关系ID');
+		return;
+	}
+	duplicateDialogMode.value = 'replace';
+	replaceDuplicateSelectedRows.value = rows;
+	duplicateTargets.value = rows.map(row => ({
+		physicalid: row.resourceid,
+		name: row.label || row.instanceLabel || row.identifier || row.resourceid,
+		revision: row.revision || '',
+		typeDisplayName: row.typeDisplayName || row.globalType || '物理产品',
+		current: getDuplicateMaturityStateLabel(row.statusRaw || row.status),
+		imageUrl: row.icon || row.type_icon_url || ''
+	}));
+	duplicatePrefix.value = '';
+	duplicateIncludeStructure.value = true;
+	await loadDuplicateSecurityContext();
+	duplicateDialogVisible.value = true;
+};
+
+const refreshAfterReplaceDuplicate = async (rows: TreeNode[]) => {
+	queryModeStore.switchToDbMode();
+	const parentRows = rows.map(row => findParentNodeByChildId(childrenData.value, row.id)).filter((row): row is TreeNode => !!row);
+	if (parentRows.length) {
+		await Promise.all([...new Map(parentRows.map(row => [row.id, row])).values()].map(row => reloadAndExpandRow(row)));
+		return;
+	}
+	if (currentPhysicalId.value) {
+		await loadPartDetail(currentPhysicalId.value);
+	}
+};
+
+const formatReplaceDuplicateSuccessMessage = (
+	result: { oldName?: string; newName?: string; oldInstance?: string; newReference?: string },
+	duplicateNameMap: Map<string, string>
+) => {
+	const newName = result.newName || duplicateNameMap.get(result.oldInstance || '') || result.newReference || '';
+	return `成功将 ${result.oldName || ''} 替换为 ${newName}。`;
+};
+
+const submitReplaceDuplicateProducts = async () => {
+	const rows = [...replaceDuplicateSelectedRows.value];
+	if (!rows.length) {
+		ElMessage.warning('未选择要替换的数据');
+		return;
+	}
+	duplicateSubmitting.value = true;
+	try {
+		const duplicateResponse = await partDetailApi.duplicateStructure(
+			rows.map(row => ({ physicalid: row.resourceid })),
+			duplicatePrefix.value,
+			duplicateIncludeStructure.value
+		);
+		if (duplicateResponse.status && String(duplicateResponse.status).toLowerCase() !== 'success') {
+			const reportMessages = duplicateResponse.report?.map(item => getCatflMessage(String(item))).join('；');
+			ElMessage.error(reportMessages || '复制结构失败');
+			return;
+		}
+		const duplicateResults = duplicateResponse.results?.flat() || [];
+		const operations: ReplaceByLatestRevisionOperation[] = [];
+		const duplicateNameMap = new Map<string, string>();
+		for (const row of rows) {
+			const clonedPhysicalId = duplicateResults.find(result => result.sourceid === row.resourceid)?.physicalid || '';
+			if (!clonedPhysicalId) {
+				ElMessage.error(`未获取到 ${row.label || row.resourceid} 的复制对象`);
+				return;
+			}
+			const oldName = row.label || row.instanceLabel || row.identifier || row.resourceid;
+			const newName = `${duplicatePrefix.value || ''}${oldName}`;
+			duplicateNameMap.set(row.relationId || row.resourceid, newName);
+			const parentPhysicalId = getInstanceQuantityParentPhysicalId(row);
+			if (!parentPhysicalId || !row.relationId) {
+				ElMessage.error('未获取到选中对象的父节点或关系ID');
+				return;
+			}
+			operations.push({
+				hasParent: parentPhysicalId,
+				instance: row.relationId,
+				isInstanceOf: clonedPhysicalId,
+				oldName,
+				newName
+			});
+		}
+		const response = await partDetailApi.replaceByLatestRevision(operations);
+		if (String(response.status).toLowerCase() !== 'success') {
+			ElMessage.error(getInsertExistingFailureMessage(response) || '替换为重复项失败');
+			return;
+		}
+		const failedResults = response.results?.filter(result => String(result.status).toLowerCase() !== 'success') || [];
+		if (failedResults.length) {
+			ElMessage.error(getInsertExistingFailureMessage({ results: failedResults }) || '替换为重复项失败');
+			return;
+		}
+		const successResults = response.results?.filter(result => String(result.status).toLowerCase() === 'success') || [];
+		replaceReportTitle.value = '替换为重复项报告';
+		replaceLatestReportMessages.value = successResults.length
+			? successResults.map(result => formatReplaceDuplicateSuccessMessage(result, duplicateNameMap))
+			: operations.map(operation => `成功将 ${operation.oldName} 替换为 ${operation.newName || operation.isInstanceOf}。`);
+		replaceLatestReportVisible.value = true;
+		duplicateDialogVisible.value = false;
+		selectedChildrenRows.value = [];
+		await refreshAfterReplaceDuplicate(rows);
+	} catch (error) {
+		console.error('[PartDetailView] 替换为重复项失败:', error);
+		ElMessage.error('替换为重复项失败');
+	} finally {
+		duplicateSubmitting.value = false;
+	}
+};
+
 const submitDuplicateProducts = async () => {
+	if (duplicateDialogMode.value === 'replace') {
+		await submitReplaceDuplicateProducts();
+		return;
+	}
 	if (!duplicateTargets.value.length) {
 		ElMessage.warning('未选择重复项');
 		return;
@@ -1944,6 +2497,18 @@ const submitDuplicateProducts = async () => {
 
 const handleCreateMenuCommand = async (command: CreateMenuCommand) => {
 	console.log('[PartDetailView] menu command:', command);
+	if (command === 'cutProducts') {
+		handleCutProducts();
+		return;
+	}
+	if (command === 'copyProducts') {
+		handleCopyProducts();
+		return;
+	}
+	if (command === 'pasteProducts') {
+		await handlePasteProducts();
+		return;
+	}
 	if (command === 'newProduct' || command === 'newPart') {
 		pendingMaterialQuantity.value = null;
 		await openCreateDialogFromChildrenTable(command);
@@ -3381,6 +3946,9 @@ const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 		case 'replaceExisting':
 			openReplaceExistingProductDialog();
 			break;
+		case 'replaceDuplicate':
+			openReplaceDuplicateDialog();
+			break;
 		case 'unparent':
 			openUnparentDialog();
 			break;
@@ -4367,6 +4935,10 @@ const handleBack = () => {
 	router.back();
 };
 
+const handleHeaderActionCommand = (command: string) => {
+	console.log('[PartDetailView] header action command:', command);
+};
+
 // 切换查询模式
 const handleModeSwitch = () => {
 	const wasDbMode = queryModeStore.isDbMode;
@@ -4823,7 +5395,9 @@ onUnmounted(() => {
 		.mode-switch-container {
 			display: flex;
 			align-items: center;
+			gap: 2px;
 
+			.header-action-dropdown-btn,
 			.mode-icon-btn {
 				font-size: 14px;
 				color: #777;
@@ -4834,6 +5408,12 @@ onUnmounted(() => {
 				&:hover {
 					background-color: #f0f0f0;
 				}
+			}
+
+			.header-action-dropdown-btn {
+				width: 18px;
+				height: 24px;
+				padding: 4px 2px;
 			}
 		}
 
@@ -5065,13 +5645,76 @@ onUnmounted(() => {
 		.summary-bar {
 			display: flex;
 			align-items: center;
-			gap: 12px;
-			font-size: 13px;
+			gap: 10px;
+			width: 100%;
+			min-width: 0;
+			padding-right: 108px;
+			box-sizing: border-box;
+			font-size: 14px;
 			color: #303133;
 		}
 
+		.summary-home-icon {
+			flex: 0 0 auto;
+			color: #b8bec6;
+			font-size: 18px;
+			cursor: pointer;
+
+			&:hover {
+				color: #409eff;
+			}
+		}
+
+		.summary-thumbnail {
+			flex: 0 0 auto;
+			width: 38px;
+			height: 28.5px;
+			object-fit: contain;
+		}
+
+		.summary-main {
+			display: inline-flex;
+			flex: 0 1 auto;
+			align-items: center;
+			gap: 4px;
+			min-width: 90px;
+			max-width: 220px;
+			overflow: hidden;
+		}
+
 		.summary-title {
+			overflow: hidden;
+			color: #303133;
 			font-weight: 600;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.summary-field {
+			display: inline-flex;
+			flex: 0 1 auto;
+			align-items: center;
+			gap: 2px;
+			min-width: 0;
+			white-space: nowrap;
+		}
+
+		.summary-label {
+			flex: 0 0 auto;
+			color: #606266;
+		}
+
+		.summary-value {
+			max-width: 120px;
+			overflow: hidden;
+			color: #303133;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.summary-dropdown-icon {
+			color: #909399;
+			font-size: 13px;
 		}
 
 		@media (max-width: 1200px) {
@@ -5133,6 +5776,7 @@ onUnmounted(() => {
 
 		&.collapsed {
 			flex: 0 0 auto;
+			min-height: 48px;
 			padding: 8px 16px;
 		}
 	}
@@ -5249,6 +5893,44 @@ onUnmounted(() => {
 					color: #c0c4cc;
 					cursor: not-allowed;
 					pointer-events: none;
+				}
+
+				.toolbar-copy-tooltip-wrapper {
+					display: inline-flex;
+				}
+
+				.toolbar-copy-action {
+					display: inline-flex;
+					align-items: center;
+					justify-content: center;
+					width: 26px;
+					height: 24px;
+					padding: 0;
+					border: 1px solid #dcdfe6;
+					border-radius: 6px;
+					background: #f5f7fa;
+					color: #a8abb2;
+					font-size: 15px;
+					line-height: 1;
+					cursor: not-allowed;
+					transition:
+						background-color 0.15s ease,
+						border-color 0.15s ease,
+						color 0.15s ease,
+						box-shadow 0.15s ease;
+				}
+
+				.toolbar-copy-action.is-enabled {
+					background: #ecf5ff;
+					border-color: #409eff;
+					color: #409eff;
+					cursor: pointer;
+				}
+
+				.toolbar-copy-action.is-enabled:hover {
+					background: #409eff;
+					color: #fff;
+					box-shadow: 0 2px 6px rgb(64 158 255 / 28%);
 				}
 			}
 		}
@@ -5572,7 +6254,7 @@ onUnmounted(() => {
 	}
 
 	.el-dialog__body {
-		height: 160px;
+		min-height: 160px;
 		padding: 12px 16px;
 	}
 
@@ -5581,6 +6263,61 @@ onUnmounted(() => {
 		background-color: #f2f3f5;
 		border-top: 1px solid #dcdfe6;
 	}
+}
+
+.duplicate-target-list {
+	margin: -12px -8px 88px;
+	border: 1px solid #dcdfe6;
+}
+
+.duplicate-target-header,
+.duplicate-target-row {
+	display: grid;
+	grid-template-columns: 1fr 112px 80px 108px;
+	align-items: center;
+	min-height: 32px;
+}
+
+.duplicate-target-header {
+	color: #303133;
+	background-color: #f4f4f5;
+	border-bottom: 1px solid #dcdfe6;
+}
+
+.duplicate-target-row:nth-child(odd) {
+	background-color: #f5f7fa;
+}
+
+.duplicate-target-cell {
+	display: flex;
+	align-items: center;
+	height: 100%;
+	padding: 0 10px;
+	border-right: 1px solid #dcdfe6;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.duplicate-target-cell:last-child {
+	border-right: none;
+}
+
+.duplicate-target-title {
+	gap: 8px;
+}
+
+.duplicate-target-icon,
+.duplicate-target-default-icon {
+	flex: none;
+	width: 16px;
+	height: 16px;
+}
+
+.duplicate-target-default-icon {
+	border-radius: 3px;
+	background: linear-gradient(135deg, #d7ecff 0%, #8bbbe8 100%);
+	border: 1px solid #7da9d5;
 }
 
 .duplicate-form {
@@ -5961,6 +6698,66 @@ onUnmounted(() => {
 .children-create-dropdown .el-dropdown-menu__item:not(.is-disabled):hover {
 	background-color: #ececec !important;
 	color: #1f2d3d !important;
+}
+
+.part-action-dropdown-popper.el-popper {
+	min-width: 228px !important;
+	padding: 0 !important;
+	border: 1px solid #d7dce2 !important;
+	border-radius: 0 !important;
+	box-shadow: 0 2px 8px rgb(0 0 0 / 18%) !important;
+}
+.part-action-dropdown-popper .el-popper__arrow {
+	display: none !important;
+}
+.part-action-dropdown-popper .el-dropdown-menu {
+	padding: 0 !important;
+	border: 0 !important;
+	box-shadow: none !important;
+}
+.part-action-dropdown-popper .el-dropdown-menu__item {
+	display: flex !important;
+	align-items: center !important;
+	min-width: 226px !important;
+	height: 26px !important;
+	padding: 0 8px !important;
+	box-sizing: border-box !important;
+	font-size: 13px !important;
+	line-height: 26px !important;
+	color: #1f2d3d !important;
+}
+.part-action-dropdown-popper .el-dropdown-menu__item--divided {
+	margin-top: 0 !important;
+	border-top: 1px solid #e4e7ed !important;
+}
+.part-action-dropdown-popper .el-dropdown-menu__item--divided::before {
+	display: none !important;
+}
+.part-action-dropdown-popper .el-dropdown-menu__item:not(.is-disabled):focus,
+.part-action-dropdown-popper .el-dropdown-menu__item:not(.is-disabled):hover {
+	background-color: #ececec !important;
+	color: #1f2d3d !important;
+}
+.part-action-menu-icon {
+	display: inline-flex;
+	flex: 0 0 24px;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	color: #6b7c8d;
+	font-size: 14px;
+}
+.part-action-menu-label {
+	flex: 1 1 auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.part-action-menu-arrow {
+	flex: 0 0 auto;
+	margin-left: 8px;
+	color: #606266;
+	font-size: 12px;
 }
 .children-create-dropdown .create-menu-icon {
 	position: relative;
