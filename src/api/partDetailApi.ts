@@ -134,6 +134,37 @@ export interface ReparentTargetItem {
 	pathArray?: string[];
 }
 
+export interface UpdateEntireStructureRevisionConfirmation {
+	icon?: string;
+	physicalid: string;
+	label: string;
+	code: string;
+	operation: string;
+}
+
+export interface UpdateEntireStructureRevisionOperations {
+	replaceList?: unknown[];
+	createList?: unknown[];
+	addRoot?: unknown[];
+	confirmations?: UpdateEntireStructureRevisionConfirmation[];
+}
+
+export interface UpdateEntireStructureRevisionOperationsResponse {
+	pathsArray?: string[][];
+	structureLevel?: number;
+	loadedNodes?: unknown[];
+	operations?: UpdateEntireStructureRevisionOperations;
+	[key: string]: unknown;
+}
+
+export interface UpdateEntireStructureRevisionOperationsParams {
+	pathsArray: string[][];
+	version: '1.0';
+	authored: boolean;
+	expand3DShape: boolean;
+	expandDrawing: boolean;
+}
+
 const buildReparentTargetOperation = (target: ReparentTargetItem, targetIndex: number, sourceIndex: number): ReparentOperation['target'] => {
 	if (sourceIndex !== 0) {
 		return {
@@ -681,6 +712,48 @@ class PartDetailAPI {
 			console.error('[PartDetailAPI] 插入子级失败:', error);
 			throw error;
 		}
+	}
+
+	async getUpdateEntireStructureRevisionOperations(rootPhysicalId: string): Promise<UpdateEntireStructureRevisionOperationsResponse> {
+		const baseInfoStore = useBaseInfoStore();
+		if (!baseInfoStore.spaceUrl) {
+			console.log('[PartDetailAPI] 3DSpace URL 为空，先获取 URL');
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			console.log('[PartDetailAPI] SecurityContext 为空，先获取');
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/product/navigation/updateRevOnEntireStructure/getoperationslist';
+		const url = `${endpoint}?securityContext=${encodeURIComponent(securityContext)}`;
+		let params: UpdateEntireStructureRevisionOperationsParams | UpdateEntireStructureRevisionOperationsResponse = {
+			pathsArray: [[rootPhysicalId]],
+			version: '1.0',
+			authored: true,
+			expand3DShape: true,
+			expandDrawing: true
+		};
+		const maxRequests = 50;
+
+		for (let index = 0; index < maxRequests; index += 1) {
+			console.log('[PartDetailAPI] 更新整个结构修订版 URL:', url);
+			console.log('[PartDetailAPI] 更新整个结构修订版参数:', JSON.stringify(params, null, 2));
+
+			const response = (await http.post(url, params as unknown as Record<string, unknown>, {
+				SecurityContext: securityContext
+			})) as UpdateEntireStructureRevisionOperationsResponse;
+			console.log('[PartDetailAPI] 更新整个结构修订版响应:', response);
+
+			if (!response.pathsArray?.length) {
+				return response;
+			}
+			params = response;
+		}
+
+		throw new Error('获取更新整个结构修订版操作列表超过最大请求次数');
 	}
 
 	async insertExistingProducts(operations: InsertExistingProductOperation[]): Promise<InsertExistingProductResponse> {

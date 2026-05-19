@@ -1,7 +1,9 @@
 <template>
 	<div
 		id="partDetailContainer"
-		class="part-detail-container">
+		v-loading="updateEntireStructureRevisionLoading"
+		class="part-detail-container"
+		element-loading-text="正在获取更新整个结构的修订版操作...">
 		<!-- 零件详细信息区域（整个区域支持拖拽） -->
 		<div
 			id="dropZone"
@@ -309,8 +311,8 @@
 				</div>
 				<div class="toolbar">
 					<div
-						v-if="selectedChildrenRows.length && !isFlatStructureView"
-						class="selected-actions-wrap">
+						class="selected-actions-wrap"
+						:class="{ 'is-visible': selectedChildrenRows.length && !isFlatStructureView }">
 						<el-dropdown
 							trigger="click"
 							:hide-on-click="false"
@@ -959,7 +961,8 @@
 						row-key="id"
 						:row-class="getChildrenV2RowClass"
 						:row-props="getChildrenV2RowProps"
-						fixed />
+						fixed
+						@click="handleChildrenTableClick" />
 				</template>
 			</el-auto-resizer>
 		</div>
@@ -1372,6 +1375,10 @@
 			v-model="replaceLatestReportVisible"
 			:title="replaceReportTitle"
 			:messages="replaceLatestReportMessages" />
+		<UpdateEntireStructureRevisionConfirmDialog
+			v-model="updateEntireStructureRevisionDialogVisible"
+			:confirmations="updateEntireStructureRevisionConfirmations"
+			@confirm="handleConfirmUpdateEntireStructureRevision" />
 	</div>
 </template>
 
@@ -1419,6 +1426,7 @@ import type {
 	ReparentTargetItem,
 	ReplaceByLatestRevisionOperation,
 	UnparentResponseResult,
+	UpdateEntireStructureRevisionConfirmation,
 	VersionGraphVersion
 } from '@/api/partDetailApi';
 import { useBaseInfoStore } from '@/store';
@@ -1436,6 +1444,7 @@ import type { UploadItem } from '@/components/UploadProgressPanel.vue';
 import documentApi from '@/api/documentApi';
 import UnparentConfirmDialog from './UnparentConfirmDialog.vue';
 import ReplaceLatestRevisionReportDialog from './ReplaceLatestRevisionReportDialog.vue';
+import UpdateEntireStructureRevisionConfirmDialog from './UpdateEntireStructureRevisionConfirmDialog.vue';
 
 // 路由
 const route = useRoute();
@@ -1598,6 +1607,10 @@ const unparentSelectedRowsSnapshot = ref<TreeNode[]>([]);
 const replaceLatestReportVisible = ref(false);
 const replaceLatestReportMessages = ref<string[]>([]);
 const replaceReportTitle = ref('替换为最新修订版报告');
+const updateEntireStructureRevisionDialogVisible = ref(false);
+const updateEntireStructureRevisionLoading = ref(false);
+const updateEntireStructureRevisionConfirmations = ref<UpdateEntireStructureRevisionConfirmation[]>([]);
+const updateEntireStructureRevisionReplaceList = ref<ReplaceByLatestRevisionOperation[]>([]);
 
 // 展开菜单相关数据（独立功能，不混合原有逻辑）
 const expandMenuActive = ref(false);
@@ -3303,6 +3316,16 @@ const getChildrenV2RowClass = ({ rowData, rowIndex }: { rowData: TreeNode; rowIn
 		.filter(Boolean)
 		.join(' ');
 
+const handleChildrenTableClick = (event: MouseEvent) => {
+	const target = event.target as HTMLElement | null;
+	if (!target || !selectedChildrenRows.value.length) return;
+
+	const shouldKeepSelection = !!target.closest('.el-checkbox, .selection-cell, .selection-header-cell, .column-resize-handle');
+	if (shouldKeepSelection) return;
+
+	selectedChildrenRows.value = [];
+};
+
 const getChildDragRows = (row: TreeNode) => (isChildrenRowSelected(row) ? selectedChildrenRows.value : [row]);
 
 const getChildDragObjectType = () => 'VPMReference';
@@ -4935,7 +4958,67 @@ const handleBack = () => {
 	router.back();
 };
 
-const handleHeaderActionCommand = (command: string) => {
+const handleUpdateEntireStructureRevision = async () => {
+	const rootPhysicalId = currentPhysicalId.value || partInfo.value?.physicalid || partInfo.value?.resourceid;
+	if (!rootPhysicalId) {
+		ElMessage.error('未获取到根节点物理ID');
+		return;
+	}
+	if (updateEntireStructureRevisionLoading.value) return;
+
+	updateEntireStructureRevisionLoading.value = true;
+	try {
+		const response = await partDetailApi.getUpdateEntireStructureRevisionOperations(rootPhysicalId);
+		updateEntireStructureRevisionConfirmations.value = response.operations?.confirmations || [];
+		updateEntireStructureRevisionReplaceList.value = (response.operations?.replaceList || []) as ReplaceByLatestRevisionOperation[];
+		updateEntireStructureRevisionDialogVisible.value = true;
+	} catch (error) {
+		console.error('[PartDetailView] 获取更新整个结构修订版操作失败:', error);
+		ElMessage.error('获取更新整个结构修订版操作失败');
+	} finally {
+		updateEntireStructureRevisionLoading.value = false;
+	}
+};
+
+const handleConfirmUpdateEntireStructureRevision = async () => {
+	const operations = updateEntireStructureRevisionReplaceList.value;
+	if (!operations.length) {
+		updateEntireStructureRevisionDialogVisible.value = false;
+		return;
+	}
+
+	updateEntireStructureRevisionLoading.value = true;
+	try {
+		const response = await partDetailApi.replaceByLatestRevision(operations);
+		if (String(response.status).toLowerCase() !== 'success') {
+			ElMessage.error(getInsertExistingFailureMessage(response) || '更新整个结构的修订版失败');
+			return;
+		}
+
+		const successResults = response.results?.filter(result => String(result.status).toLowerCase() === 'success') || [];
+		replaceReportTitle.value = '更新整个结构的修订版报告';
+		replaceLatestReportMessages.value = successResults.length
+			? successResults.map(result => `成功将 ${result.oldName || ''} 替换为 ${result.newName || ''}。`)
+			: operations.map(operation => `成功将 ${operation.oldName || ''} 替换为 ${operation.newName || ''}。`);
+		updateEntireStructureRevisionDialogVisible.value = false;
+		replaceLatestReportVisible.value = true;
+		queryModeStore.switchToDbMode();
+		if (currentPhysicalId.value) {
+			await loadPartDetail(currentPhysicalId.value);
+		}
+	} catch (error) {
+		console.error('[PartDetailView] 更新整个结构的修订版失败:', error);
+		ElMessage.error('更新整个结构的修订版失败');
+	} finally {
+		updateEntireStructureRevisionLoading.value = false;
+	}
+};
+
+const handleHeaderActionCommand = async (command: string) => {
+	if (command === 'updateRevisionAll') {
+		await handleUpdateEntireStructureRevision();
+		return;
+	}
 	console.log('[PartDetailView] header action command:', command);
 };
 
@@ -5831,6 +5914,14 @@ onUnmounted(() => {
 					display: inline-flex;
 					align-items: center;
 					gap: 10px;
+					width: 61px;
+					visibility: hidden;
+					pointer-events: none;
+				}
+
+				.selected-actions-wrap.is-visible {
+					visibility: visible;
+					pointer-events: auto;
 				}
 
 				.selected-actions-trigger {
