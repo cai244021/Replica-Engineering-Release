@@ -1389,6 +1389,7 @@
 			:part-info="partInfo"
 			:children-data="childrenData"
 			:current-physical-id="currentPhysicalId"
+			:submitting="updateRevisionSubmitting"
 			@confirm="handleUpdateRevisionConfirm" />
 	</div>
 </template>
@@ -1458,6 +1459,9 @@ import ReplaceLatestRevisionReportDialog from './ReplaceLatestRevisionReportDial
 import UpdateEntireStructureRevisionConfirmDialog from './UpdateEntireStructureRevisionConfirmDialog.vue';
 import ReplaceRevisionDialog from './ReplaceRevisionDialog.vue';
 import UpdateRevisionDialog from './UpdateRevisionDialog.vue';
+import type { UpdateRevisionOperation } from './UpdateRevisionDialog.vue';
+import catflNlsZh from '@/i18n/lang/zh-CN/CATFLNls_zh.json';
+import catflNlsEn from '@/i18n/lang/en-US/CATFLNls_en.json';
 
 // 路由
 const route = useRoute();
@@ -1627,6 +1631,7 @@ const updateEntireStructureRevisionReplaceList = ref<ReplaceByLatestRevisionOper
 const replaceRevisionDialogVisible = ref(false);
 const replaceRevisionSelectedRows = ref<TreeNode[]>([]);
 const updateRevisionDialogVisible = ref(false);
+const updateRevisionSubmitting = ref(false);
 
 // 展开菜单相关数据（独立功能，不混合原有逻辑）
 const expandMenuActive = ref(false);
@@ -5084,16 +5089,103 @@ const handleHeaderActionCommand = async (command: string) => {
 	console.log('[PartDetailView] header action command:', command);
 };
 
-const handleUpdateRevisionConfirm = async (
-	operations: Array<{ hasParent: string; instance: string; isInstanceOf: string; oldName: string; newName: string }>
-) => {
+const getCatflNlsMessage = (key: string) => {
+	const language = localStorage.getItem('language') || navigator.language || '';
+	const messages = language.toLowerCase().startsWith('en') ? catflNlsEn : catflNlsZh;
+	return (messages as Record<string, string>)[key] || key;
+};
+
+const getReplaceFailureMessage = (response: { status?: string; results?: Array<{ status?: string; oldName?: string; messages?: string[] }> }) => {
+	const failedResults = (response.results || []).filter(result => String(result.status).toLowerCase() === 'failure');
+	if (String(response.status).toLowerCase() !== 'failure' && !failedResults.length) return '';
+	return failedResults
+		.map(result => {
+			const errorCode = result.messages?.find(message => /^ERR_/.test(message));
+			const message = errorCode ? getCatflNlsMessage(errorCode).replace(/<br>/g, '\n') : result.messages?.join('\n') || '替换失败';
+			return `${result.oldName || ''}: ${message}`.trim();
+		})
+		.join('\n');
+};
+
+const showReplaceFailureMessage = (message: string) => {
+	ElMessage({
+		type: 'error',
+		dangerouslyUseHTMLString: true,
+		duration: 12000,
+		showClose: true,
+		message: message
+			.split('\n')
+			.filter(Boolean)
+			.map(line => `<div>${line}</div>`)
+			.join('')
+	});
+};
+
+const handleUpdateRevisionConfirm = async (operations: UpdateRevisionOperation[]) => {
 	try {
-		const response = await partDetailApi.replaceByLatestRevision(operations);
-		const successResults = (response.results || []).filter(result => String(result.status).toLowerCase() === 'success');
+		updateRevisionSubmitting.value = true;
+		const reportMessages: string[] = [];
+		const newRevisionOps = operations.filter(op => op.action === 'newRevision');
+		const replaceNewRevisionOps = operations.filter(op => op.action === 'replaceNewRevision');
+		const replaceOps = operations.filter(op => op.action === 'replace');
+
+		// 1. 批量新建修订版（newRevision + replaceNewRevision 合并一个请求）
+		const allAddOps = [...newRevisionOps, ...replaceNewRevisionOps];
+		let addResults: Array<{ copyId: string; id?: string; revision?: string; code?: string; status?: string; [key: string]: unknown }> = [];
+		if (allAddOps.length) {
+			const addIds = allAddOps.map(op => op.physicalId);
+			const addResp = await partDetailApi.addVersions(addIds);
+			console.log('[PartDetailView] 批量新建修订版响应:', addResp);
+			addResults = addResp.addRequests || [];
+			for (const op of allAddOps) {
+				const addResult = addResults.find(r => r.copyId === op.physicalId);
+				const newRevision = addResult?.revision || addResult?.code || op.newName.split(' ').pop() || '';
+				const label = op.oldName.split(' ')[0] || '';
+				reportMessages.push(`已成功从 ${op.oldName} 创建新修订版 ${label} ${newRevision}。`);
+			}
+		}
+
+		// 2. 批量替换（replaceNewRevision 用 addResult.id + 普通 replace 合并一个请求）
+		const allReplaceParams: Array<{ hasParent: string; instance: string; isInstanceOf: string; oldName: string; newName: string }> = [];
+		for (const op of replaceNewRevisionOps) {
+			const addResult = addResults.find(r => r.copyId === op.physicalId);
+			console.log('[PartDetailView] 替换为新修订版匹配:', op.physicalId, addResult);
+			if (addResult?.id) {
+				allReplaceParams.push({
+					hasParent: op.hasParent,
+					instance: op.instance,
+					isInstanceOf: addResult.id,
+					oldName: op.oldName,
+					newName: op.newName
+				});
+			}
+		}
+		for (const op of replaceOps) {
+			allReplaceParams.push({
+				hasParent: op.hasParent,
+				instance: op.instance,
+				isInstanceOf: op.isInstanceOf,
+				oldName: op.oldName,
+				newName: op.newName
+			});
+		}
+		if (allReplaceParams.length) {
+			const replaceResp = await partDetailApi.replaceByLatestRevision(allReplaceParams);
+			console.log('[PartDetailView] 批量替换修订版响应:', replaceResp);
+			const failureMessage = getReplaceFailureMessage(replaceResp);
+			if (failureMessage) {
+				showReplaceFailureMessage(failureMessage);
+				const detailError = new Error(failureMessage) as Error & { detailShown?: boolean };
+				detailError.detailShown = true;
+				throw detailError;
+			}
+			for (const op of allReplaceParams) {
+				reportMessages.push(`成功将 ${op.oldName} 替换为 ${op.newName}。`);
+			}
+		}
+
 		replaceReportTitle.value = '更新修订版报告';
-		replaceLatestReportMessages.value = successResults.length
-			? successResults.map(result => `成功将 ${result.oldName || ''} 替换为 ${result.newName || ''}。`)
-			: operations.map(op => `成功将 ${op.oldName} 替换为 ${op.newName}。`);
+		replaceLatestReportMessages.value = reportMessages;
 		updateRevisionDialogVisible.value = false;
 		replaceLatestReportVisible.value = true;
 		selectedChildrenRows.value = [];
@@ -5103,7 +5195,11 @@ const handleUpdateRevisionConfirm = async (
 		}
 	} catch (error) {
 		console.error('[PartDetailView] 更新修订版失败:', error);
-		ElMessage.error('更新修订版失败');
+		if (!(error as Error & { detailShown?: boolean })?.detailShown) {
+			ElMessage.error('更新修订版失败');
+		}
+	} finally {
+		updateRevisionSubmitting.value = false;
 	}
 };
 

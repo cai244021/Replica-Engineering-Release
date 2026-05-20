@@ -1,7 +1,7 @@
 <template>
 	<el-dialog
 		v-model="visible"
-		width="1100px"
+		width="1280px"
 		:show-close="true"
 		:close-on-click-modal="false"
 		draggable
@@ -35,6 +35,7 @@
 				</el-select>
 			</div>
 			<el-table
+				v-loading="dataLoading"
 				:data="visibleRows"
 				border
 				size="small"
@@ -42,7 +43,7 @@
 				:height="380">
 				<el-table-column
 					label="标题"
-					min-width="180">
+					min-width="340">
 					<template #default="{ row }">
 						<div
 							class="title-cell"
@@ -68,22 +69,22 @@
 				<el-table-column
 					prop="revision"
 					label="修订版"
-					width="90" />
+					width="80" />
 				<el-table-column
 					prop="statusDisplay"
 					label="成熟度状态"
-					width="110" />
+					width="105" />
 				<el-table-column
 					prop="typeDisplay"
 					label="类型"
-					width="110" />
+					width="100" />
 				<el-table-column
 					prop="owner"
 					label="所有者"
-					width="120" />
+					width="105" />
 				<el-table-column
 					label=""
-					width="50">
+					width="42">
 					<template #default="{ row }">
 						<div class="version-indicator">
 							<div
@@ -100,7 +101,7 @@
 				</el-table-column>
 				<el-table-column
 					label="替换操作"
-					width="200">
+					width="190">
 					<template #default="{ row }">
 						<el-select
 							v-model="row.selectedAction"
@@ -125,27 +126,38 @@
 							<el-option
 								label="用修订版替换"
 								value="manual" />
+							<el-option
+								label="新建修订版"
+								value="newRevision" />
+							<el-option
+								label="替换为新修订版"
+								value="replaceNewRevision" />
 						</el-select>
 					</template>
 				</el-table-column>
 				<el-table-column
 					prop="expectedRevision"
 					label="预期修订版"
-					width="110" />
+					width="105" />
 				<el-table-column
 					prop="expectedMaturity"
 					label="预期成熟度"
-					width="110" />
+					width="105" />
 			</el-table>
 		</div>
 		<template #footer>
 			<el-button
 				type="primary"
-				:disabled="!hasAnySelection"
+				:loading="submitting"
+				:disabled="dataLoading || submitting || !hasAnySelection"
 				@click="handleConfirm">
 				确定
 			</el-button>
-			<el-button @click="visible = false">取消</el-button>
+			<el-button
+				:disabled="submitting"
+				@click="visible = false">
+				取消
+			</el-button>
 		</template>
 	</el-dialog>
 	<RevisionVersionSelectDialog
@@ -195,11 +207,22 @@ const props = defineProps<{
 	partInfo: PartInfo | null;
 	childrenData: TreeNode[];
 	currentPhysicalId: string;
+	submitting?: boolean;
 }>();
+
+export interface UpdateRevisionOperation {
+	action: 'replace' | 'newRevision' | 'replaceNewRevision';
+	physicalId: string;
+	hasParent: string;
+	instance: string;
+	isInstanceOf: string;
+	oldName: string;
+	newName: string;
+}
 
 const emit = defineEmits<{
 	(e: 'update:modelValue', value: boolean): void;
-	(e: 'confirm', operations: Array<{ hasParent: string; instance: string; isInstanceOf: string; oldName: string; newName: string }>): void;
+	(e: 'confirm', operations: UpdateRevisionOperation[]): void;
 }>();
 
 const visible = computed({
@@ -209,6 +232,7 @@ const visible = computed({
 
 const treeData = ref<UpdateRevisionRow[]>([]);
 const expandedIds = ref<Set<string>>(new Set());
+const dataLoading = ref(false);
 const batchAction = ref('');
 const versionSelectVisible = ref(false);
 const currentRowVersions = ref<VersionGraphVersion[]>([]);
@@ -225,6 +249,8 @@ const flattenVisible = (rows: UpdateRevisionRow[]): UpdateRevisionRow[] =>
 
 const visibleRows = computed(() => flattenVisible(treeData.value));
 
+const submitting = computed(() => !!props.submitting);
+
 const toggleExpand = (row: UpdateRevisionRow) => {
 	const newSet = new Set(expandedIds.value);
 	if (newSet.has(row.rowId)) {
@@ -235,7 +261,11 @@ const toggleExpand = (row: UpdateRevisionRow) => {
 	expandedIds.value = newSet;
 };
 
-const hasAnySelection = computed(() => allFlatRows.value.some(row => row.selectedAction && row.targetPhysicalId));
+const hasAnySelection = computed(() =>
+	allFlatRows.value.some(
+		row => row.selectedAction && (row.targetPhysicalId || row.selectedAction === 'newRevision' || row.selectedAction === 'replaceNewRevision')
+	)
+);
 
 const batchOptions = computed(() => {
 	const rows = allFlatRows.value;
@@ -299,11 +329,36 @@ const computeAvailableCount = (options: { hasLatest: boolean; hasFrozen: boolean
 
 const findRowById = (rowId: string): UpdateRevisionRow | undefined => allFlatRows.value.find(r => r.rowId === rowId);
 
+const computeNewRevision = (versions: VersionGraphVersion[]): string => {
+	if (!versions.length) return '';
+	const lastVersion = versions[versions.length - 1];
+	const currentCode = lastVersion.code || '';
+	const dotIndex = currentCode.lastIndexOf('.');
+	if (dotIndex === -1) return '';
+	const prefix = currentCode.substring(0, dotIndex);
+	const suffix = currentCode.substring(dotIndex + 1);
+	if (lastVersion.maturity === 'RELEASED') {
+		const lastChar = prefix[prefix.length - 1];
+		const nextChar = String.fromCharCode(lastChar.charCodeAt(0) + 1);
+		const newPrefix = prefix.substring(0, prefix.length - 1) + nextChar;
+		return `${newPrefix}.1`;
+	} else {
+		const nextSuffix = parseInt(suffix, 10) + 1;
+		return `${prefix}.${nextSuffix}`;
+	}
+};
+
 const handleRowActionChange = (row: UpdateRevisionRow) => {
 	if (row.selectedAction === 'manual') {
 		currentEditingRowId.value = row.rowId;
 		currentRowPhysicalId.value = row.physicalId;
 		openVersionSelectForRow(row);
+		return;
+	}
+	if (row.selectedAction === 'newRevision' || row.selectedAction === 'replaceNewRevision') {
+		row.expectedRevision = computeNewRevision(row.versions);
+		row.expectedMaturity = '工作中';
+		row.targetPhysicalId = '';
 		return;
 	}
 	const target = getTargetVersion(row.selectedAction, row.versions, row.physicalId);
@@ -373,15 +428,24 @@ const handleBatchActionChange = () => {
 };
 
 const handleConfirm = () => {
-	const operations = allFlatRows.value
-		.filter(row => row.selectedAction && row.targetPhysicalId)
-		.map(row => ({
-			hasParent: row.parentPhysicalId,
-			instance: row.relationId,
-			isInstanceOf: row.targetPhysicalId,
-			oldName: `${row.label} ${row.revision}`.trim(),
-			newName: `${row.label} ${row.expectedRevision}`.trim()
-		}));
+	const operations: UpdateRevisionOperation[] = allFlatRows.value
+		.filter(
+			row => row.selectedAction && (row.targetPhysicalId || row.selectedAction === 'newRevision' || row.selectedAction === 'replaceNewRevision')
+		)
+		.map(row => {
+			let action: UpdateRevisionOperation['action'] = 'replace';
+			if (row.selectedAction === 'newRevision') action = 'newRevision';
+			else if (row.selectedAction === 'replaceNewRevision') action = 'replaceNewRevision';
+			return {
+				action,
+				physicalId: row.physicalId,
+				hasParent: row.parentPhysicalId,
+				instance: row.relationId,
+				isInstanceOf: row.targetPhysicalId,
+				oldName: `${row.label} ${row.revision}`.trim(),
+				newName: `${row.label} ${row.expectedRevision}`.trim()
+			};
+		});
 	if (operations.length) {
 		emit('confirm', operations);
 	}
@@ -448,6 +512,7 @@ const loadData = async () => {
 	const allIds = [...new Set([rootPhysicalId, ...childIds])];
 
 	try {
+		dataLoading.value = true;
 		const response = await partDetailApi.getVersionGraphBatch(allIds);
 		const graphs = response.graphs || [];
 		const graphsMap = new Map<string, VersionGraphVersion[]>();
@@ -493,6 +558,8 @@ const loadData = async () => {
 		expandedIds.value = new Set(expandAllIds([rootRow]));
 	} catch (error) {
 		console.error('[UpdateRevisionDialog] 加载版本图数据失败:', error);
+	} finally {
+		dataLoading.value = false;
 	}
 };
 

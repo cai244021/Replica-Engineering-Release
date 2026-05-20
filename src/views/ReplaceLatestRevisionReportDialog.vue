@@ -4,6 +4,7 @@
 		width="680px"
 		:show-close="true"
 		:close-on-click-modal="false"
+		draggable
 		class="replace-latest-report-dialog">
 		<template #header>
 			<span>{{ title }}</span>

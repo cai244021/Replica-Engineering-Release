@@ -281,6 +281,23 @@ export interface VersionGraphResponse {
 	}>;
 }
 
+export interface AddVersionsResult {
+	copyId: string;
+	id?: string;
+	code?: string;
+	revision?: string;
+	status?: string;
+	name?: string;
+	type?: string;
+	owner?: string;
+	[key: string]: unknown;
+}
+
+export interface AddVersionsResponse {
+	addRequests?: AddVersionsResult[];
+	[key: string]: unknown;
+}
+
 export interface ReplaceByLatestRevisionOperation {
 	hasParent: string;
 	instance: string;
@@ -946,6 +963,38 @@ class PartDetailAPI {
 		});
 		console.log('[PartDetailAPI] 批量获取版本图响应:', response);
 		return response as VersionGraphResponse;
+	}
+
+	async addVersions(physicalIds: string[]): Promise<AddVersionsResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/v1/dslc/addversions';
+		const url = `${endpoint}?securityContext=${encodeURIComponent(securityContext)}&tenant=OnPremise`;
+		const params = {
+			addRequests: physicalIds.map(id => ({
+				copyId: id,
+				ancestors: [{ semantic: 'LAST', id }],
+				options: { withPost: true }
+			}))
+		};
+
+		console.log('[PartDetailAPI] 新建修订版 URL:', url);
+		console.log('[PartDetailAPI] 新建修订版参数:', JSON.stringify(params, null, 2));
+
+		const response = await http.post(url, params, {
+			SecurityContext: securityContext
+		});
+		console.log('[PartDetailAPI] 新建修订版响应:', response);
+		return response as AddVersionsResponse;
 	}
 
 	async replaceByLatestRevision(operations: ReplaceByLatestRevisionOperation[]): Promise<ReplaceByLatestRevisionResponse> {

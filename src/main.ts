@@ -12,6 +12,9 @@ import i18n from './i18n';
 import App from './App.vue';
 import router from './router';
 import { isDev } from './utils/env';
+import { installGlobalErrorMessage } from './utils/elementMessage';
+
+installGlobalErrorMessage();
 
 const start = () => {
 	disableDefaultCSS(true);
