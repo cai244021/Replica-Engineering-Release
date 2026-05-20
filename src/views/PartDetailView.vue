@@ -24,39 +24,54 @@
 						</el-button>
 						<template #dropdown>
 							<el-dropdown-menu class="part-action-dropdown-menu">
-								<el-dropdown-item command="openMethod">
+								<el-dropdown-item
+									command="openMethod"
+									disabled>
 									<span class="part-action-menu-icon">↪</span>
 									<span class="part-action-menu-label">打开方式</span>
 									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
 								</el-dropdown-item>
-								<el-dropdown-item command="setEnterpriseNumber">
+								<el-dropdown-item
+									command="setEnterpriseNumber"
+									disabled>
 									<span class="part-action-menu-icon">▦</span>
 									<span class="part-action-menu-label">设置企业项目编号</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="delete">
+								<el-dropdown-item
+									command="delete"
+									disabled>
 									<span class="part-action-menu-icon">⌫</span>
 									<span class="part-action-menu-label">删除</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="manageBrowsingStructure">
+								<el-dropdown-item
+									command="manageBrowsingStructure"
+									disabled>
 									<span class="part-action-menu-icon">⌘</span>
 									<span class="part-action-menu-label">管理浏览结构定义</span>
 									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="revision"
-									divided>
+									divided
+									disabled>
 									<span class="part-action-menu-icon">☷</span>
 									<span class="part-action-menu-label">修订版</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="newRevision">
+								<el-dropdown-item
+									command="newRevision"
+									disabled>
 									<span class="part-action-menu-icon">↳</span>
 									<span class="part-action-menu-label">新修订版</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="newBranch">
+								<el-dropdown-item
+									command="newBranch"
+									disabled>
 									<span class="part-action-menu-icon">⌘</span>
 									<span class="part-action-menu-label">新建分支</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="newRevisionSource">
+								<el-dropdown-item
+									command="newRevisionSource"
+									disabled>
 									<span class="part-action-menu-icon">⌁</span>
 									<span class="part-action-menu-label">新修订版源</span>
 								</el-dropdown-item>
@@ -68,57 +83,79 @@
 									<span class="part-action-menu-icon">▥</span>
 									<span class="part-action-menu-label">更新整个结构的修订版</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="copy">
+								<el-dropdown-item
+									command="copy"
+									disabled>
 									<span class="part-action-menu-icon">⧉</span>
 									<span class="part-action-menu-label">复制</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="compare">
+								<el-dropdown-item
+									command="compare"
+									disabled>
 									<span class="part-action-menu-icon">↔</span>
 									<span class="part-action-menu-label">比较</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="maturity">
+								<el-dropdown-item
+									command="maturity"
+									disabled>
 									<span class="part-action-menu-icon">♻</span>
 									<span class="part-action-menu-label">成熟度</span>
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="lock"
-									divided>
+									divided
+									disabled>
 									<span class="part-action-menu-icon">🔒</span>
 									<span class="part-action-menu-label">锁定</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="unlock">
+								<el-dropdown-item
+									command="unlock"
+									disabled>
 									<span class="part-action-menu-icon">🔓</span>
 									<span class="part-action-menu-label">解锁</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="move">
+								<el-dropdown-item
+									command="move"
+									disabled>
 									<span class="part-action-menu-icon">⇥</span>
 									<span class="part-action-menu-label">移动</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="share">
+								<el-dropdown-item
+									command="share"
+									disabled>
 									<span class="part-action-menu-icon">↗</span>
 									<span class="part-action-menu-label">共享</span>
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="relationship"
-									divided>
+									divided
+									disabled>
 									<span class="part-action-menu-icon">⚭</span>
 									<span class="part-action-menu-label">关系</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="relatedChange">
+								<el-dropdown-item
+									command="relatedChange"
+									disabled>
 									<span class="part-action-menu-icon">▤</span>
 									<span class="part-action-menu-label">相关更改</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="subscribe">
+								<el-dropdown-item
+									command="subscribe"
+									disabled>
 									<span class="part-action-menu-icon">☁</span>
 									<span class="part-action-menu-label">订阅</span>
 									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
 								</el-dropdown-item>
-								<el-dropdown-item command="exportMenu">
+								<el-dropdown-item
+									command="exportMenu"
+									disabled>
 									<span class="part-action-menu-icon">⇲</span>
 									<span class="part-action-menu-label">导出菜单</span>
 									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
 								</el-dropdown-item>
-								<el-dropdown-item command="customTitle">
+								<el-dropdown-item
+									command="customTitle"
+									disabled>
 									<span class="part-action-menu-icon">⚙</span>
 									<span class="part-action-menu-label">自定义标题</span>
 								</el-dropdown-item>
