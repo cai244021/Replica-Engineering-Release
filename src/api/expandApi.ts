@@ -766,9 +766,18 @@ class ExpandAPI {
 		// 找到所有直接子节点（路径中第二个位置是关系ID，第三个是子节点ID）
 		const childPaths = paths.filter(path => path.length >= 3 && path[0] === rootPhysicalId);
 
+		// 使用 relationId 去重（同一零件可通过不同 VPMInstance 多次挂载在同一父级下）
+		const processedRelationIds = new Set<string>();
+
 		childPaths.forEach(path => {
 			const relationId = path[1]; // 关系ID（VPMInstance）
 			const childId = path[2]; // 子节点ID（VPMReference）
+
+			// 避免同一关系重复添加（多层路径可能重复包含相同的直接子级）
+			if (processedRelationIds.has(relationId)) {
+				return;
+			}
+			processedRelationIds.add(relationId);
 
 			const node = nodes.get(childId);
 			const relation = relations.get(relationId);
@@ -839,17 +848,18 @@ class ExpandAPI {
 		console.log('[ExpandAPI] 菜单展开 - 过滤后的子路径数量:', childPaths.length);
 
 		// 找到所有直接子节点（过滤后的路径中第一个位置是关系ID，第二个是子节点ID）
-		const processedChildIds = new Set<string>();
+		// 使用 relationId 去重（同一零件可通过不同 VPMInstance 多次挂载在同一父级下）
+		const processedRelationIds = new Set<string>();
 
 		childPaths.forEach(path => {
 			const relationId = path[0]; // 关系ID（VPMInstance）
 			const childId = path[1]; // 子节点ID（VPMReference）
 
-			// 避免重复添加同一子节点
-			if (processedChildIds.has(childId)) {
+			// 避免同一关系重复添加
+			if (processedRelationIds.has(relationId)) {
 				return;
 			}
-			processedChildIds.add(childId);
+			processedRelationIds.add(relationId);
 
 			const node = nodes.get(childId);
 			const relation = relations.get(relationId);
@@ -1154,7 +1164,8 @@ class ExpandAPI {
 		// 构建树形结构（递归）
 		const buildTree = (parentPath: string[], currentLevel: number): TreeNode[] => {
 			const result: TreeNode[] = [];
-			const processedChildIds = new Set<string>();
+			// 使用 relationId 去重（同一零件可通过不同 VPMInstance 多次挂载在同一父级下）
+			const processedRelationIds = new Set<string>();
 
 			// 找到当前层级的直接子节点
 			// parentPath 是去掉前缀后的路径，所以直接比较长度即可
@@ -1183,12 +1194,12 @@ class ExpandAPI {
 
 				console.log('[ExpandAPI] 递归解析 - 处理路径:', path, 'relationId:', relationId, 'childId:', childId);
 
-				// 避免重复添加同一子节点
-				if (processedChildIds.has(childId)) {
-					console.log('[ExpandAPI] 递归解析 - 跳过重复子节点:', childId);
+				// 使用 relationId 去重，避免同一关系被多次添加
+				if (processedRelationIds.has(relationId)) {
+					console.log('[ExpandAPI] 递归解析 - 跳过重复关系:', relationId);
 					return;
 				}
-				processedChildIds.add(childId);
+				processedRelationIds.add(relationId);
 
 				const node = nodes.get(childId);
 				const relation = relations.get(relationId);

@@ -24,54 +24,39 @@
 						</el-button>
 						<template #dropdown>
 							<el-dropdown-menu class="part-action-dropdown-menu">
-								<el-dropdown-item
-									command="openMethod"
-									disabled>
+								<el-dropdown-item command="openMethod">
 									<span class="part-action-menu-icon">↪</span>
 									<span class="part-action-menu-label">打开方式</span>
 									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="setEnterpriseNumber"
-									disabled>
+								<el-dropdown-item command="setEnterpriseNumber">
 									<span class="part-action-menu-icon">▦</span>
 									<span class="part-action-menu-label">设置企业项目编号</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="delete"
-									disabled>
+								<el-dropdown-item command="delete">
 									<span class="part-action-menu-icon">⌫</span>
 									<span class="part-action-menu-label">删除</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="manageBrowsingStructure"
-									disabled>
+								<el-dropdown-item command="manageBrowsingStructure">
 									<span class="part-action-menu-icon">⌘</span>
 									<span class="part-action-menu-label">管理浏览结构定义</span>
 									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="revision"
-									divided
-									disabled>
+									divided>
 									<span class="part-action-menu-icon">☷</span>
 									<span class="part-action-menu-label">修订版</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="newRevision"
-									disabled>
+								<el-dropdown-item command="newRevision">
 									<span class="part-action-menu-icon">↳</span>
 									<span class="part-action-menu-label">新修订版</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="newBranch"
-									disabled>
+								<el-dropdown-item command="newBranch">
 									<span class="part-action-menu-icon">⌘</span>
 									<span class="part-action-menu-label">新建分支</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="newRevisionSource"
-									disabled>
+								<el-dropdown-item command="newRevisionSource">
 									<span class="part-action-menu-icon">⌁</span>
 									<span class="part-action-menu-label">新修订版源</span>
 								</el-dropdown-item>
@@ -83,79 +68,57 @@
 									<span class="part-action-menu-icon">▥</span>
 									<span class="part-action-menu-label">更新整个结构的修订版</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="copy"
-									disabled>
+								<el-dropdown-item command="copy">
 									<span class="part-action-menu-icon">⧉</span>
 									<span class="part-action-menu-label">复制</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="compare"
-									disabled>
+								<el-dropdown-item command="compare">
 									<span class="part-action-menu-icon">↔</span>
 									<span class="part-action-menu-label">比较</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="maturity"
-									disabled>
+								<el-dropdown-item command="maturity">
 									<span class="part-action-menu-icon">♻</span>
 									<span class="part-action-menu-label">成熟度</span>
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="lock"
-									divided
-									disabled>
+									divided>
 									<span class="part-action-menu-icon">🔒</span>
 									<span class="part-action-menu-label">锁定</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="unlock"
-									disabled>
+								<el-dropdown-item command="unlock">
 									<span class="part-action-menu-icon">🔓</span>
 									<span class="part-action-menu-label">解锁</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="move"
-									disabled>
+								<el-dropdown-item command="move">
 									<span class="part-action-menu-icon">⇥</span>
 									<span class="part-action-menu-label">移动</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="share"
-									disabled>
+								<el-dropdown-item command="share">
 									<span class="part-action-menu-icon">↗</span>
 									<span class="part-action-menu-label">共享</span>
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="relationship"
-									divided
-									disabled>
+									divided>
 									<span class="part-action-menu-icon">⚭</span>
 									<span class="part-action-menu-label">关系</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="relatedChange"
-									disabled>
+								<el-dropdown-item command="relatedChange">
 									<span class="part-action-menu-icon">▤</span>
 									<span class="part-action-menu-label">相关更改</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="subscribe"
-									disabled>
+								<el-dropdown-item command="subscribe">
 									<span class="part-action-menu-icon">☁</span>
 									<span class="part-action-menu-label">订阅</span>
 									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="exportMenu"
-									disabled>
+								<el-dropdown-item command="exportMenu">
 									<span class="part-action-menu-icon">⇲</span>
 									<span class="part-action-menu-label">导出菜单</span>
 									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="customTitle"
-									disabled>
+								<el-dropdown-item command="customTitle">
 									<span class="part-action-menu-icon">⚙</span>
 									<span class="part-action-menu-label">自定义标题</span>
 								</el-dropdown-item>
@@ -222,6 +185,13 @@
 					@click="handleBack">
 					<HomeFilled />
 				</el-icon>
+				<el-icon
+					v-if="partDetailNavigationStack.length"
+					class="summary-previous-icon"
+					title="返回上一个零件"
+					@click="handlePartDetailPrevious">
+					<Back />
+				</el-icon>
 				<img
 					class="summary-thumbnail"
 					:src="partInfo?.['preview_url'] || partInfo?.['thumbnail_2d'] || defaultThumbnail"
@@ -273,6 +243,13 @@
 						title="主页"
 						@click="handleBack">
 						<HomeFilled />
+					</el-icon>
+					<el-icon
+						v-if="partDetailNavigationStack.length"
+						class="previous-part-icon"
+						title="返回上一个零件"
+						@click="handlePartDetailPrevious">
+						<Back />
 					</el-icon>
 					<div class="thumbnail-container">
 						<img
@@ -379,6 +356,12 @@
 							</span>
 							<template #dropdown>
 								<el-dropdown-menu>
+									<el-dropdown-item
+										v-if="selectedChildrenRows.length === 1"
+										command="openSelectedPart">
+										<span class="selected-action-icon">↪</span>
+										<span>打开</span>
+									</el-dropdown-item>
 									<el-dropdown-item command="setEnterpriseCode">
 										<span class="selected-action-icon">↔</span>
 										<span>设置企业编码</span>
@@ -478,6 +461,106 @@
 							</button>
 						</span>
 					</el-tooltip>
+					<el-tooltip
+						content="在产品结构中搜索包含特定字符串的对象。"
+						placement="top">
+						<button
+							ref="findButtonRef"
+							aria-label="查找"
+							class="toolbar-copy-action find-toolbar-action"
+							@click.stop="toggleFindPanel">
+							<svg
+								width="16"
+								height="16"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round">
+								<path d="M10 10l-4 8" />
+								<path d="M14 10l4 8" />
+								<path d="M6 18h12" />
+								<circle
+									cx="8"
+									cy="8"
+									r="4" />
+								<circle
+									cx="16"
+									cy="8"
+									r="4" />
+							</svg>
+						</button>
+					</el-tooltip>
+					<Teleport to="body">
+						<div
+							v-if="findPopoverVisible"
+							class="children-find-floating"
+							:style="{ left: `${findPanelPosition.left}px`, top: `${findPanelPosition.top}px` }">
+							<div class="children-find-panel">
+								<div
+									class="children-find-header"
+									@mousedown="startFindPanelDrag">
+									<span class="children-find-title">查找 - {{ findMatchedRowIds.length }} 产品</span>
+									<el-icon
+										class="children-find-close"
+										@click="closeFindPopover">
+										<Close />
+									</el-icon>
+								</div>
+								<div class="children-find-row">
+									<el-input
+										v-model="findKeyword"
+										size="small"
+										@keyup.enter="handleFindInStructure" />
+									<el-button
+										size="small"
+										title="查找输入字符串"
+										:loading="findLoading"
+										:disabled="!findKeyword.trim()"
+										:class="{ 'is-find-ready': !!findKeyword.trim() }"
+										@click="handleFindInStructure">
+										<el-icon><Check /></el-icon>
+									</el-button>
+									<el-button
+										size="small"
+										title="查找上一个匹配单元格"
+										:disabled="!findMatchedRowIds.length"
+										@click="goToPreviousFindResult">
+										<el-icon><ArrowUp /></el-icon>
+									</el-button>
+									<el-button
+										size="small"
+										title="查找下一个匹配单元格"
+										:disabled="!findMatchedRowIds.length"
+										@click="goToNextFindResult">
+										<el-icon><ArrowDown /></el-icon>
+									</el-button>
+									<el-button
+										size="small"
+										title="选择所有匹配的单元格"
+										:disabled="!findMatchedRowIds.length"
+										@click="selectAllFindResults">
+										<el-icon>
+											<svg
+												viewBox="0 0 1024 1024"
+												xmlns="http://www.w3.org/2000/svg">
+												<path
+													d="M338 160h486v486H338V160z m44 44v398h398V204H382z"
+													fill="currentColor" />
+												<path
+													d="M200 338v486h486v-64h44v108H156V294h108v44H200z"
+													fill="currentColor" />
+												<path
+													d="M697 294L476 515l-98-98-32 32 130 130 253-253-32-32z"
+													fill="currentColor" />
+											</svg>
+										</el-icon>
+									</el-button>
+								</div>
+							</div>
+						</div>
+					</Teleport>
 					<el-dropdown
 						trigger="click"
 						placement="bottom-start"
@@ -1432,10 +1515,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, h, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
 	ArrowDown,
+	ArrowUp,
 	Plus,
 	Minus,
 	View,
@@ -1446,6 +1530,7 @@ import {
 	Download,
 	Check,
 	Close,
+	Back,
 	CopyDocument,
 	DocumentChecked,
 	Loading,
@@ -1455,6 +1540,7 @@ import {
 	Scissor,
 	ArrowRight,
 	CirclePlus,
+	CaretRight,
 	Expand,
 	ArrowLeft
 } from '@element-plus/icons-vue';
@@ -1614,6 +1700,7 @@ interface InstanceQuantityRow {
 
 type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger';
 type SelectedActionCommand =
+	| 'openSelectedPart'
 	| 'setEnterpriseCode'
 	| 'instanceQuantity'
 	| 'unparent'
@@ -1643,6 +1730,15 @@ const exportPercentage = ref(0);
 const exportStatusText = ref('准备导出...');
 const enterpriseCodeRows = ref<EnterpriseCodeRow[]>([]);
 const selectedChildrenRows = ref<TreeNode[]>([]);
+const partDetailNavigationStack = ref<string[]>([]);
+const findButtonRef = ref<HTMLButtonElement | null>(null);
+const findPopoverVisible = ref(false);
+const findPanelPosition = ref({ left: 0, top: 0 });
+const findKeyword = ref('');
+const findActiveKeyword = ref('');
+const findLoading = ref(false);
+const findMatchedRowIds = ref<string[]>([]);
+const findCurrentIndex = ref(-1);
 const structureViewMode = ref<'indented' | 'flat'>('indented');
 const hoveredChildrenColumnKey = ref<string>('');
 const instanceQuantityDialogVisible = ref(false);
@@ -3368,6 +3464,7 @@ const getChildrenV2RowClass = ({ rowData, rowIndex }: { rowData: TreeNode; rowIn
 	[
 		rowIndex % 2 === 1 ? 'even-child-row' : 'odd-child-row',
 		isChildrenRowSelected(rowData) ? 'selected-child-row' : '',
+		findMatchedRowIds.value[findCurrentIndex.value] === rowData.id ? 'find-active-child-row' : '',
 		draggingChildRowId.value === rowData.id ? 'dragging-child-row' : '',
 		dragOverChildRowId.value === rowData.id ? 'drag-over-child-row' : ''
 	]
@@ -3545,6 +3642,15 @@ const createChildrenCellProps = (key: string, className?: string) => ({
 	}
 });
 
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const renderHighlightedText = (value: string) => {
+	const keyword = findActiveKeyword.value.trim();
+	if (!keyword) return value || '';
+	const parts = String(value || '').split(new RegExp(`(${escapeRegExp(keyword)})`, 'gi'));
+	return parts.map(part => (part.toLowerCase() === keyword.toLowerCase() ? h('span', { class: 'find-highlight-text' }, part) : part));
+};
+
 const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 	{
 		key: 'selection',
@@ -3651,7 +3757,7 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 						class: 'row-icon',
 						fit: 'contain'
 					}),
-					h('span', { class: 'name-text' }, rowData.label)
+					h('span', { class: 'name-text' }, renderHighlightedText(rowData.label))
 				]
 			);
 		}
@@ -3684,7 +3790,8 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 		dataKey: 'instanceLabel',
 		title: '标题(实例)',
 		width: columnWidths.value.instanceLabel,
-		headerCellRenderer: () => createResizableHeader('instanceLabel', '标题(实例)')
+		headerCellRenderer: () => createResizableHeader('instanceLabel', '标题(实例)'),
+		cellRenderer: ({ rowData }) => h('span', createChildrenCellProps('instanceLabel'), renderHighlightedText(rowData.instanceLabel))
 	},
 	{
 		key: 'isLastRevision',
@@ -4054,6 +4161,9 @@ const handleReplaceRevisionConfirm = async (
 
 const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 	switch (command) {
+		case 'openSelectedPart':
+			handleOpenSelectedPartDetail();
+			break;
 		case 'setEnterpriseCode':
 			openEnterpriseCodeDialogForSelectedRows();
 			break;
@@ -4079,6 +4189,20 @@ const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 			ElMessage.info('替换功能接口后续接入');
 			break;
 	}
+};
+
+const handleOpenSelectedPartDetail = async () => {
+	const selectedRow = selectedChildrenRows.value[0];
+	const targetPhysicalId = selectedRow?.resourceid;
+	if (!targetPhysicalId) {
+		ElMessage.error('未获取到选中零件的物理ID');
+		return;
+	}
+	if (currentPhysicalId.value && currentPhysicalId.value !== targetPhysicalId) {
+		partDetailNavigationStack.value.push(currentPhysicalId.value);
+	}
+	selectedChildrenRows.value = [];
+	await loadPartDetail(targetPhysicalId);
 };
 
 const handleConfirmInstanceQuantity = async () => {
@@ -4796,6 +4920,241 @@ const handleExpandSelected = async () => {
 	}
 };
 
+const buildFindUql = (keyword: string) => {
+	const escapedKeyword = keyword.replace(/"/g, '\\"');
+	return [
+		`ds6w_58_label:*${escapedKeyword}*`,
+		`ds6wg_58_enterpriseextension_46_v_95_partnumber:*${escapedKeyword}*`,
+		`ds6wg_58_revision:*${escapedKeyword}*`,
+		`ds6w_58_islastrevision:*${escapedKeyword}*`,
+		`ds6w_58_status:*${escapedKeyword}*`,
+		`ds6w_58_responsible:*${escapedKeyword}*`,
+		`ds6w_58_type:*${escapedKeyword}*`,
+		`ds6w_58_identifier:*${escapedKeyword}*`
+	].join(' OR ');
+};
+
+const buildFindInStructureParams = (rootPhysicalId: string, keyword: string) => {
+	const uql = buildFindUql(keyword);
+	return {
+		batch: {
+			expands: [
+				{
+					filter: {
+						and: {
+							filters: [
+								{
+									prefix_filter: {
+										prefix_path: [{ physical_id_path: [rootPhysicalId] }]
+									}
+								},
+								{
+									sequence_filter: {
+										sequence: [{ uql }]
+									}
+								}
+							]
+						}
+					},
+					root: { physical_id: rootPhysicalId },
+					graph: {
+						descending_condition_relation: {
+							uql: 'NOT (flattenedtaxonomies:"reltypes/XCADBaseDependency") AND ((flattenedtaxonomies:"reltypes/VPMInstance") OR (flattenedtaxonomies:"reltypes/VPMRepInstance"))'
+						},
+						descending_condition_object: {
+							uql: 'ds6w_58_globaltype:"ds6w:Document" OR ds6w_58_globaltype:"ds6w:Part"'
+						}
+					},
+					aggregation_processors: [{ truncate: { sequence_filter: { sequence: [{ uql }] } } }],
+					label: `FindInCtxFTS-xEngineer-${baseInfoStore.currentUser || 'USER'}-${Date.now()}`,
+					parameters: { limit_max_path: 301 }
+				}
+			]
+		},
+		outputs: {
+			select_object: [
+				'ds6w:label',
+				'ds6w:modified',
+				'ds6w:created',
+				'ds6w:description',
+				'ds6wg:revision',
+				'ds6w:cadMaster',
+				'ds6w:responsible',
+				'owner',
+				'ds6w:status',
+				'ds6w:type',
+				'ds6wg:EnterpriseExtension.V_PartNumber',
+				'type',
+				'physicalid',
+				'ds6w:policy',
+				'ds6w:reservedBy',
+				'ds6w:globalType',
+				'ds6w:manufacturable',
+				'pathsr',
+				'ds6w:isLastRevision',
+				'ds6w:reserved',
+				'ds6w:identifier'
+			],
+			select_relation: ['ds6w:label', 'ds6w:type', 'physicalid', 'ro.plminstance.V_treeorder', 'ds6w:reservedBy'],
+			hits: { predefined_computation: ['icons', 'urlstream|thumbnail_2d|2dthb|allrefs'] },
+			format: 'entity_relation_occurrence'
+		}
+	};
+};
+
+const positionFindPanelByButton = () => {
+	const rect = findButtonRef.value?.getBoundingClientRect();
+	if (!rect) return;
+	const panelWidth = 360;
+	findPanelPosition.value = {
+		left: Math.max(8, rect.left + rect.width / 2 - panelWidth / 2),
+		top: rect.bottom + 50
+	};
+};
+
+const toggleFindPanel = async () => {
+	if (!findPopoverVisible.value) {
+		positionFindPanelByButton();
+	}
+	findPopoverVisible.value = !findPopoverVisible.value;
+	await nextTick();
+};
+
+const startFindPanelDrag = (event: MouseEvent) => {
+	const startX = event.clientX;
+	const startY = event.clientY;
+	const startLeft = findPanelPosition.value.left;
+	const startTop = findPanelPosition.value.top;
+	const handleMouseMove = (moveEvent: MouseEvent) => {
+		findPanelPosition.value = {
+			left: startLeft + moveEvent.clientX - startX,
+			top: startTop + moveEvent.clientY - startY
+		};
+	};
+	const handleMouseUp = () => {
+		document.removeEventListener('mousemove', handleMouseMove);
+		document.removeEventListener('mouseup', handleMouseUp);
+	};
+	document.addEventListener('mousemove', handleMouseMove);
+	document.addEventListener('mouseup', handleMouseUp);
+};
+
+const getPathTargetPhysicalIds = (response: { results?: Array<unknown> }) =>
+	(response.results || [])
+		.filter((item): item is { Path: string[] } => !!item && typeof item === 'object' && Array.isArray((item as { Path?: unknown }).Path))
+		.map(item => item.Path[item.Path.length - 1])
+		.filter((id): id is string => !!id);
+
+const expandSearchTreeNodes = (nodes: TreeNode[]) => {
+	nodes.forEach(node => {
+		if (node.children?.length) {
+			node.isExpanded = true;
+			expandSearchTreeNodes(node.children);
+		}
+	});
+};
+
+const mergeSearchTreeNodes = (currentNodes: TreeNode[], searchNodes: TreeNode[]) => {
+	searchNodes.forEach(searchNode => {
+		const existingNode = currentNodes.find(node => node.id === searchNode.id || node.relationId === searchNode.relationId);
+		if (!existingNode) {
+			currentNodes.push(searchNode);
+			return;
+		}
+		existingNode.hasChildren = existingNode.hasChildren || searchNode.hasChildren;
+		if (searchNode.children?.length) {
+			existingNode.isExpanded = true;
+			mergeSearchTreeNodes(existingNode.children || (existingNode.children = []), searchNode.children);
+		}
+	});
+};
+
+const rowContainsFindKeyword = (row: TreeNode, keyword: string) => {
+	const normalizedKeyword = keyword.toLowerCase();
+	return [row.label, row.instanceLabel].some(value =>
+		String(value || '')
+			.toLowerCase()
+			.includes(normalizedKeyword)
+	);
+};
+
+const scrollToFindResult = async (index: number) => {
+	await nextTick();
+	const rowId = findMatchedRowIds.value[index];
+	const rowIndex = flattenChildrenData.value.findIndex(row => row.id === rowId);
+	if (rowIndex < 0) return;
+	tableRef.value?.scrollToRow?.(rowIndex, 'center');
+};
+
+const setFindResults = async (keyword: string, targetPhysicalIds: string[]) => {
+	findActiveKeyword.value = keyword;
+	await nextTick();
+	findMatchedRowIds.value = flattenChildrenData.value
+		.filter(row => targetPhysicalIds.includes(row.resourceid) || rowContainsFindKeyword(row, keyword))
+		.map(row => row.id);
+	findCurrentIndex.value = findMatchedRowIds.value.length ? 0 : -1;
+	if (findCurrentIndex.value >= 0) {
+		await scrollToFindResult(findCurrentIndex.value);
+	}
+};
+
+const handleFindInStructure = async () => {
+	const keyword = findKeyword.value.trim();
+	const rootPhysicalId = currentPhysicalId.value;
+	if (!keyword) {
+		ElMessage.warning('请输入查找内容');
+		return;
+	}
+	if (!rootPhysicalId) {
+		ElMessage.error('未获取到根节点物理ID');
+		return;
+	}
+
+	findLoading.value = true;
+	try {
+		const response = await expandApi.expandWithParams(buildFindInStructureParams(rootPhysicalId, keyword));
+		const targetPhysicalIds = getPathTargetPhysicalIds(response);
+		if (!response.results?.length || !targetPhysicalIds.length) {
+			findActiveKeyword.value = '';
+			findMatchedRowIds.value = [];
+			findCurrentIndex.value = -1;
+			ElMessage.warning('未找到任何选定对象的匹配项');
+			return;
+		}
+		const searchTreeNodes = expandApi.parseExpandDataRecursive(response, rootPhysicalId, [rootPhysicalId]);
+		expandSearchTreeNodes(searchTreeNodes);
+		mergeSearchTreeNodes(childrenData.value, searchTreeNodes);
+		await setFindResults(keyword, targetPhysicalIds);
+	} catch (error) {
+		console.error('[PartDetailView] 查找失败:', error);
+		ElMessage.error('查找失败');
+	} finally {
+		findLoading.value = false;
+	}
+};
+
+const goToPreviousFindResult = async () => {
+	if (!findMatchedRowIds.value.length) return;
+	findCurrentIndex.value = findCurrentIndex.value <= 0 ? findMatchedRowIds.value.length - 1 : findCurrentIndex.value - 1;
+	await scrollToFindResult(findCurrentIndex.value);
+};
+
+const goToNextFindResult = async () => {
+	if (!findMatchedRowIds.value.length) return;
+	findCurrentIndex.value = findCurrentIndex.value >= findMatchedRowIds.value.length - 1 ? 0 : findCurrentIndex.value + 1;
+	await scrollToFindResult(findCurrentIndex.value);
+};
+
+const selectAllFindResults = () => {
+	if (!findMatchedRowIds.value.length) return;
+	const matchedIds = new Set(findMatchedRowIds.value);
+	selectedChildrenRows.value = flattenChildrenData.value.filter(row => matchedIds.has(row.id));
+};
+
+const closeFindPopover = () => {
+	findPopoverVisible.value = false;
+};
+
 /**
  * 处理全部展开
  * 独立方法，不混合原有 reloadAndExpandRow 逻辑
@@ -4877,9 +5236,10 @@ const handleConfirmExpandN = async () => {
  * 独立方法，不混合原有逻辑
  */
 const handleCollapseAll = async () => {
-	console.log('[PartDetailView] 全部折叠');
+	const selectedRows = [...selectedChildrenRows.value];
+	console.log('[PartDetailView] 全部折叠, 选中行数:', selectedRows.length);
 
-	// 递归折叠所有节点
+	// 递归折叠节点
 	const collapseNodes = (nodes: TreeNode[]) => {
 		nodes.forEach(node => {
 			node.isExpanded = false;
@@ -4889,12 +5249,23 @@ const handleCollapseAll = async () => {
 		});
 	};
 
-	collapseNodes(childrenData.value);
+	if (selectedRows.length > 0) {
+		// 有勾选行时，只折叠勾选行的子结构
+		selectedRows.forEach(row => {
+			row.isExpanded = false;
+			if (row.children?.length) {
+				collapseNodes(row.children);
+			}
+		});
+	} else {
+		// 未勾选时，折叠所有节点
+		collapseNodes(childrenData.value);
+	}
 
 	// 清空展开状态集合
 	expandingRowIds.value = new Set();
 
-	ElMessage.success('全部折叠成功');
+	ElMessage.success('折叠成功');
 };
 
 /**
@@ -5056,6 +5427,13 @@ const refreshAfterTableCreate = async () => {
 // 返回上一页
 const handleBack = () => {
 	router.back();
+};
+
+const handlePartDetailPrevious = async () => {
+	const previousPhysicalId = partDetailNavigationStack.value.pop();
+	if (!previousPhysicalId) return;
+	selectedChildrenRows.value = [];
+	await loadPartDetail(previousPhysicalId);
 };
 
 const handleUpdateEntireStructureRevision = async () => {
@@ -5795,7 +6173,8 @@ onUnmounted(() => {
 				flex-direction: row;
 				gap: 8px;
 
-				.back-icon {
+				.back-icon,
+				.previous-part-icon {
 					font-size: 22px;
 					color: #c0c4cc;
 					cursor: pointer;
@@ -5955,7 +6334,8 @@ onUnmounted(() => {
 			color: #303133;
 		}
 
-		.summary-home-icon {
+		.summary-home-icon,
+		.summary-previous-icon {
 			flex: 0 0 auto;
 			color: #b8bec6;
 			font-size: 18px;
@@ -6241,6 +6621,17 @@ onUnmounted(() => {
 					color: #fff;
 					box-shadow: 0 2px 6px rgb(64 158 255 / 28%);
 				}
+
+				.find-toolbar-action {
+					color: #5f6b7a;
+					cursor: pointer;
+				}
+
+				.find-toolbar-action:hover {
+					background: #ecf5ff;
+					border-color: #409eff;
+					color: #409eff;
+				}
 			}
 		}
 
@@ -6308,6 +6699,16 @@ onUnmounted(() => {
 				:deep(.el-table-v2__row.drag-over-child-row .el-table-v2__row-cell) {
 					background-color: #ecf5ff !important;
 					box-shadow: inset 0 0 0 1px #409eff;
+				}
+
+				:deep(.el-table-v2__row.find-active-child-row .el-table-v2__row-cell) {
+					box-shadow: inset 0 0 0 1px #e6a23c;
+				}
+
+				:deep(.find-highlight-text) {
+					background-color: #ffd86b;
+					color: #303133;
+					padding: 0 1px;
 				}
 
 				:deep(.el-table-v2__row:hover .el-table-v2__row-cell) {
@@ -7043,10 +7444,105 @@ onUnmounted(() => {
 	display: none !important;
 }
 .part-action-dropdown-popper .el-dropdown-menu__item:not(.is-disabled):focus,
-.part-action-dropdown-popper .el-dropdown-menu__item:not(.is-disabled):hover {
-	background-color: #ececec !important;
-	color: #1f2d3d !important;
+.part-action-dropdown-popper .el-dropdown-menu__item.is-disabled {
+	color: #b8bec6 !important;
+	cursor: not-allowed !important;
 }
+
+.children-find-floating {
+	position: fixed;
+	z-index: 3000;
+	width: 360px !important;
+	border: 1px solid #cfd3da !important;
+	border-radius: 0 !important;
+	background: #f1f2f4 !important;
+	box-shadow: 0 2px 6px rgb(0 0 0 / 22%) !important;
+}
+
+.children-find-panel {
+	padding: 0 8px 10px;
+	background: #f1f2f4;
+	color: #2f3540;
+	font-size: 13px;
+}
+
+.children-find-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	height: 28px;
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 28px;
+	cursor: move;
+	user-select: none;
+}
+
+.children-find-title {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.children-find-close {
+	flex: 0 0 auto;
+	color: #7b8088;
+	font-size: 16px;
+	cursor: pointer;
+}
+
+.children-find-close:hover {
+	color: #409eff;
+}
+
+.children-find-row {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.children-find-row .el-input {
+	flex: 1;
+}
+
+.children-find-row .el-input__wrapper {
+	height: 28px;
+	border-radius: 4px;
+	box-shadow: 0 0 0 1px #409eff inset;
+}
+
+.children-find-row .el-button {
+	width: 29px;
+	height: 28px;
+	padding: 0;
+	border-radius: 4px;
+	background: #eef0f3;
+	color: #9097a3;
+}
+
+.children-find-row .el-button.is-find-ready {
+	border-color: #409eff;
+	background: #ecf5ff;
+	color: #409eff;
+	cursor: pointer;
+}
+
+.children-find-row .el-button.is-find-ready:hover {
+	background: #409eff;
+	color: #fff;
+}
+
+.children-find-options {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-top: 11px;
+	color: #4b5563;
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 18px;
+}
+
 .part-action-menu-icon {
 	display: inline-flex;
 	flex: 0 0 24px;
@@ -7422,7 +7918,7 @@ body.is-resizing-column {
 	}
 }
 
-// 展开菜单按钮样式
+/* 展开菜单按钮样式 */
 .expand-menu-btn.is-active {
 	color: #409eff !important;
 	border-color: #409eff !important;
@@ -7435,7 +7931,7 @@ body.is-resizing-column {
 	cursor: not-allowed !important;
 }
 
-// 展开菜单下拉框样式
+/* 展开菜单下拉框样式 */
 .expand-menu-dropdown {
 	.el-dropdown-menu__item {
 		display: flex;
@@ -7457,12 +7953,12 @@ body.is-resizing-column {
 	}
 }
 
-// 展开 N 层对话框样式
+/* 展开 N 层对话框样式 */
 .expand-n-content {
 	padding: 10px 0;
 }
 
-// 导出进度对话框样式
+/* 导出进度对话框样式 */
 .export-progress-content {
 	padding: 20px 10px;
 	.export-status-text {
