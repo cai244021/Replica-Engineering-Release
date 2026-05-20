@@ -218,7 +218,7 @@ const findLatestVersion = (versions: VersionGraphVersion[], requestPhysicalId: s
 
 const findLatestFrozen = (versions: VersionGraphVersion[], requestPhysicalId: string): VersionGraphVersion | null => {
 	for (let i = versions.length - 1; i >= 0; i--) {
-		if (versions[i].maturity === 'FROZEN') {
+		if (versions[i].maturity === 'FROZEN' || versions[i].maturity === 'RELEASED') {
 			if (versions[i].id === requestPhysicalId) return null;
 			return versions[i];
 		}

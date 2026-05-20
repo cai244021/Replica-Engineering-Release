@@ -35,10 +35,7 @@
 				</el-select>
 			</div>
 			<el-table
-				:data="tableData"
-				row-key="rowId"
-				:tree-props="{ children: 'children' }"
-				default-expand-all
+				:data="visibleRows"
 				border
 				size="small"
 				class="update-revision-table"
@@ -47,13 +44,24 @@
 					label="标题"
 					min-width="180">
 					<template #default="{ row }">
-						<div class="title-cell">
+						<div
+							class="title-cell"
+							:style="{ paddingLeft: row.level * 20 + 'px' }">
+							<span
+								v-if="row.hasChildren"
+								class="tree-expand-icon"
+								@click="toggleExpand(row)">
+								{{ expandedIds.has(row.rowId) ? '−' : '+' }}
+							</span>
+							<span
+								v-else
+								class="tree-expand-placeholder"></span>
 							<img
 								v-if="row.icon"
 								:src="row.icon"
 								class="row-icon"
 								alt="" />
-							<span>{{ row.label || '-' }}</span>
+							<span class="title-text">{{ row.label || '-' }}</span>
 						</div>
 					</template>
 				</el-table-column>
@@ -177,7 +185,9 @@ export interface UpdateRevisionRow {
 	expectedRevision: string;
 	expectedMaturity: string;
 	targetPhysicalId: string;
-	children?: UpdateRevisionRow[];
+	level: number;
+	hasChildren: boolean;
+	children: UpdateRevisionRow[];
 }
 
 const props = defineProps<{
@@ -197,17 +207,33 @@ const visible = computed({
 	set: value => emit('update:modelValue', value)
 });
 
-const tableData = ref<UpdateRevisionRow[]>([]);
+const treeData = ref<UpdateRevisionRow[]>([]);
+const expandedIds = ref<Set<string>>(new Set());
 const batchAction = ref('');
 const versionSelectVisible = ref(false);
 const currentRowVersions = ref<VersionGraphVersion[]>([]);
 const currentRowPhysicalId = ref('');
 const currentEditingRowId = ref('');
 
-const flattenRows = (rows: UpdateRevisionRow[]): UpdateRevisionRow[] =>
-	rows.flatMap(row => [row, ...(row.children?.length ? flattenRows(row.children) : [])]);
+const flattenTree = (rows: UpdateRevisionRow[]): UpdateRevisionRow[] =>
+	rows.flatMap(row => [row, ...(row.children?.length ? flattenTree(row.children) : [])]);
 
-const allFlatRows = computed(() => flattenRows(tableData.value));
+const allFlatRows = computed(() => flattenTree(treeData.value));
+
+const flattenVisible = (rows: UpdateRevisionRow[]): UpdateRevisionRow[] =>
+	rows.flatMap(row => [row, ...(row.hasChildren && expandedIds.value.has(row.rowId) ? flattenVisible(row.children) : [])]);
+
+const visibleRows = computed(() => flattenVisible(treeData.value));
+
+const toggleExpand = (row: UpdateRevisionRow) => {
+	const newSet = new Set(expandedIds.value);
+	if (newSet.has(row.rowId)) {
+		newSet.delete(row.rowId);
+	} else {
+		newSet.add(row.rowId);
+	}
+	expandedIds.value = newSet;
+};
 
 const hasAnySelection = computed(() => allFlatRows.value.some(row => row.selectedAction && row.targetPhysicalId));
 
@@ -229,7 +255,7 @@ const findLatestVersion = (versions: VersionGraphVersion[], requestPhysicalId: s
 
 const findLatestFrozen = (versions: VersionGraphVersion[], requestPhysicalId: string): VersionGraphVersion | null => {
 	for (let i = versions.length - 1; i >= 0; i--) {
-		if (versions[i].maturity === 'FROZEN') {
+		if (versions[i].maturity === 'FROZEN' || versions[i].maturity === 'RELEASED') {
 			if (versions[i].id === requestPhysicalId) return null;
 			return versions[i];
 		}
@@ -372,10 +398,21 @@ const collectPhysicalIds = (nodes: TreeNode[]): string[] => {
 	return ids;
 };
 
-const buildTreeRow = (node: TreeNode, parentPhysicalId: string, graphsMap: Map<string, VersionGraphVersion[]>): UpdateRevisionRow => {
+const expandAllIds = (rows: UpdateRevisionRow[]): string[] => {
+	const ids: string[] = [];
+	for (const row of rows) {
+		if (row.hasChildren) {
+			ids.push(row.rowId);
+			ids.push(...expandAllIds(row.children));
+		}
+	}
+	return ids;
+};
+
+const buildTreeRow = (node: TreeNode, parentPhysicalId: string, level: number, graphsMap: Map<string, VersionGraphVersion[]>): UpdateRevisionRow => {
 	const versions = graphsMap.get(node.resourceid) || [];
 	const options = computeOptions(versions, node.resourceid);
-	const children = node.children?.length && node.isExpanded ? node.children.map(child => buildTreeRow(child, node.resourceid, graphsMap)) : undefined;
+	const childRows = node.children?.length ? node.children.map(child => buildTreeRow(child, node.resourceid, level + 1, graphsMap)) : [];
 	return {
 		rowId: node.id,
 		physicalId: node.resourceid,
@@ -394,7 +431,9 @@ const buildTreeRow = (node: TreeNode, parentPhysicalId: string, graphsMap: Map<s
 		expectedRevision: '',
 		expectedMaturity: '',
 		targetPhysicalId: '',
-		children
+		level,
+		hasChildren: childRows.length > 0,
+		children: childRows
 	};
 };
 
@@ -424,6 +463,8 @@ const loadData = async () => {
 
 		const rootVersions = graphsMap.get(rootPhysicalId) || [];
 		const rootOptions = computeOptions(rootVersions, rootPhysicalId);
+		const childRows = props.childrenData.map(child => buildTreeRow(child, rootPhysicalId, 1, graphsMap));
+		const rootCurrentVersion = rootVersions.find(v => v.id === rootPhysicalId);
 
 		const rootRow: UpdateRevisionRow = {
 			rowId: 'root',
@@ -432,7 +473,7 @@ const loadData = async () => {
 			parentPhysicalId: '',
 			label: info['ds6w:label'] || '',
 			revision: info['ds6wg:revision'] || '',
-			statusDisplay: info['ds6w:status'] || '',
+			statusDisplay: rootCurrentVersion?.maturity_nls || info['ds6w:status'] || '',
 			typeDisplay: info['ds6w:type'] || '',
 			owner: info['owner'] || '',
 			icon: info['type_icon_url'] || '',
@@ -443,10 +484,13 @@ const loadData = async () => {
 			expectedRevision: '',
 			expectedMaturity: '',
 			targetPhysicalId: '',
-			children: props.childrenData.map(child => buildTreeRow(child, rootPhysicalId, graphsMap))
+			level: 0,
+			hasChildren: childRows.length > 0,
+			children: childRows
 		};
 
-		tableData.value = [rootRow];
+		treeData.value = [rootRow];
+		expandedIds.value = new Set(expandAllIds([rootRow]));
 	} catch (error) {
 		console.error('[UpdateRevisionDialog] 加载版本图数据失败:', error);
 	}
@@ -457,7 +501,8 @@ watch(
 	value => {
 		if (value) {
 			batchAction.value = '';
-			tableData.value = [];
+			treeData.value = [];
+			expandedIds.value = new Set();
 			loadData();
 		}
 	}
@@ -483,8 +528,36 @@ watch(
 .title-cell {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: 4px;
 	min-width: 0;
+}
+
+.tree-expand-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	border: 1px solid #c0c4cc;
+	border-radius: 2px;
+	font-size: 12px;
+	line-height: 1;
+	cursor: pointer;
+	user-select: none;
+	flex: 0 0 auto;
+	background-color: #fff;
+	color: #606266;
+}
+
+.tree-expand-icon:hover {
+	border-color: #409eff;
+	color: #409eff;
+}
+
+.tree-expand-placeholder {
+	display: inline-block;
+	width: 18px;
+	flex: 0 0 auto;
 }
 
 .row-icon {
@@ -492,6 +565,12 @@ watch(
 	height: 22px;
 	object-fit: contain;
 	flex: 0 0 auto;
+}
+
+.title-text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .version-indicator {

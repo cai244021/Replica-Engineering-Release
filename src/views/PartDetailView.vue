@@ -1384,6 +1384,12 @@
 			:rows="replaceRevisionSelectedRows"
 			:get-parent-physical-id="getInstanceQuantityParentPhysicalId"
 			@confirm="handleReplaceRevisionConfirm" />
+		<UpdateRevisionDialog
+			v-model="updateRevisionDialogVisible"
+			:part-info="partInfo"
+			:children-data="childrenData"
+			:current-physical-id="currentPhysicalId"
+			@confirm="handleUpdateRevisionConfirm" />
 	</div>
 </template>
 
@@ -5071,7 +5077,34 @@ const handleHeaderActionCommand = async (command: string) => {
 		await handleUpdateEntireStructureRevision();
 		return;
 	}
+	if (command === 'updateRevision') {
+		updateRevisionDialogVisible.value = true;
+		return;
+	}
 	console.log('[PartDetailView] header action command:', command);
+};
+
+const handleUpdateRevisionConfirm = async (
+	operations: Array<{ hasParent: string; instance: string; isInstanceOf: string; oldName: string; newName: string }>
+) => {
+	try {
+		const response = await partDetailApi.replaceByLatestRevision(operations);
+		const successResults = (response.results || []).filter(result => String(result.status).toLowerCase() === 'success');
+		replaceReportTitle.value = '更新修订版报告';
+		replaceLatestReportMessages.value = successResults.length
+			? successResults.map(result => `成功将 ${result.oldName || ''} 替换为 ${result.newName || ''}。`)
+			: operations.map(op => `成功将 ${op.oldName} 替换为 ${op.newName}。`);
+		updateRevisionDialogVisible.value = false;
+		replaceLatestReportVisible.value = true;
+		selectedChildrenRows.value = [];
+		queryModeStore.switchToDbMode();
+		if (currentPhysicalId.value) {
+			await loadPartDetail(currentPhysicalId.value);
+		}
+	} catch (error) {
+		console.error('[PartDetailView] 更新修订版失败:', error);
+		ElMessage.error('更新修订版失败');
+	}
 };
 
 // 切换查询模式
