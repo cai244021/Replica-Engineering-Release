@@ -99,7 +99,7 @@ const dialogStyle = computed(() => ({
 	width: `${dialogSize.value.width}px`,
 	height: `${dialogSize.value.height}px`
 }));
-const tableHeight = computed(() => Math.max(200, dialogSize.value.height - 160));
+const tableHeight = computed(() => Math.max(200, dialogSize.value.height - 126));
 let resizing = false;
 let resizeStartX = 0;
 let resizeStartY = 0;
@@ -163,6 +163,28 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+:deep(.update-entire-structure-revision-dialog) {
+	display: flex;
+	flex-direction: column;
+}
+
+:deep(.update-entire-structure-revision-dialog .el-dialog__header) {
+	padding: 18px 20px 14px;
+	margin-right: 0;
+}
+
+:deep(.update-entire-structure-revision-dialog .el-dialog__body) {
+	flex: 1;
+	min-height: 0;
+	padding: 8px 20px 0;
+}
+
+:deep(.update-entire-structure-revision-dialog .el-dialog__footer) {
+	flex: 0 0 auto;
+	padding: 12px 20px 16px;
+	border-top: 1px solid #ebeef5;
+}
+
 .dialog-title {
 	display: flex;
 	align-items: center;

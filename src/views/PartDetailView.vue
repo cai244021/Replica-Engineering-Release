@@ -1379,6 +1379,11 @@
 			v-model="updateEntireStructureRevisionDialogVisible"
 			:confirmations="updateEntireStructureRevisionConfirmations"
 			@confirm="handleConfirmUpdateEntireStructureRevision" />
+		<ReplaceRevisionDialog
+			v-model="replaceRevisionDialogVisible"
+			:rows="replaceRevisionSelectedRows"
+			:get-parent-physical-id="getInstanceQuantityParentPhysicalId"
+			@confirm="handleReplaceRevisionConfirm" />
 	</div>
 </template>
 
@@ -1445,6 +1450,7 @@ import documentApi from '@/api/documentApi';
 import UnparentConfirmDialog from './UnparentConfirmDialog.vue';
 import ReplaceLatestRevisionReportDialog from './ReplaceLatestRevisionReportDialog.vue';
 import UpdateEntireStructureRevisionConfirmDialog from './UpdateEntireStructureRevisionConfirmDialog.vue';
+import ReplaceRevisionDialog from './ReplaceRevisionDialog.vue';
 
 // 路由
 const route = useRoute();
@@ -1611,6 +1617,8 @@ const updateEntireStructureRevisionDialogVisible = ref(false);
 const updateEntireStructureRevisionLoading = ref(false);
 const updateEntireStructureRevisionConfirmations = ref<UpdateEntireStructureRevisionConfirmation[]>([]);
 const updateEntireStructureRevisionReplaceList = ref<ReplaceByLatestRevisionOperation[]>([]);
+const replaceRevisionDialogVisible = ref(false);
+const replaceRevisionSelectedRows = ref<TreeNode[]>([]);
 
 // 展开菜单相关数据（独立功能，不混合原有逻辑）
 const expandMenuActive = ref(false);
@@ -3955,6 +3963,45 @@ const handleConfirmUnparent = async () => {
 	}
 };
 
+const openReplaceRevisionDialog = () => {
+	const rows = [...selectedChildrenRows.value];
+	if (!rows.length) {
+		ElMessage.warning('请先选择要替换的行');
+		return;
+	}
+	for (const row of rows) {
+		if (!row.resourceid || !row.relationId) {
+			ElMessage.error('未获取到选中对象的物理ID或关系ID');
+			return;
+		}
+	}
+	replaceRevisionSelectedRows.value = rows;
+	replaceRevisionDialogVisible.value = true;
+};
+
+const handleReplaceRevisionConfirm = async (
+	operations: Array<{ hasParent: string; instance: string; isInstanceOf: string; oldName: string; newName: string }>
+) => {
+	try {
+		const response = await partDetailApi.replaceByLatestRevision(operations);
+		const successResults = (response.results || []).filter(result => String(result.status).toLowerCase() === 'success');
+		replaceReportTitle.value = '替换为修订版报告';
+		replaceLatestReportMessages.value = successResults.length
+			? successResults.map(result => `成功将 ${result.oldName || ''} 替换为 ${result.newName || ''}。`)
+			: operations.map(op => `成功将 ${op.oldName} 替换为 ${op.newName}。`);
+		replaceRevisionDialogVisible.value = false;
+		replaceLatestReportVisible.value = true;
+		selectedChildrenRows.value = [];
+		queryModeStore.switchToDbMode();
+		if (currentPhysicalId.value) {
+			await loadPartDetail(currentPhysicalId.value);
+		}
+	} catch (error) {
+		console.error('[PartDetailView] 替换为修订版失败:', error);
+		ElMessage.error('替换为修订版失败');
+	}
+};
+
 const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 	switch (command) {
 		case 'setEnterpriseCode':
@@ -3968,6 +4015,9 @@ const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 			break;
 		case 'replaceExisting':
 			openReplaceExistingProductDialog();
+			break;
+		case 'replaceRevision':
+			openReplaceRevisionDialog();
 			break;
 		case 'replaceDuplicate':
 			openReplaceDuplicateDialog();

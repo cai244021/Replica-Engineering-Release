@@ -250,11 +250,25 @@ export interface UnparentResponse {
 	results?: UnparentResponseResult[];
 }
 
+export interface VersionGraphVersionAncestor {
+	semantic?: string;
+	id: string;
+	fid?: string;
+}
+
 export interface VersionGraphVersion {
 	id: string;
 	label?: string;
 	code?: string;
+	description?: string;
+	creation?: string;
+	modification?: string;
+	maturity?: string;
+	maturity_nls?: string;
 	isLastVersion?: boolean | string;
+	type?: string;
+	type_nls?: string;
+	ancestors?: VersionGraphVersionAncestor[];
 }
 
 export interface VersionGraphResponse {
@@ -901,6 +915,36 @@ class PartDetailAPI {
 			SecurityContext: securityContext
 		});
 		console.log('[PartDetailAPI] 获取版本图响应:', response);
+		return response as VersionGraphResponse;
+	}
+
+	async getVersionGraphBatch(physicalIds: string[]): Promise<VersionGraphResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			console.log('[PartDetailAPI] 3DSpace URL 为空，先获取 URL');
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			console.log('[PartDetailAPI] SecurityContext 为空，先获取');
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/v1/dslc/versiongraph';
+		const url = `${endpoint}?withIsLastVersion=1&validIntents=E&securityContext=${encodeURIComponent(securityContext)}&tenant=OnPremise`;
+		const params = {
+			graphRequests: physicalIds.map(id => ({ id }))
+		};
+
+		console.log('[PartDetailAPI] 批量获取版本图 URL:', url);
+		console.log('[PartDetailAPI] 批量获取版本图参数:', JSON.stringify(params, null, 2));
+
+		const response = await http.post(url, params, {
+			SecurityContext: securityContext
+		});
+		console.log('[PartDetailAPI] 批量获取版本图响应:', response);
 		return response as VersionGraphResponse;
 	}
 
