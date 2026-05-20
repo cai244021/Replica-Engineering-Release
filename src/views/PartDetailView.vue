@@ -1451,6 +1451,7 @@ import UnparentConfirmDialog from './UnparentConfirmDialog.vue';
 import ReplaceLatestRevisionReportDialog from './ReplaceLatestRevisionReportDialog.vue';
 import UpdateEntireStructureRevisionConfirmDialog from './UpdateEntireStructureRevisionConfirmDialog.vue';
 import ReplaceRevisionDialog from './ReplaceRevisionDialog.vue';
+import UpdateRevisionDialog from './UpdateRevisionDialog.vue';
 
 // 路由
 const route = useRoute();
@@ -1619,6 +1620,7 @@ const updateEntireStructureRevisionConfirmations = ref<UpdateEntireStructureRevi
 const updateEntireStructureRevisionReplaceList = ref<ReplaceByLatestRevisionOperation[]>([]);
 const replaceRevisionDialogVisible = ref(false);
 const replaceRevisionSelectedRows = ref<TreeNode[]>([]);
+const updateRevisionDialogVisible = ref(false);
 
 // 展开菜单相关数据（独立功能，不混合原有逻辑）
 const expandMenuActive = ref(false);
