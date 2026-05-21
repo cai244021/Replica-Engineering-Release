@@ -73,6 +73,8 @@ export interface ExpandRelation {
 	'type': string;
 	'from': string; // 父节点ID
 	'to': string; // 子节点ID
+	'ro.VPMInstanceQuantity_Mass.V_ContQuantity'?: string;
+	'ro.VPMInstanceQuantity_Volume.V_ContQuantity'?: string;
 }
 
 // Path 信息
@@ -118,6 +120,7 @@ export interface TreeNode {
 	hasChildren: boolean;
 	path: string[];
 	isDocument?: boolean;
+	quantity?: string;
 }
 
 class ExpandAPI {
@@ -468,117 +471,193 @@ class ExpandAPI {
 		/* eslint-disable */
 		const params = {
 			db: {
-				root_path_physicalid: [[physicalId]],
+				'root_path_physicalid': [[physicalId]],
 				label,
-				no_type_filter_rel: ['XCADBaseDependency'],
-				type_filter_rel: ['VPMInstance', 'VPMRepInstance'],
+				'no_type_filter_rel': ['XCADBaseDependency'],
+				'type_filter_rel': ['VPMInstance', 'VPMRepInstance'],
 				'q.iterative_filter_query_bo': '(flattenedtaxonomies:"types/Drawing") OR [ds6w:globalType]:"ds6w:Part"',
-				compute_select_bo: ['icon', 'thumbnail_2d'],
-				expand_iter: '1',
-				fcs_url_mode: 'REDIRECT',
-				select_bo: [
-					'ds6w:label','ds6w:modified','ds6w:created','ds6w:description','ds6wg:revision','ds6w:cadMaster',
-					'ds6w:responsible','owner','ds6w:status','ds6w:type','ds6wg:EnterpriseExtension.V_PartNumber',
-					'ds6wg:MaterialUsageExtension.DeclaredQuantity','ds6wg:DELFmiContQuantity_Mass.V_ContQuantity',
-					'ds6wg:DELFmiContQuantity_Volume.V_ContQuantity','ds6wg:raw_material.v_dimensiontype','type',
-					'physicalid','ds6w:policy','ds6w:reservedBy','ds6w:globalType','ds6w:manufacturable','pathsr',
-					'ds6w:isLastRevision','ds6w:reserved','ds6w:identifier','cestamp'
+				'compute_select_bo': ['icon', 'thumbnail_2d'],
+				'expand_iter': '1',
+				'fcs_url_mode': 'REDIRECT',
+				'select_bo': [
+					'ds6w:label',
+					'ds6w:modified',
+					'ds6w:created',
+					'ds6w:description',
+					'ds6wg:revision',
+					'ds6w:cadMaster',
+					'ds6w:responsible',
+					'owner',
+					'ds6w:status',
+					'ds6w:type',
+					'ds6wg:EnterpriseExtension.V_PartNumber',
+					'ds6wg:MaterialUsageExtension.DeclaredQuantity',
+					'ds6wg:DELFmiContQuantity_Mass.V_ContQuantity',
+					'ds6wg:DELFmiContQuantity_Volume.V_ContQuantity',
+					'ds6wg:raw_material.v_dimensiontype',
+					'type',
+					'physicalid',
+					'ds6w:policy',
+					'ds6w:reservedBy',
+					'ds6w:globalType',
+					'ds6w:manufacturable',
+					'pathsr',
+					'ds6w:isLastRevision',
+					'ds6w:reserved',
+					'ds6w:identifier',
+					'cestamp'
 				],
-				select_rel: [
-					'ds6w:label','ds6w:type','ds6wg:SynchroEBOMExt.V_InEBOMUser','physicalid','ro.plminstance.V_treeorder',
-					'ds6wg:raw_material.v_dimensiontype','ro.madefromquantity_length.V_ContQuantity',
-					'ro.madefromquantity_mass.V_ContQuantity','ro.madefromquantity_area.V_ContQuantity',
-					'ro.madefromquantity_volume.V_ContQuantity','ro.madefromquantity_AsRequired.AsRequired',
-					'ro.MadeFromQuantity_Rectangular.Length','ro.MadeFromQuantity_Rectangular.Width',
-					'ro.VPMInstanceQuantity_Area.V_ContQuantity','ro.VPMInstanceQuantity_Mass.V_ContQuantity',
-					'ro.VPMInstanceQuantity_Volume.V_ContQuantity','ro.VPMInstanceQuantity_Length.V_ContQuantity',
-					'ro.VPMInstanceQuantity_AsRequired.AsRequired','ro.VPMInstanceQuantity_Rectangular.Length',
-					'ro.VPMInstanceQuantity_Rectangular.Width','ds6w:reservedBy','cestamp'
+				'select_rel': [
+					'ds6w:label',
+					'ds6w:type',
+					'ds6wg:SynchroEBOMExt.V_InEBOMUser',
+					'physicalid',
+					'ro.plminstance.V_treeorder',
+					'ds6wg:raw_material.v_dimensiontype',
+					'ro.madefromquantity_length.V_ContQuantity',
+					'ro.madefromquantity_mass.V_ContQuantity',
+					'ro.madefromquantity_area.V_ContQuantity',
+					'ro.madefromquantity_volume.V_ContQuantity',
+					'ro.madefromquantity_AsRequired.AsRequired',
+					'ro.MadeFromQuantity_Rectangular.Length',
+					'ro.MadeFromQuantity_Rectangular.Width',
+					'ro.VPMInstanceQuantity_Area.V_ContQuantity',
+					'ro.VPMInstanceQuantity_Mass.V_ContQuantity',
+					'ro.VPMInstanceQuantity_Volume.V_ContQuantity',
+					'ro.VPMInstanceQuantity_Length.V_ContQuantity',
+					'ro.VPMInstanceQuantity_AsRequired.AsRequired',
+					'ro.VPMInstanceQuantity_Rectangular.Length',
+					'ro.VPMInstanceQuantity_Rectangular.Width',
+					'ds6w:reservedBy',
+					'cestamp'
 				],
-				locale: 'zh',
-				tenant: 'OnPremise',
-				paths: [[physicalId]],
-				sequence_filter: [{
-					definition: [{
-						type_filter_rel: ['VPMInstance', 'VPMRepInstance'],
-						'q.query': 'NOT ([ds6wg:SynchroEBOMExt.V_InEBOMUser]:"FALSE" )'
-					}]
-				}],
-				types: ['VPMReference', 'VPMRepReference', 'VPMInstance', 'Document'],
-				extensions: ['XCADExtension', 'XP_VPMReference_Ext', 'EnterpriseExtension', 'DELFmiContQuantity_Mass', 'DELFmiContQuantity_Volume'],
-				source: 'cstorage',
-				static_mapping: false,
-				format: 'entity_relation_occurrence'
+				'locale': 'zh',
+				'tenant': 'OnPremise',
+				'paths': [[physicalId]],
+				'sequence_filter': [
+					{
+						definition: [
+							{
+								'type_filter_rel': ['VPMInstance', 'VPMRepInstance'],
+								'q.query': 'NOT ([ds6wg:SynchroEBOMExt.V_InEBOMUser]:"FALSE" )'
+							}
+						]
+					}
+				],
+				'types': ['VPMReference', 'VPMRepReference', 'VPMInstance', 'Document'],
+				'extensions': ['XCADExtension', 'XP_VPMReference_Ext', 'EnterpriseExtension', 'DELFmiContQuantity_Mass', 'DELFmiContQuantity_Volume'],
+				'source': 'cstorage',
+				'static_mapping': false,
+				'format': 'entity_relation_occurrence'
 			},
 			cv: {
 				batch: {
-					expands: [{
-						filter: {
-							and: {
-								filters: [
-									{
+					expands: [
+						{
+							filter: {
+								and: {
+									filters: [
+										{
+											prefix_filter: {
+												prefix_path: [{ physical_id_path: [physicalId] }]
+											}
+										},
+										{
+											and: {
+												filters: [
+													{
+														sequence_filter: {
+															sequence: [
+																{
+																	uql: '((flattenedtaxonomies:"reltypes/VPMInstance") OR (flattenedtaxonomies:"reltypes/VPMRepInstance")) AND (NOT (ds6wg_58_synchroebomext_46_v_95_inebomuser:"FALSE" ))'
+																}
+															]
+														}
+													}
+												]
+											}
+										}
+									]
+								}
+							},
+							root: { physical_id: physicalId },
+							label,
+							graph: {
+								descending_condition_relation: {
+									uql: 'NOT (flattenedtaxonomies:"reltypes/XCADBaseDependency") AND ((flattenedtaxonomies:"reltypes/VPMInstance") OR (flattenedtaxonomies:"reltypes/VPMRepInstance"))'
+								},
+								descending_condition_object: {
+									uql: '(flattenedtaxonomies:"types/Drawing") OR ds6w_58_globaltype:"ds6w:Part"'
+								}
+							},
+							aggregation_processors: [
+								{
+									truncate: {
+										max_distance_from_prefix: 1,
 										prefix_filter: {
 											prefix_path: [{ physical_id_path: [physicalId] }]
 										}
-									},
-									{
-										and: {
-											filters: [{
-												sequence_filter: {
-													sequence: [{
-														uql: '((flattenedtaxonomies:"reltypes/VPMInstance") OR (flattenedtaxonomies:"reltypes/VPMRepInstance")) AND (NOT (ds6wg_58_synchroebomext_46_v_95_inebomuser:"FALSE" ))'
-													}]
-												}
-											}]
-										}
 									}
-								]
-							}
-						},
-						root: { physical_id: physicalId },
-						label,
-						graph: {
-							descending_condition_relation: {
-								uql: 'NOT (flattenedtaxonomies:"reltypes/XCADBaseDependency") AND ((flattenedtaxonomies:"reltypes/VPMInstance") OR (flattenedtaxonomies:"reltypes/VPMRepInstance"))'
-							},
-							descending_condition_object: {
-								uql: '(flattenedtaxonomies:"types/Drawing") OR ds6w_58_globaltype:"ds6w:Part"'
-							}
-						},
-						aggregation_processors: [{
-							truncate: {
-								max_distance_from_prefix: 1,
-								prefix_filter: {
-									prefix_path: [{ physical_id_path: [physicalId] }]
 								}
-							}
-						}]
-					}]
+							]
+						}
+					]
 				},
 				outputs: {
 					hits: {
 						predefined_computation: ['icons', 'urlstream|thumbnail_2d|2dthb|allrefs']
 					},
 					select_object: [
-						'ds6w:label','ds6w:modified','ds6w:created','ds6w:description','ds6wg:revision',
-						'ds6w:cadMaster','ds6w:responsible','owner','ds6w:status','ds6w:type',
-						'ds6wg:EnterpriseExtension.V_PartNumber','ds6wg:MaterialUsageExtension.DeclaredQuantity',
-						'ds6wg:DELFmiContQuantity_Mass.V_ContQuantity','ds6wg:DELFmiContQuantity_Volume.V_ContQuantity',
-						'ds6wg:raw_material.v_dimensiontype','type','physicalid','ds6w:policy',
-						'ds6w:reservedBy','ds6w:globalType','ds6w:manufacturable','pathsr',
-						'ds6w:isLastRevision','ds6w:reserved','ds6w:identifier','cestamp'
+						'ds6w:label',
+						'ds6w:modified',
+						'ds6w:created',
+						'ds6w:description',
+						'ds6wg:revision',
+						'ds6w:cadMaster',
+						'ds6w:responsible',
+						'owner',
+						'ds6w:status',
+						'ds6w:type',
+						'ds6wg:EnterpriseExtension.V_PartNumber',
+						'ds6wg:MaterialUsageExtension.DeclaredQuantity',
+						'ds6wg:DELFmiContQuantity_Mass.V_ContQuantity',
+						'ds6wg:DELFmiContQuantity_Volume.V_ContQuantity',
+						'ds6wg:raw_material.v_dimensiontype',
+						'type',
+						'physicalid',
+						'ds6w:policy',
+						'ds6w:reservedBy',
+						'ds6w:globalType',
+						'ds6w:manufacturable',
+						'pathsr',
+						'ds6w:isLastRevision',
+						'ds6w:reserved',
+						'ds6w:identifier',
+						'cestamp'
 					],
 					select_relation: [
-						'ds6w:label','ds6w:type','ds6wg:SynchroEBOMExt.V_InEBOMUser','physicalid',
-						'ro.plminstance.V_treeorder','ds6wg:raw_material.v_dimensiontype',
-						'ro.madefromquantity_length.V_ContQuantity','ro.madefromquantity_mass.V_ContQuantity',
-						'ro.madefromquantity_area.V_ContQuantity','ro.madefromquantity_volume.V_ContQuantity',
-						'ro.madefromquantity_AsRequired.AsRequired','ro.MadeFromQuantity_Rectangular.Length',
-						'ro.MadeFromQuantity_Rectangular.Width','ro.VPMInstanceQuantity_Area.V_ContQuantity',
-						'ro.VPMInstanceQuantity_Mass.V_ContQuantity','ro.VPMInstanceQuantity_Volume.V_ContQuantity',
-						'ro.VPMInstanceQuantity_Length.V_ContQuantity','ro.VPMInstanceQuantity_AsRequired.AsRequired',
-						'ro.VPMInstanceQuantity_Rectangular.Length','ro.VPMInstanceQuantity_Rectangular.Width',
-						'ds6w:reservedBy','cestamp'
+						'ds6w:label',
+						'ds6w:type',
+						'ds6wg:SynchroEBOMExt.V_InEBOMUser',
+						'physicalid',
+						'ro.plminstance.V_treeorder',
+						'ds6wg:raw_material.v_dimensiontype',
+						'ro.madefromquantity_length.V_ContQuantity',
+						'ro.madefromquantity_mass.V_ContQuantity',
+						'ro.madefromquantity_area.V_ContQuantity',
+						'ro.madefromquantity_volume.V_ContQuantity',
+						'ro.madefromquantity_AsRequired.AsRequired',
+						'ro.MadeFromQuantity_Rectangular.Length',
+						'ro.MadeFromQuantity_Rectangular.Width',
+						'ro.VPMInstanceQuantity_Area.V_ContQuantity',
+						'ro.VPMInstanceQuantity_Mass.V_ContQuantity',
+						'ro.VPMInstanceQuantity_Volume.V_ContQuantity',
+						'ro.VPMInstanceQuantity_Length.V_ContQuantity',
+						'ro.VPMInstanceQuantity_AsRequired.AsRequired',
+						'ro.VPMInstanceQuantity_Rectangular.Length',
+						'ro.VPMInstanceQuantity_Rectangular.Width',
+						'ds6w:reservedBy',
+						'cestamp'
 					],
 					format: 'entity_relation_occurrence'
 				}
@@ -835,15 +914,17 @@ class ExpandAPI {
 		const treeNodes: TreeNode[] = [];
 
 		// 去掉前缀路径，只保留真正的子级路径
-		const childPaths = paths.map(path => {
-			// 检查路径是否以 prefixPath 开头
-			const isPrefixMatch = prefixPath.every((id, index) => path[index] === id);
-			if (!isPrefixMatch) {
-				return null;
-			}
-			// 去掉前缀部分
-			return path.slice(prefixPath.length);
-		}).filter((path): path is string[] => path !== null && path.length >= 2);
+		const childPaths = paths
+			.map(path => {
+				// 检查路径是否以 prefixPath 开头
+				const isPrefixMatch = prefixPath.every((id, index) => path[index] === id);
+				if (!isPrefixMatch) {
+					return null;
+				}
+				// 去掉前缀部分
+				return path.slice(prefixPath.length);
+			})
+			.filter((path): path is string[] => path !== null && path.length >= 2);
 
 		console.log('[ExpandAPI] 菜单展开 - 过滤后的子路径数量:', childPaths.length);
 
@@ -1054,26 +1135,59 @@ class ExpandAPI {
 					predefined_computation: ['icons', 'urlstream|thumbnail_2d|2dthb|allrefs']
 				},
 				select_object: [
-					'ds6w:label', 'ds6w:modified', 'ds6w:created', 'ds6w:description', 'ds6wg:revision',
-					'ds6w:cadMaster', 'ds6w:responsible', 'owner', 'ds6w:status', 'ds6w:type',
-					'ds6wg:EnterpriseExtension.V_PartNumber', 'ds6wg:MaterialUsageExtension.DeclaredQuantity',
-					'ds6wg:DELFmiContQuantity_Mass.V_ContQuantity', 'ds6wg:DELFmiContQuantity_Volume.V_ContQuantity',
-					'ds6wg:raw_material.v_dimensiontype', 'type', 'physicalid', 'ds6w:policy',
-					'ds6w:reservedBy', 'ds6w:globalType', 'ds6w:manufacturable', 'pathsr',
-					'ds6w:isLastRevision', 'ds6w:reserved', 'ds6w:identifier', 'ds6w:docextension',
-					'islastrevision', 'policy', 'current'
+					'ds6w:label',
+					'ds6w:modified',
+					'ds6w:created',
+					'ds6w:description',
+					'ds6wg:revision',
+					'ds6w:cadMaster',
+					'ds6w:responsible',
+					'owner',
+					'ds6w:status',
+					'ds6w:type',
+					'ds6wg:EnterpriseExtension.V_PartNumber',
+					'ds6wg:MaterialUsageExtension.DeclaredQuantity',
+					'ds6wg:DELFmiContQuantity_Mass.V_ContQuantity',
+					'ds6wg:DELFmiContQuantity_Volume.V_ContQuantity',
+					'ds6wg:raw_material.v_dimensiontype',
+					'type',
+					'physicalid',
+					'ds6w:policy',
+					'ds6w:reservedBy',
+					'ds6w:globalType',
+					'ds6w:manufacturable',
+					'pathsr',
+					'ds6w:isLastRevision',
+					'ds6w:reserved',
+					'ds6w:identifier',
+					'ds6w:docextension',
+					'islastrevision',
+					'policy',
+					'current'
 				],
 				select_relation: [
-					'ds6w:label', 'ds6w:type', 'ds6wg:SynchroEBOMExt.V_InEBOMUser', 'physicalid',
-					'ro.plminstance.V_treeorder', 'ds6wg:raw_material.v_dimensiontype',
-					'ro.madefromquantity_length.V_ContQuantity', 'ro.madefromquantity_mass.V_ContQuantity',
-					'ro.madefromquantity_area.V_ContQuantity', 'ro.madefromquantity_volume.V_ContQuantity',
-					'ro.madefromquantity_AsRequired.AsRequired', 'ro.MadeFromQuantity_Rectangular.Length',
-					'ro.MadeFromQuantity_Rectangular.Width', 'ro.VPMInstanceQuantity_Area.V_ContQuantity',
-					'ro.VPMInstanceQuantity_Mass.V_ContQuantity', 'ro.VPMInstanceQuantity_Volume.V_ContQuantity',
-					'ro.VPMInstanceQuantity_Length.V_ContQuantity', 'ro.VPMInstanceQuantity_AsRequired.AsRequired',
-					'ro.VPMInstanceQuantity_Rectangular.Length', 'ro.VPMInstanceQuantity_Rectangular.Width',
-					'ds6w:reservedBy', 'type'
+					'ds6w:label',
+					'ds6w:type',
+					'ds6wg:SynchroEBOMExt.V_InEBOMUser',
+					'physicalid',
+					'ro.plminstance.V_treeorder',
+					'ds6wg:raw_material.v_dimensiontype',
+					'ro.madefromquantity_length.V_ContQuantity',
+					'ro.madefromquantity_mass.V_ContQuantity',
+					'ro.madefromquantity_area.V_ContQuantity',
+					'ro.madefromquantity_volume.V_ContQuantity',
+					'ro.madefromquantity_AsRequired.AsRequired',
+					'ro.MadeFromQuantity_Rectangular.Length',
+					'ro.MadeFromQuantity_Rectangular.Width',
+					'ro.VPMInstanceQuantity_Area.V_ContQuantity',
+					'ro.VPMInstanceQuantity_Mass.V_ContQuantity',
+					'ro.VPMInstanceQuantity_Volume.V_ContQuantity',
+					'ro.VPMInstanceQuantity_Length.V_ContQuantity',
+					'ro.VPMInstanceQuantity_AsRequired.AsRequired',
+					'ro.VPMInstanceQuantity_Rectangular.Length',
+					'ro.VPMInstanceQuantity_Rectangular.Width',
+					'ds6w:reservedBy',
+					'type'
 				],
 				format: 'entity_relation_occurrence'
 			}
@@ -1123,23 +1237,25 @@ class ExpandAPI {
 
 		// 去掉前缀路径，只保留真正的子级路径
 		// 前缀路径可能是 [根节点] 或 [根节点, 关系, 选中节点]
-		const childPaths = paths.map(path => {
-			// 检查路径是否以 prefixPath 开头
-			if (path.length < prefixPath.length) {
-				return null;
-			}
-			const isPrefixMatch = prefixPath.every((id, index) => path[index] === id);
-			if (!isPrefixMatch) {
-				return null;
-			}
-			// 去掉前缀部分，保留真正的子节点路径
-			const remainingPath = path.slice(prefixPath.length);
-			// 剩余路径至少包含 [关系, 节点]（即长度 >= 2）
-			if (remainingPath.length < 2) {
-				return null;
-			}
-			return remainingPath;
-		}).filter((path): path is string[] => path !== null);
+		const childPaths = paths
+			.map(path => {
+				// 检查路径是否以 prefixPath 开头
+				if (path.length < prefixPath.length) {
+					return null;
+				}
+				const isPrefixMatch = prefixPath.every((id, index) => path[index] === id);
+				if (!isPrefixMatch) {
+					return null;
+				}
+				// 去掉前缀部分，保留真正的子节点路径
+				const remainingPath = path.slice(prefixPath.length);
+				// 剩余路径至少包含 [关系, 节点]（即长度 >= 2）
+				if (remainingPath.length < 2) {
+					return null;
+				}
+				return remainingPath;
+			})
+			.filter((path): path is string[] => path !== null);
 
 		// 提取所有中间路径（用于递归构建树形结构）
 		// 路径格式：[relation, node, relation, node, ...]
@@ -1183,8 +1299,14 @@ class ExpandAPI {
 			});
 
 			console.log('[ExpandAPI] 递归解析 - Level:', currentLevel, 'parentPath:', parentPath, '直接子节点数:', directChildPaths.length);
-			console.log('[ExpandAPI] 递归解析 - 所有expandedChildPaths:', expandedChildPaths.map(p => p.join(',')));
-			console.log('[ExpandAPI] 递归解析 - 匹配的directChildPaths:', directChildPaths.map(p => p.join(',')));
+			console.log(
+				'[ExpandAPI] 递归解析 - 所有expandedChildPaths:',
+				expandedChildPaths.map(p => p.join(','))
+			);
+			console.log(
+				'[ExpandAPI] 递归解析 - 匹配的directChildPaths:',
+				directChildPaths.map(p => p.join(','))
+			);
 
 			directChildPaths.forEach(path => {
 				// path 结构: [relationId, childId] 或 [relationId, childId, relationId2, childId2, ...]
@@ -1227,12 +1349,19 @@ class ExpandAPI {
 
 		const result = buildTree([], 0);
 		console.log('[ExpandAPI] 递归解析 - 最终返回的树节点数量:', result.length);
-		console.log('[ExpandAPI] 递归解析 - 最终返回的树结构:', JSON.stringify(result, (key, value) => {
-			if (key === 'children' && Array.isArray(value)) {
-				return `[${value.length} children]`;
-			}
-			return value;
-		}, 2));
+		console.log(
+			'[ExpandAPI] 递归解析 - 最终返回的树结构:',
+			JSON.stringify(
+				result,
+				(key, value) => {
+					if (key === 'children' && Array.isArray(value)) {
+						return `[${value.length} children]`;
+					}
+					return value;
+				},
+				2
+			)
+		);
 		return result;
 	}
 
@@ -1303,6 +1432,43 @@ class ExpandAPI {
 					isDocument: node['ds6w:type'] === 'Document' || node.type === 'Document'
 				};
 			});
+	}
+
+	parseReferenceExpandData(response: ExpandResponse, rootPhysicalId: string): TreeNode[] {
+		const children = this.parseExpandData(response, rootPhysicalId);
+		const groupedChildren = new Map<string, TreeNode>();
+
+		children.forEach(child => {
+			const groupKey = child.resourceid;
+			const quantity = this.getRelationQuantity(response, child.relationId);
+			const existingChild = groupedChildren.get(groupKey);
+			if (existingChild) {
+				const currentQuantity = Number(existingChild.quantity || 0);
+				existingChild.quantity = String(currentQuantity + quantity);
+				return;
+			}
+			groupedChildren.set(groupKey, {
+				...child,
+				quantity: String(quantity),
+				id: `reference-${child.resourceid}`,
+				relationId: child.relationId
+			});
+		});
+
+		return Array.from(groupedChildren.values());
+	}
+
+	private getRelationQuantity(response: ExpandResponse, relationId?: string) {
+		if (!relationId) return 1;
+		const relation = response.results.find(item => {
+			const record = item as Partial<ExpandRelation>;
+			return record.resourceid === relationId && !!record.from && !!record.to;
+		}) as ExpandRelation | undefined;
+		const massQuantity = Number(relation?.['ro.VPMInstanceQuantity_Mass.V_ContQuantity']);
+		if (!Number.isNaN(massQuantity) && massQuantity > 0) return massQuantity;
+		const volumeQuantity = Number(relation?.['ro.VPMInstanceQuantity_Volume.V_ContQuantity']);
+		if (!Number.isNaN(volumeQuantity) && volumeQuantity > 0) return volumeQuantity;
+		return 1;
 	}
 
 	/**

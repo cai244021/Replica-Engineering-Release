@@ -382,6 +382,20 @@ export interface ReorderTreeResponse {
 	messages?: string[];
 }
 
+export interface DocumentDownloadTicketResponse {
+	success: boolean;
+	statusCode?: number;
+	csrf?: { name: string; value: string };
+	items?: number;
+	data?: Array<{
+		dataelements?: {
+			ticketURL?: string;
+			fileNames?: string[];
+		};
+		children?: unknown[];
+	}>;
+}
+
 export interface DuplicateProductOptionsParams {
 	data: DuplicateProductItem[];
 	command: 'duplicate';
@@ -1409,6 +1423,40 @@ class PartDetailAPI {
 			return response as { success: boolean; csrf?: { name: string; value: string } };
 		} catch (error) {
 			console.error('[PartDetailAPI] 获取 CSRF Token 失败:', error);
+			throw error;
+		}
+	}
+
+	async getDocumentDownloadTicket(documentIds: string[], csrfToken: string): Promise<DocumentDownloadTicketResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.securityContext) {
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/v1/modeler/documents/DownloadTicket';
+		const url = `${endpoint}?useDOCMParamSettings=true&zipFiles=true&tenant=OnPremise&e6w-lang=zh_CN&e6w-timezone=-480&`;
+		const params = {
+			csrf: {
+				name: 'ENO_CSRF_TOKEN',
+				value: csrfToken
+			},
+			data: documentIds.map(id => ({ id }))
+		};
+
+		console.log('[PartDetailAPI] 获取文档下载 Ticket URL:', url);
+		console.log('[PartDetailAPI] 获取文档下载 Ticket 参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.put(url, params as unknown as Record<string, unknown>, {
+				SecurityContext: securityContext,
+				eno_csrf_token: csrfToken
+			});
+			console.log('[PartDetailAPI] 获取文档下载 Ticket 响应:', response);
+			return response as DocumentDownloadTicketResponse;
+		} catch (error) {
+			console.error('[PartDetailAPI] 获取文档下载 Ticket 失败:', error);
 			throw error;
 		}
 	}

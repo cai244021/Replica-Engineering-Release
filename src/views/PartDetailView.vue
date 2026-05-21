@@ -62,34 +62,54 @@
 										</div>
 									</div>
 								</div>
-								<el-dropdown-item command="setEnterpriseNumber">
+								<el-dropdown-item
+									command="setEnterpriseNumber"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">▦</span>
 									<span class="part-action-menu-label">设置企业项目编号</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="delete">
+								<el-dropdown-item
+									command="delete"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">⌫</span>
 									<span class="part-action-menu-label">删除</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="manageBrowsingStructure">
+								<el-dropdown-item
+									command="manageBrowsingStructure"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">⌘</span>
 									<span class="part-action-menu-label">管理浏览结构定义</span>
 									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="revision"
-									divided>
+									divided
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">☷</span>
 									<span class="part-action-menu-label">修订版</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="newRevision">
+								<el-dropdown-item
+									command="newRevision"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">↳</span>
 									<span class="part-action-menu-label">新修订版</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="newBranch">
+								<el-dropdown-item
+									command="newBranch"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">⌘</span>
 									<span class="part-action-menu-label">新建分支</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="newRevisionSource">
+								<el-dropdown-item
+									command="newRevisionSource"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">⌁</span>
 									<span class="part-action-menu-label">新修订版源</span>
 								</el-dropdown-item>
@@ -101,57 +121,91 @@
 									<span class="part-action-menu-icon">▥</span>
 									<span class="part-action-menu-label">更新整个结构的修订版</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="copy">
+								<el-dropdown-item
+									command="copy"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">⧉</span>
 									<span class="part-action-menu-label">复制</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="compare">
+								<el-dropdown-item
+									command="compare"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">↔</span>
 									<span class="part-action-menu-label">比较</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="maturity">
+								<el-dropdown-item
+									command="maturity"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">♻</span>
 									<span class="part-action-menu-label">成熟度</span>
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="lock"
-									divided>
+									divided
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">🔒</span>
 									<span class="part-action-menu-label">锁定</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="unlock">
+								<el-dropdown-item
+									command="unlock"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">🔓</span>
 									<span class="part-action-menu-label">解锁</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="move">
+								<el-dropdown-item
+									command="move"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">⇥</span>
 									<span class="part-action-menu-label">移动</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="share">
+								<el-dropdown-item
+									command="share"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">↗</span>
 									<span class="part-action-menu-label">共享</span>
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="relationship"
-									divided>
+									divided
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">⚭</span>
 									<span class="part-action-menu-label">关系</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="relatedChange">
+								<el-dropdown-item
+									command="relatedChange"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">▤</span>
 									<span class="part-action-menu-label">相关更改</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="subscribe">
+								<el-dropdown-item
+									command="subscribe"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">☁</span>
 									<span class="part-action-menu-label">订阅</span>
 									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
 								</el-dropdown-item>
-								<el-dropdown-item command="exportMenu">
+								<el-dropdown-item
+									command="exportMenu"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">⇲</span>
 									<span class="part-action-menu-label">导出菜单</span>
 									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
 								</el-dropdown-item>
-								<el-dropdown-item command="customTitle">
+								<el-dropdown-item
+									command="customTitle"
+									disabled
+									class="part-action-disabled-item">
 									<span class="part-action-menu-icon">⚙</span>
 									<span class="part-action-menu-label">自定义标题</span>
 								</el-dropdown-item>
@@ -437,6 +491,12 @@
 									<el-dropdown-item command="setEnterpriseCode">
 										<span class="selected-action-icon">↔</span>
 										<span>设置企业编码</span>
+									</el-dropdown-item>
+									<el-dropdown-item
+										v-if="canDownloadSelectedDocuments"
+										command="downloadDocuments">
+										<el-icon class="selected-action-icon"><Download /></el-icon>
+										<span>下载</span>
 									</el-dropdown-item>
 									<div
 										class="selected-action-submenu"
@@ -1006,7 +1066,9 @@
 						</el-button>
 						<template #dropdown>
 							<el-dropdown-menu>
-								<el-dropdown-item command="indented">
+								<el-dropdown-item
+									command="indented"
+									:class="{ 'is-selected': structureViewMode === 'indented' }">
 									<svg
 										class="structure-view-icon"
 										width="18"
@@ -1044,7 +1106,9 @@
 									</svg>
 									<span>缩进的产品结构</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="flat">
+								<el-dropdown-item
+									command="flat"
+									:class="{ 'is-selected': structureViewMode === 'flat' }">
 									<svg
 										class="structure-view-icon"
 										width="18"
@@ -1070,7 +1134,9 @@
 									</svg>
 									<span>扁平产品结构</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="leaf">
+								<el-dropdown-item
+									command="leaf"
+									:class="{ 'is-selected': structureViewMode === 'leaf' }">
 									<svg
 										class="structure-view-icon"
 										width="18"
@@ -1086,7 +1152,9 @@
 									</svg>
 									<span>产品叶</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="material">
+								<el-dropdown-item
+									command="material"
+									:class="{ 'is-selected': structureViewMode === 'material' }">
 									<svg
 										class="structure-view-icon"
 										width="18"
@@ -1123,6 +1191,26 @@
 											rx="1" />
 									</svg>
 									<span>产品原材料</span>
+								</el-dropdown-item>
+								<el-dropdown-item divided />
+								<el-dropdown-item
+									command="usage"
+									:class="{ 'is-selected': structureUsageView === 'usage' }">
+									<span class="structure-view-check">✓</span>
+									<span>用法视图</span>
+								</el-dropdown-item>
+								<el-dropdown-item
+									command="reference"
+									:class="{ 'is-selected': structureUsageView === 'reference' }">
+									<span class="structure-view-check">✓</span>
+									<span>参考视图</span>
+								</el-dropdown-item>
+								<el-dropdown-item divided />
+								<el-dropdown-item
+									command="manufacturableOnly"
+									:class="{ 'is-selected': structureManufacturableOnly }">
+									<span class="structure-view-check">✓</span>
+									<span>仅显示可制造/可采购个项目</span>
 								</el-dropdown-item>
 							</el-dropdown-menu>
 						</template>
@@ -1729,11 +1817,6 @@ import {
 	ArrowUp,
 	Plus,
 	Minus,
-	View,
-	Filter,
-	Sort,
-	Refresh,
-	List,
 	Download,
 	Check,
 	Close,
@@ -1742,19 +1825,14 @@ import {
 	DocumentChecked,
 	Loading,
 	HomeFilled,
-	Share,
-	Fold,
 	Scissor,
 	ArrowRight,
-	CirclePlus,
-	CaretRight,
-	Expand,
-	ArrowLeft
+	Expand
 } from '@element-plus/icons-vue';
 import { ElCheckbox, ElIcon, ElImage, ElMessage, ElMessageBox, ElTag } from 'element-plus';
 import type { Column } from 'element-plus';
 import partDetailApi from '@/api/partDetailApi';
-import expandApi, { type TreeNode } from '@/api/expandApi';
+import expandApi, { type ExpandResponse, type TreeNode } from '@/api/expandApi';
 import { ModelerAPI, VplmAPI } from '@/api';
 import type {
 	DeformableProductInfo,
@@ -1920,6 +1998,7 @@ type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger';
 type SelectedActionCommand =
 	| 'openSelectedPart'
 	| 'setEnterpriseCode'
+	| 'downloadDocuments'
 	| 'instanceQuantity'
 	| 'unparent'
 	| 'replaceLatest'
@@ -1957,7 +2036,11 @@ const findActiveKeyword = ref('');
 const findLoading = ref(false);
 const findMatchedRowIds = ref<string[]>([]);
 const findCurrentIndex = ref(-1);
-const structureViewMode = ref<'indented' | 'flat'>('indented');
+type StructureDisplayView = 'indented' | 'flat' | 'leaf' | 'material';
+type StructureUsageView = 'usage' | 'reference';
+const structureViewMode = ref<StructureDisplayView>('indented');
+const structureUsageView = ref<StructureUsageView>('usage');
+const structureManufacturableOnly = ref(false);
 const hoveredChildrenColumnKey = ref<string>('');
 const instanceQuantityDialogVisible = ref(false);
 const instanceQuantitySubmitting = ref(false);
@@ -2087,6 +2170,7 @@ const columnWidths = ref<Record<string, number>>({
 	label: 240,
 	partNumber: 150,
 	revision: 80,
+	quantity: 80,
 	instanceLabel: 150,
 	isLastRevision: 100,
 	status: 100,
@@ -2154,6 +2238,19 @@ const getChildEnterpriseCode = (row: TreeNode) => {
 
 const isChildrenRowSelected = (row: TreeNode) => selectedChildrenRows.value.some(item => item.id === row.id);
 const isFlatStructureView = computed(() => structureViewMode.value === 'flat');
+const isDocumentRow = (row: TreeNode) => (row as any).type === 'Document' || row.typeDisplayName === 'Document';
+const canDownloadSelectedDocuments = computed(() => !!selectedChildrenRows.value.length && selectedChildrenRows.value.every(isDocumentRow));
+const filterManufacturableRows = (rows: TreeNode[]) =>
+	structureManufacturableOnly.value
+		? rows.filter(row => row.typeDisplayName === 'ds6w:Part' || (row as any)['ds6w:manufacturable'] === 'TRUE')
+		: rows;
+
+const parseStructureExpandData = (response: ExpandResponse, physicalId: string) => {
+	if (structureUsageView.value === 'reference') {
+		return expandApi.parseReferenceExpandData(response, physicalId);
+	}
+	return expandApi.parseExpandData(response, physicalId);
+};
 
 // 判断+号菜单是否可用（当勾选了非VPMReference类型的零件时禁用）
 const isCreateMenuDisabled = computed(() => {
@@ -2672,8 +2769,8 @@ const loadDuplicateSecurityContext = async () => {
 			type: 'VPMReference',
 			xrequestedwith: 'xmlhttprequest'
 		});
-		const options: DuplicateSecurityContextOption[] =
-			createContextRes.credentials?.map((credential: { ctxname: string; prjtitle?: string; ctxtitle?: string }) => ({
+		const options: DuplicateSecurityContextOption[]
+			= createContextRes.credentials?.map((credential: { ctxname: string; prjtitle?: string; ctxtitle?: string }) => ({
 				value: credential.ctxname,
 				label: credential.prjtitle || credential.ctxtitle || credential.ctxname
 			})) || [];
@@ -2931,11 +3028,17 @@ const handleCreateMenuCommand = async (command: CreateMenuCommand) => {
 		return;
 	}
 	if (command === 'uploadDocument') {
-		openUploadDocumentDialog();
+		const parentIds = getSelectedParentContextPhysicalIds();
+		const canInsert = await validateChildInsertParentContext(parentIds);
+		if (!canInsert) return;
+		openUploadDocumentDialog(parentIds);
 		return;
 	}
 	if (command === 'existingDocument') {
-		openAddExistingDocumentDialog();
+		const parentIds = getSelectedParentContextPhysicalIds();
+		const canInsert = await validateChildInsertParentContext(parentIds);
+		if (!canInsert) return;
+		openAddExistingDocumentDialog(parentIds);
 		return;
 	}
 	if (command === 'newDrawing') {
@@ -2989,8 +3092,10 @@ const handleCreateMenuCommand = async (command: CreateMenuCommand) => {
 
 // 上传文档相关
 const selectedUploadFile = ref<File | null>(null);
+const uploadDocumentParentIds = ref<string[]>([]);
 
-const openUploadDocumentDialog = () => {
+const openUploadDocumentDialog = (parentIds: string[] = getSelectedParentContextPhysicalIds()) => {
+	uploadDocumentParentIds.value = [...parentIds];
 	// 先触发文件选择
 	const fileInput = document.createElement('input');
 	fileInput.type = 'file';
@@ -3009,7 +3114,7 @@ const openUploadDocumentDialog = () => {
 };
 
 // 添加现有文档 - 使用 dsSearchInput 打开搜索对话框
-const openAddExistingDocumentDialog = () => {
+const openAddExistingDocumentDialog = (parentIds: string[] = getSelectedParentContextPhysicalIds()) => {
 	console.log('[PartDetailView] opening existing document dialog');
 	// 文档类型的搜索条件
 	const precond = `((flattenedtaxonomies:"types/Document" OR flattenedtaxonomies:"types/CONTROLLED DOCUMENTS") AND (NOT (flattenedtaxonomies:"types/Controlled Document Template" OR flattenedtaxonomies:"types/Rendition Document Template")))`;
@@ -3038,9 +3143,7 @@ const openAddExistingDocumentDialog = () => {
 
 				console.log('[PartDetailView] 选中文档:', documentIds);
 
-				// 获取当前父节点ID
-				const parentId = getParentPhysicalId();
-				if (!parentId) {
+				if (!parentIds.length) {
 					ElMessage.warning('未获取到父节点');
 					return;
 				}
@@ -3054,16 +3157,16 @@ const openAddExistingDocumentDialog = () => {
 				const csrfToken = ticketResponse.csrf.value;
 				console.log('[PartDetailView] 使用新鲜 CSRF Token:', csrfToken);
 
-				// 调用关联文档API
-				const response = await documentApi.relateDocuments(documentIds, parentId, csrfToken);
+				const responses = await Promise.all(parentIds.map(parentId => documentApi.relateDocuments(documentIds, parentId, csrfToken)));
+				const failedResponse = responses.find(response => !response.success);
 
-				if (response.success) {
-					ElMessage.success(`成功关联 ${documentIds.length} 个文档`);
+				if (!failedResponse) {
+					ElMessage.success(`成功关联 ${documentIds.length} 个文档到 ${parentIds.length} 个父节点`);
 
 					// 切换到数据库模式并刷新
-					await switchToDbModeAndRefresh();
+					await refreshCurrentPartDetail();
 				} else {
-					ElMessage.error(response.error || '关联文档失败');
+					ElMessage.error(failedResponse.error || '关联文档失败');
 				}
 			} catch (error: any) {
 				console.error('[PartDetailView] 关联文档失败:', error);
@@ -3558,14 +3661,13 @@ const handleUploadDocumentSubmit = async (data: {
 		return;
 	}
 
-	// 获取父对象ID（当前零件的 physicalId）
-	const parentId = getParentPhysicalId();
-	if (!parentId) {
+	const parentIds = uploadDocumentParentIds.value.length ? [...uploadDocumentParentIds.value] : getSelectedParentContextPhysicalIds();
+	if (!parentIds.length) {
 		ElMessage.error('无法获取父对象ID，请刷新页面后重试');
 		return;
 	}
 
-	console.log('[PartDetailView] 父对象ID:', parentId);
+	console.log('[PartDetailView] 父对象ID:', parentIds);
 
 	// 生成上传任务ID
 	const uploadId = `upload_${Date.now()}`;
@@ -3594,13 +3696,16 @@ const handleUploadDocumentSubmit = async (data: {
 
 	try {
 		// 调用文档上传API
-		const response = await documentApi.uploadDocument(data.file, data.title, data.description, parentId, data.remark);
+		const responses = await Promise.all(
+			parentIds.map(parentId => documentApi.uploadDocument(data.file!, data.title, data.description, parentId, data.remark))
+		);
+		const failedResponse = responses.find(response => !response.success);
 
 		// 处理响应结果
-		if (response.success) {
+		if (!failedResponse) {
 			// 上传成功
 			updateUploadStatus('completed');
-			ElMessage.success('文档上传成功');
+			ElMessage.success(`文档上传成功，已关联到 ${parentIds.length} 个父节点`);
 
 			// 刷新当前零件详情，显示新上传的文档
 			await refreshCurrentPartDetail();
@@ -3619,8 +3724,8 @@ const handleUploadDocumentSubmit = async (data: {
 			uploadDocumentDialogVisible.value = true;
 
 			// 处理失败情况
-			const errorMsg = response.error || '文档上传失败';
-			console.error('[PartDetailView] 文档上传失败:', errorMsg, response.internalError);
+			const errorMsg = failedResponse.error || '文档上传失败';
+			console.error('[PartDetailView] 文档上传失败:', errorMsg, failedResponse.internalError);
 			ElMessage.error(errorMsg);
 		}
 	} catch (error) {
@@ -3693,8 +3798,8 @@ const treeReorderSelectedIndexes = computed(() =>
 const canMoveTreeReorderUp = computed(() => !!treeReorderSelectedIndexes.value.length && treeReorderSelectedIndexes.value[0] > 0);
 const canMoveTreeReorderDown = computed(
 	() =>
-		!!treeReorderSelectedIndexes.value.length &&
-		treeReorderSelectedIndexes.value[treeReorderSelectedIndexes.value.length - 1] < treeReorderRows.value.length - 1
+		!!treeReorderSelectedIndexes.value.length
+		&& treeReorderSelectedIndexes.value[treeReorderSelectedIndexes.value.length - 1] < treeReorderRows.value.length - 1
 );
 const treeReorderDialogStyle = computed(() => ({
 	left: `${treeReorderDialogMaximized.value ? 8 : treeReorderDialogPosition.value.left}px`,
@@ -3901,6 +4006,19 @@ const renderHighlightedText = (value: string) => {
 	return parts.map(part => (part.toLowerCase() === keyword.toLowerCase() ? h('span', { class: 'find-highlight-text' }, part) : part));
 };
 
+const referenceQuantityColumn = computed<Column<TreeNode>[]>(() => {
+	if (structureUsageView.value !== 'reference') return [];
+	return [
+		{
+			key: 'quantity',
+			dataKey: 'quantity',
+			title: '数量',
+			width: columnWidths.value.quantity,
+			headerCellRenderer: () => createResizableHeader('quantity', '数量')
+		}
+	];
+});
+
 const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 	{
 		key: 'selection',
@@ -4035,6 +4153,7 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 		width: columnWidths.value.revision,
 		headerCellRenderer: () => createResizableHeader('revision', '修订版')
 	},
+	...referenceQuantityColumn.value,
 	{
 		key: 'instanceLabel',
 		dataKey: 'instanceLabel',
@@ -4262,6 +4381,44 @@ const isLastVersionValue = (value: unknown) => String(value).toLowerCase() === '
 
 const getLatestVersion = (versions: VersionGraphVersion[]) => versions.find(version => isLastVersionValue(version.isLastVersion));
 
+const handleDownloadSelectedDocuments = async () => {
+	const rows = [...selectedChildrenRows.value];
+	if (!rows.length) return;
+	if (!rows.every(isDocumentRow)) {
+		ElMessage.warning('请选择文档类型的数据下载');
+		return;
+	}
+	const documentIds = rows.map(row => row.resourceid).filter(Boolean);
+	if (!documentIds.length || documentIds.length !== rows.length) {
+		ElMessage.error('未获取到选中文档的物理ID');
+		return;
+	}
+	try {
+		const csrfResponse = await partDetailApi.getCSRFToken();
+		const csrfToken = csrfResponse.csrf?.value;
+		if (!csrfToken) {
+			ElMessage.error('未获取到 CSRF Token');
+			return;
+		}
+		const ticketResponse = await partDetailApi.getDocumentDownloadTicket(documentIds, csrfToken);
+		const ticketUrl = ticketResponse.data?.find(item => item.dataelements?.ticketURL)?.dataelements?.ticketURL;
+		if (!ticketResponse.success || !ticketUrl) {
+			ElMessage.error('获取文档下载地址失败');
+			return;
+		}
+		const iframe = document.createElement('iframe');
+		iframe.style.display = 'none';
+		iframe.src = ticketUrl;
+		document.body.appendChild(iframe);
+		window.setTimeout(() => {
+			iframe.remove();
+		}, 30000);
+	} catch (error) {
+		console.error('[PartDetailView] 下载文档失败:', error);
+		ElMessage.error('下载文档失败');
+	}
+};
+
 const handleReplaceLatestRevision = async () => {
 	const rows = [...selectedChildrenRows.value];
 	if (!rows.length) return;
@@ -4416,6 +4573,9 @@ const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 			break;
 		case 'setEnterpriseCode':
 			openEnterpriseCodeDialogForSelectedRows();
+			break;
+		case 'downloadDocuments':
+			handleDownloadSelectedDocuments();
 			break;
 		case 'instanceQuantity':
 			openInstanceQuantityDialog();
@@ -4880,11 +5040,13 @@ const loadPartDetail = async (physicalId: string) => {
 			currentPhysicalId.value = physicalId;
 
 			// 解析子级树形数据（产品子级）
-			const productChildren = expandApi.parseExpandData(expandResponse, physicalId);
+			const productChildren = parseStructureExpandData(expandResponse, physicalId);
 			// 解析文档数据为树形节点
-			const docChildren = expandApi.parseDocumentsToTreeNodes(docs, 1, [physicalId]);
+			const docChildren = expandApi.parseDocumentsToTreeNodes(docs, 0, [physicalId]);
 			// 合并产品子级和文档，按标题排序
-			const treeData = [...productChildren, ...docChildren].sort((a, b) => (a.label || '').localeCompare(b.label || '', 'zh'));
+			const treeData = filterManufacturableRows([...productChildren, ...docChildren]).sort((a, b) =>
+				(a.label || '').localeCompare(b.label || '', 'zh')
+			);
 			console.log('[PartDetailView] DB模式 解析后的树形数据:', treeData);
 			childrenData.value = treeData;
 		} else {
@@ -4937,10 +5099,10 @@ const loadExpandData = async (physicalId: string) => {
 		console.log('[PartDetailView] 展开数据响应:', response);
 
 		// 解析为树形结构
-		const treeData = expandApi.parseExpandData(response, physicalId);
+		const treeData = parseStructureExpandData(response, physicalId);
 		console.log('[PartDetailView] 解析后的树形数据:', treeData);
 
-		childrenData.value = treeData;
+		childrenData.value = filterManufacturableRows(treeData);
 	} catch (error) {
 		console.error('[PartDetailView] 加载展开数据失败:', error);
 		ElMessage.error('加载子级数据失败');
@@ -4971,14 +5133,15 @@ const loadChildren = async (row: TreeNode, treeNode: any, resolve: (data: TreeNo
 				expandApi.getSpecificationDocuments(row.resourceid)
 			]);
 
-			const productChildren = expandApi.parseExpandData(expandResponse, row.resourceid);
+			const productChildren = parseStructureExpandData(expandResponse, row.resourceid);
 			const docChildren = expandApi.parseDocumentsToTreeNodes(docs, (row.level || 0) + 1, row.path || [row.resourceid]);
 
 			// 合并产品子级和文档，按标题排序
-			childData = [...productChildren, ...docChildren].sort((a, b) => (a.label || '').localeCompare(b.label || '', 'zh'));
+			childData = filterManufacturableRows([...productChildren, ...docChildren]).sort((a, b) => (a.label || '').localeCompare(b.label || '', 'zh'));
 		} else {
 			const response = await expandApi.getExpandData(row.resourceid);
-			childData = expandApi.parseExpandData(response, row.resourceid);
+			childData = parseStructureExpandData(response, row.resourceid);
+			childData = filterManufacturableRows(childData);
 		}
 
 		// 设置子节点的 level 为父节点 level + 1
@@ -5262,20 +5425,42 @@ const handleStructureViewCommand = async (command: string) => {
 
 	switch (command) {
 		case 'indented':
-			await handleIndentedStructureView();
+			structureViewMode.value = 'indented';
+			await refreshCurrentStructureView();
 			break;
 		case 'flat':
-			await handleFlatStructureView();
+			structureViewMode.value = 'flat';
+			await refreshCurrentStructureView();
 			break;
 		case 'leaf':
-			ElMessage.info('切换到产品叶视图');
-			// TODO: 实现产品叶视图逻辑
+			structureViewMode.value = 'leaf';
+			await refreshCurrentStructureView();
 			break;
 		case 'material':
-			ElMessage.info('切换到产品原材料视图');
-			// TODO: 实现产品原材料视图逻辑
+			structureViewMode.value = 'material';
+			await refreshCurrentStructureView();
+			break;
+		case 'usage':
+			structureUsageView.value = 'usage';
+			await refreshCurrentStructureView();
+			break;
+		case 'reference':
+			structureUsageView.value = 'reference';
+			await refreshCurrentStructureView();
+			break;
+		case 'manufacturableOnly':
+			structureManufacturableOnly.value = !structureManufacturableOnly.value;
+			await refreshCurrentStructureView();
 			break;
 	}
+};
+
+const refreshCurrentStructureView = async () => {
+	if (structureViewMode.value === 'flat') {
+		await handleFlatStructureView();
+		return;
+	}
+	await handleIndentedStructureView();
 };
 
 const handleIndentedStructureView = async () => {
@@ -5285,9 +5470,12 @@ const handleIndentedStructureView = async () => {
 		return;
 	}
 
-	structureViewMode.value = 'indented';
 	selectedChildrenRows.value = [];
 	expandingRowIds.value = new Set();
+	if (queryModeStore.isDbMode) {
+		await loadPartDetail(rootPhysicalId);
+		return;
+	}
 	await loadExpandData(rootPhysicalId);
 	ElMessage.success('已切换到缩进的产品结构视图');
 };
@@ -5305,7 +5493,11 @@ const handleFlatStructureView = async () => {
 		selectedChildrenRows.value = [];
 		expandingRowIds.value = new Set();
 		const response = await expandApi.getFlatExpandData(rootPhysicalId);
-		childrenData.value = expandApi.parseFlatExpandData(response, rootPhysicalId);
+		let treeData = expandApi.parseFlatExpandData(response, rootPhysicalId);
+		if (structureUsageView.value === 'reference') {
+			treeData = expandApi.parseReferenceExpandData(response, rootPhysicalId);
+		}
+		childrenData.value = filterManufacturableRows(treeData);
 		ElMessage.success('已切换到扁平产品结构视图');
 	} catch (error) {
 		console.error('[PartDetailView] 切换扁平产品结构视图失败:', error);
@@ -8167,10 +8359,26 @@ onUnmounted(() => {
 .part-action-dropdown-popper .el-dropdown-menu__item--divided::before {
 	display: none !important;
 }
-.part-action-dropdown-popper .el-dropdown-menu__item:not(.is-disabled):focus,
-.part-action-dropdown-popper .el-dropdown-menu__item.is-disabled {
+.part-action-dropdown-popper .el-dropdown-menu__item:not(.is-disabled):focus {
+	background-color: #ecf5ff !important;
+	color: #409eff !important;
+}
+.part-action-dropdown-popper .el-dropdown-menu__item.is-disabled,
+.part-action-dropdown-popper .el-dropdown-menu__item.part-action-disabled-item {
 	color: #b8bec6 !important;
 	cursor: not-allowed !important;
+}
+.part-action-dropdown-popper .el-dropdown-menu__item.is-disabled:hover,
+.part-action-dropdown-popper .el-dropdown-menu__item.is-disabled:focus,
+.part-action-dropdown-popper .el-dropdown-menu__item.part-action-disabled-item:hover,
+.part-action-dropdown-popper .el-dropdown-menu__item.part-action-disabled-item:focus {
+	background-color: transparent !important;
+	color: #b8bec6 !important;
+}
+.part-action-dropdown-popper .part-action-disabled-item .part-action-menu-icon,
+.part-action-dropdown-popper .part-action-disabled-item .part-action-menu-label,
+.part-action-dropdown-popper .part-action-disabled-item .part-action-menu-arrow {
+	color: #b8bec6 !important;
 }
 .part-action-open-with-submenu {
 	position: relative;
@@ -8223,6 +8431,20 @@ onUnmounted(() => {
 	margin-top: 2px;
 	border-top: 1px solid #e4e7ed;
 	padding-top: 4px;
+}
+
+.structure-view-dropdown .el-dropdown-menu__item.is-selected {
+	background-color: #ecf5ff;
+	color: #409eff;
+	font-weight: 600;
+}
+.structure-view-check {
+	display: inline-block;
+	width: 18px;
+	color: transparent;
+}
+.structure-view-dropdown .el-dropdown-menu__item.is-selected .structure-view-check {
+	color: #409eff;
 }
 
 .children-find-floating {
