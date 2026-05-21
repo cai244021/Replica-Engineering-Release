@@ -24,11 +24,44 @@
 						</el-button>
 						<template #dropdown>
 							<el-dropdown-menu class="part-action-dropdown-menu">
-								<el-dropdown-item command="openMethod">
-									<span class="part-action-menu-icon">↪</span>
-									<span class="part-action-menu-label">打开方式</span>
-									<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
-								</el-dropdown-item>
+								<div
+									class="part-action-open-with-submenu"
+									@mouseenter="headerOpenWithSubmenuVisible = true"
+									@mouseleave="headerOpenWithSubmenuVisible = false">
+									<div class="part-action-open-with-trigger">
+										<span class="part-action-menu-icon">↪</span>
+										<span class="part-action-menu-label">打开方式</span>
+										<el-icon class="part-action-menu-arrow"><ArrowRight /></el-icon>
+									</div>
+									<div
+										v-show="headerOpenWithSubmenuVisible"
+										class="part-action-open-with-panel">
+										<div
+											class="part-action-open-with-item"
+											@click="handleRootOpenWith('3D Markup')">
+											<span class="part-action-menu-icon">✎</span>
+											<span>3D Markup</span>
+										</div>
+										<div
+											class="part-action-open-with-item"
+											@click="handleRootOpenWith('3D Navigate')">
+											<span class="part-action-menu-icon">🧭</span>
+											<span>3D Navigate</span>
+										</div>
+										<div
+											class="part-action-open-with-item"
+											@click="handleRootOpenWith('3DPlay')">
+											<span class="part-action-menu-icon">▶</span>
+											<span>3DPlay</span>
+										</div>
+										<div
+											class="part-action-open-with-item part-action-open-with-item-divided"
+											@click="handleRootOpenWith('more')">
+											<span class="part-action-menu-icon">＋</span>
+											<span>更多应用程序</span>
+										</div>
+									</div>
+								</div>
 								<el-dropdown-item command="setEnterpriseNumber">
 									<span class="part-action-menu-icon">▦</span>
 									<span class="part-action-menu-label">设置企业项目编号</span>
@@ -362,6 +395,45 @@
 										<span class="selected-action-icon">↪</span>
 										<span>打开</span>
 									</el-dropdown-item>
+									<div
+										v-if="selectedChildrenRows.length === 1"
+										class="selected-action-submenu"
+										@mouseenter="selectedOpenWithSubmenuVisible = true"
+										@mouseleave="selectedOpenWithSubmenuVisible = false">
+										<div class="selected-action-submenu-trigger">
+											<span class="selected-action-icon">↪</span>
+											<span>打开方式</span>
+											<el-icon><ArrowRight /></el-icon>
+										</div>
+										<div
+											v-show="selectedOpenWithSubmenuVisible"
+											class="selected-action-submenu-panel selected-action-open-with-panel">
+											<div
+												class="selected-action-submenu-item"
+												@click="handleSelectedOpenWith('3D Markup')">
+												<span class="selected-action-icon">✎</span>
+												<span>3D Markup</span>
+											</div>
+											<div
+												class="selected-action-submenu-item"
+												@click="handleSelectedOpenWith('3D Navigate')">
+												<span class="selected-action-icon">🧭</span>
+												<span>3D Navigate</span>
+											</div>
+											<div
+												class="selected-action-submenu-item"
+												@click="handleSelectedOpenWith('3DPlay')">
+												<span class="selected-action-icon">▶</span>
+												<span>3DPlay</span>
+											</div>
+											<div
+												class="selected-action-submenu-item selected-action-open-with-item-divided"
+												@click="handleSelectedOpenWith('more')">
+												<span class="selected-action-icon">＋</span>
+												<span>更多应用程序</span>
+											</div>
+										</div>
+									</div>
 									<el-dropdown-item command="setEnterpriseCode">
 										<span class="selected-action-icon">↔</span>
 										<span>设置企业编码</span>
@@ -1055,6 +1127,54 @@
 							</el-dropdown-menu>
 						</template>
 					</el-dropdown>
+					<el-tooltip
+						content="树重新排序"
+						placement="top">
+						<el-button
+							size="small"
+							circle
+							:disabled="!canOpenTreeReorder"
+							:class="['tree-reorder-btn', { 'is-disabled': !canOpenTreeReorder }]"
+							title="树重新排序"
+							@click="openTreeReorderDialog">
+							<svg
+								width="16"
+								height="16"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.8"
+								stroke-linecap="round">
+								<text
+									x="2"
+									y="7"
+									font-size="6"
+									fill="currentColor"
+									stroke="none">
+									1
+								</text>
+								<text
+									x="2"
+									y="14"
+									font-size="6"
+									fill="currentColor"
+									stroke="none">
+									2
+								</text>
+								<text
+									x="2"
+									y="21"
+									font-size="6"
+									fill="currentColor"
+									stroke="none">
+									3
+								</text>
+								<path d="M9 5h12" />
+								<path d="M9 12h12" />
+								<path d="M9 19h12" />
+							</svg>
+						</el-button>
+					</el-tooltip>
 					<el-button
 						size="small"
 						circle
@@ -1086,6 +1206,93 @@
 				</template>
 			</el-auto-resizer>
 		</div>
+		<Teleport to="body">
+			<div
+				v-if="treeReorderDialogVisible"
+				class="tree-reorder-floating"
+				:style="treeReorderDialogStyle">
+				<div
+					class="tree-reorder-header"
+					@mousedown="startTreeReorderDrag">
+					<span>树重新排序</span>
+					<div class="tree-reorder-header-actions">
+						<el-icon
+							class="tree-reorder-header-icon"
+							@click.stop="toggleTreeReorderMaximize">
+							<Expand />
+						</el-icon>
+						<el-icon
+							class="tree-reorder-header-icon"
+							@click.stop="closeTreeReorderDialog">
+							<Close />
+						</el-icon>
+					</div>
+				</div>
+				<div
+					v-loading="treeReorderLoading"
+					class="tree-reorder-body">
+					<div class="tree-reorder-table-wrap">
+						<table class="tree-reorder-table">
+							<thead>
+								<tr>
+									<th>标题</th>
+									<th>责任对象</th>
+									<th>创建日期</th>
+									<th>修改日期</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr
+									v-for="row in treeReorderRows"
+									:key="row.id"
+									:class="{ 'is-selected': isTreeReorderRowSelected(row.id) }"
+									@click="handleTreeReorderRowClick($event, row.id)">
+									<td>{{ row.title }}</td>
+									<td>{{ row.owner }}</td>
+									<td>{{ row.created }}</td>
+									<td>{{ row.modified }}</td>
+								</tr>
+							</tbody>
+						</table>
+						<div
+							v-if="!treeReorderRows.length"
+							class="tree-reorder-empty">
+							无可排序的子级
+						</div>
+					</div>
+					<div class="tree-reorder-side-actions">
+						<el-button
+							class="tree-reorder-move-btn"
+							size="small"
+							:disabled="!canMoveTreeReorderUp"
+							@click="moveTreeReorderRow(-1)">
+							<el-icon><ArrowUp /></el-icon>
+						</el-button>
+						<el-button
+							class="tree-reorder-move-btn"
+							size="small"
+							:disabled="!canMoveTreeReorderDown"
+							@click="moveTreeReorderRow(1)">
+							<el-icon><ArrowDown /></el-icon>
+						</el-button>
+					</div>
+				</div>
+				<div class="tree-reorder-footer">
+					<el-button
+						type="primary"
+						:loading="treeReorderSubmitting"
+						:disabled="!treeReorderRows.length"
+						@click="confirmTreeReorder">
+						确定
+					</el-button>
+					<el-button @click="resetTreeReorder">重置树排序</el-button>
+					<el-button @click="closeTreeReorderDialog">取消</el-button>
+				</div>
+				<div
+					class="tree-reorder-resize-handle"
+					@mousedown="startTreeReorderResize"></div>
+			</div>
+		</Teleport>
 		<!-- 导出进度对话框 -->
 		<el-dialog
 			v-model="exportDialogVisible"
@@ -1698,6 +1905,17 @@ interface InstanceQuantityRow {
 	identifier: string;
 }
 
+interface TreeReorderRow {
+	id: string;
+	relationId: string;
+	resourceid: string;
+	title: string;
+	owner: string;
+	created: string;
+	modified: string;
+	source: TreeNode;
+}
+
 type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger';
 type SelectedActionCommand =
 	| 'openSelectedPart'
@@ -1747,6 +1965,8 @@ const instanceQuantityRows = ref<InstanceQuantityRow[]>([]);
 const instanceQuantityBaseRows = ref<InstanceQuantityRow[]>([]);
 const instanceQuantitySelectedRow = ref<TreeNode | null>(null);
 const instanceQuantityValue = ref(1);
+const headerOpenWithSubmenuVisible = ref(false);
+const selectedOpenWithSubmenuVisible = ref(false);
 const selectedReplaceSubmenuVisible = ref(false);
 const unparentDialogVisible = ref(false);
 const unparentSubmitting = ref(false);
@@ -1769,6 +1989,17 @@ const updateRevisionSubmitting = ref(false);
 // 展开菜单相关数据（独立功能，不混合原有逻辑）
 const expandMenuActive = ref(false);
 const structureViewActive = ref(false);
+const treeReorderDialogVisible = ref(false);
+const treeReorderLoading = ref(false);
+const treeReorderSubmitting = ref(false);
+const treeReorderRows = ref<TreeReorderRow[]>([]);
+const treeReorderOriginalRows = ref<TreeReorderRow[]>([]);
+const treeReorderSelectedRowIds = ref<string[]>([]);
+const treeReorderParentPhysicalId = ref('');
+const treeReorderParentRow = ref<TreeNode | null>(null);
+const treeReorderDialogPosition = ref({ left: Math.max(20, Math.round((window.innerWidth - 1024) / 2)), top: 60 });
+const treeReorderDialogSize = ref({ width: 1024, height: 560 });
+const treeReorderDialogMaximized = ref(false);
 const expandNDialogVisible = ref(false);
 const expandNLevel = ref(2);
 const expandMenuLoading = ref(false);
@@ -3452,6 +3683,25 @@ const flattenTreeNodes = (nodes: TreeNode[]): TreeNode[] =>
 	nodes.flatMap(node => [node, ...(node.isExpanded && node.children?.length ? flattenTreeNodes(node.children) : [])]);
 
 const flattenChildrenData = computed(() => flattenTreeNodes(childrenData.value));
+const canOpenTreeReorder = computed(() => !isFlatStructureView.value && selectedChildrenRows.value.length <= 1);
+const treeReorderSelectedIndexes = computed(() =>
+	treeReorderSelectedRowIds.value
+		.map(id => treeReorderRows.value.findIndex(row => row.id === id))
+		.filter(index => index >= 0)
+		.sort((a, b) => a - b)
+);
+const canMoveTreeReorderUp = computed(() => !!treeReorderSelectedIndexes.value.length && treeReorderSelectedIndexes.value[0] > 0);
+const canMoveTreeReorderDown = computed(
+	() =>
+		!!treeReorderSelectedIndexes.value.length &&
+		treeReorderSelectedIndexes.value[treeReorderSelectedIndexes.value.length - 1] < treeReorderRows.value.length - 1
+);
+const treeReorderDialogStyle = computed(() => ({
+	left: `${treeReorderDialogMaximized.value ? 8 : treeReorderDialogPosition.value.left}px`,
+	top: `${treeReorderDialogMaximized.value ? 8 : treeReorderDialogPosition.value.top}px`,
+	width: `${treeReorderDialogMaximized.value ? window.innerWidth - 16 : treeReorderDialogSize.value.width}px`,
+	height: `${treeReorderDialogMaximized.value ? window.innerHeight - 16 : treeReorderDialogSize.value.height}px`
+}));
 
 const isAllVisibleChildrenSelected = computed(
 	() => !!flattenChildrenData.value.length && flattenChildrenData.value.every(row => isChildrenRowSelected(row))
@@ -4749,6 +4999,188 @@ const loadChildren = async (row: TreeNode, treeNode: any, resolve: (data: TreeNo
 	}
 };
 
+const isTreeReorderPartRow = (row: TreeNode) =>
+	((row as any)['ds6w:globalType'] === 'ds6w:Part' || (row as any).typeDisplayName === 'ds6w:Part') && !!row.relationId;
+
+const toTreeReorderRows = (rows: TreeNode[]): TreeReorderRow[] =>
+	rows.filter(isTreeReorderPartRow).map((row, index) => ({
+		id: row.id || row.relationId || `${row.resourceid}-${index}`,
+		relationId: row.relationId || '',
+		resourceid: row.resourceid,
+		title: row.label || row.instanceLabel || row.identifier || '-',
+		owner: row.owner || '-',
+		created: (row as any).created || '-',
+		modified: row.modified || '-',
+		source: row
+	}));
+
+const getTreeReorderChildren = async (parentRow: TreeNode | null): Promise<TreeNode[]> => {
+	if (!parentRow) return childrenData.value;
+	if (parentRow.children?.length) return parentRow.children;
+	setRowExpanding(parentRow, true);
+	try {
+		return await new Promise<TreeNode[]>(resolve => {
+			loadChildren(parentRow, null, childData => resolve(childData));
+		});
+	} finally {
+		setRowExpanding(parentRow, false);
+	}
+};
+
+const openTreeReorderDialog = async () => {
+	if (!canOpenTreeReorder.value) return;
+	const parentRow = selectedChildrenRows.value[0] || null;
+	const parentPhysicalId = parentRow?.resourceid || currentPhysicalId.value;
+	if (!parentPhysicalId) {
+		ElMessage.error('未获取到排序父节点的物理ID');
+		return;
+	}
+
+	treeReorderDialogVisible.value = true;
+	treeReorderLoading.value = true;
+	treeReorderParentRow.value = parentRow;
+	treeReorderParentPhysicalId.value = parentPhysicalId;
+	treeReorderSelectedRowIds.value = [];
+	try {
+		const sourceRows = await getTreeReorderChildren(parentRow);
+		const rows = toTreeReorderRows(sourceRows);
+		treeReorderRows.value = rows;
+		treeReorderOriginalRows.value = rows.map(row => ({ ...row }));
+		treeReorderSelectedRowIds.value = rows[0]?.id ? [rows[0].id] : [];
+	} catch (error) {
+		console.error('[PartDetailView] 打开树重新排序失败:', error);
+		ElMessage.error('打开树重新排序失败');
+	} finally {
+		treeReorderLoading.value = false;
+	}
+};
+
+const closeTreeReorderDialog = () => {
+	treeReorderDialogVisible.value = false;
+};
+
+const isTreeReorderRowSelected = (rowId: string) => treeReorderSelectedRowIds.value.includes(rowId);
+
+const handleTreeReorderRowClick = (event: MouseEvent, rowId: string) => {
+	if (event.ctrlKey) {
+		treeReorderSelectedRowIds.value = isTreeReorderRowSelected(rowId)
+			? treeReorderSelectedRowIds.value.filter(id => id !== rowId)
+			: [...treeReorderSelectedRowIds.value, rowId];
+		return;
+	}
+	treeReorderSelectedRowIds.value = [rowId];
+};
+
+const moveTreeReorderRow = (direction: -1 | 1) => {
+	const rows = [...treeReorderRows.value];
+	const selectedIdSet = new Set(treeReorderSelectedRowIds.value);
+	const indexes = direction < 0 ? treeReorderSelectedIndexes.value : [...treeReorderSelectedIndexes.value].reverse();
+	if (!indexes.length) return;
+	if (direction < 0 && indexes[0] === 0) return;
+	if (direction > 0 && indexes[0] === rows.length - 1) return;
+	for (const currentIndex of indexes) {
+		const targetIndex = currentIndex + direction;
+		if (targetIndex < 0 || targetIndex >= rows.length || selectedIdSet.has(rows[targetIndex].id)) continue;
+		const [currentRow] = rows.splice(currentIndex, 1);
+		rows.splice(targetIndex, 0, currentRow);
+	}
+	treeReorderRows.value = rows;
+};
+
+const resetTreeReorder = () => {
+	treeReorderRows.value = treeReorderOriginalRows.value.map(row => ({ ...row }));
+	treeReorderSelectedRowIds.value = treeReorderRows.value[0]?.id ? [treeReorderRows.value[0].id] : [];
+};
+
+const applyTreeReorderToSourceChildren = (sourceChildren: TreeNode[], reorderedPartRows: TreeReorderRow[]) => {
+	const reorderedParts = [...reorderedPartRows.map(row => row.source)];
+	return sourceChildren.map(row => (isTreeReorderPartRow(row) ? reorderedParts.shift() || row : row));
+};
+
+const getTreeReorderFailureMessage = (response: { status?: string; messages?: string[] }) => {
+	if (String(response.status).toLowerCase() !== 'failure' && !response.messages?.length) return '';
+	return (response.messages || [])
+		.map(message => (message.startsWith('ERR_') ? getCatflNlsMessage(message) : message))
+		.join('\n')
+		.replace(/<br>/g, '\n');
+};
+
+const confirmTreeReorder = async () => {
+	if (!treeReorderParentPhysicalId.value) {
+		ElMessage.error('未获取到排序父节点的物理ID');
+		return;
+	}
+	try {
+		treeReorderSubmitting.value = true;
+		const childIds = treeReorderRows.value.map(row => row.relationId).filter(Boolean);
+		const response = await partDetailApi.reorderTree(treeReorderParentPhysicalId.value, childIds);
+		if (String(response.status).toLowerCase() === 'success') {
+			ElMessage.success(response.message || '树重新排序成功');
+			if (treeReorderParentRow.value) {
+				treeReorderParentRow.value.children = applyTreeReorderToSourceChildren(treeReorderParentRow.value.children || [], treeReorderRows.value);
+			} else {
+				childrenData.value = applyTreeReorderToSourceChildren(childrenData.value, treeReorderRows.value);
+			}
+			closeTreeReorderDialog();
+			return;
+		}
+		const failureMessage = getTreeReorderFailureMessage(response) || '树重新排序失败';
+		showReplaceFailureMessage(failureMessage);
+	} catch (error: any) {
+		const failureMessage = getTreeReorderFailureMessage(error) || '树重新排序失败';
+		showReplaceFailureMessage(failureMessage);
+	} finally {
+		treeReorderSubmitting.value = false;
+	}
+};
+
+const toggleTreeReorderMaximize = () => {
+	treeReorderDialogMaximized.value = !treeReorderDialogMaximized.value;
+};
+
+const startTreeReorderDrag = (event: MouseEvent) => {
+	if (treeReorderDialogMaximized.value) return;
+	event.preventDefault();
+	const startX = event.clientX;
+	const startY = event.clientY;
+	const startLeft = treeReorderDialogPosition.value.left;
+	const startTop = treeReorderDialogPosition.value.top;
+	const handleMouseMove = (moveEvent: MouseEvent) => {
+		treeReorderDialogPosition.value = {
+			left: Math.max(0, startLeft + moveEvent.clientX - startX),
+			top: Math.max(0, startTop + moveEvent.clientY - startY)
+		};
+	};
+	const handleMouseUp = () => {
+		document.removeEventListener('mousemove', handleMouseMove);
+		document.removeEventListener('mouseup', handleMouseUp);
+	};
+	document.addEventListener('mousemove', handleMouseMove);
+	document.addEventListener('mouseup', handleMouseUp);
+};
+
+const startTreeReorderResize = (event: MouseEvent) => {
+	if (treeReorderDialogMaximized.value) return;
+	event.preventDefault();
+	event.stopPropagation();
+	const startX = event.clientX;
+	const startY = event.clientY;
+	const startWidth = treeReorderDialogSize.value.width;
+	const startHeight = treeReorderDialogSize.value.height;
+	const handleMouseMove = (moveEvent: MouseEvent) => {
+		treeReorderDialogSize.value = {
+			width: Math.max(640, startWidth + moveEvent.clientX - startX),
+			height: Math.max(360, startHeight + moveEvent.clientY - startY)
+		};
+	};
+	const handleMouseUp = () => {
+		document.removeEventListener('mousemove', handleMouseMove);
+		document.removeEventListener('mouseup', handleMouseUp);
+	};
+	document.addEventListener('mousemove', handleMouseMove);
+	document.addEventListener('mouseup', handleMouseUp);
+};
+
 // 切换行展开/收起
 const toggleRowExpand = async (row: TreeNode) => {
 	if (isRowExpanding(row)) return;
@@ -5534,6 +5966,133 @@ const showReplaceFailureMessage = (message: string) => {
 			.map(line => `<div>${line}</div>`)
 			.join('')
 	});
+};
+
+const OPEN_WITH_APP_ID: Record<string, string> = {
+	'3D Markup': 'ENOR3D_AP',
+	'3D Navigate': 'ENXDISC_AP',
+	'3DPlay': 'X3DPLAW_AP'
+};
+
+const X3D_OBJECT_TAXONOMIES = [
+	'PLMEntity',
+	'PLMReference',
+	'PLMCoreReference',
+	'LPAbstractReference',
+	'PHYSICALAbstractReference',
+	'VPMReference',
+	'3DPart',
+	'XCADExtension',
+	'CN_PartInfo'
+];
+
+const pickOpenWithField = (row: any, ...keys: string[]): string => {
+	for (const key of keys) {
+		const value = row?.[key];
+		if (value !== undefined && value !== null && value !== '') return String(value);
+	}
+	return '';
+};
+
+const buildOpenWithPayload = (row: any) => {
+	const objectId = pickOpenWithField(row, 'resourceid', 'physicalid', 'physicalId', 'id', 'objectId', 'ds6w:identifier');
+	const objectType = pickOpenWithField(row, 'ds6w:type', 'type', 'objectType', 'displayType') || 'VPMReference';
+	const displayName = pickOpenWithField(row, 'ds6w:label', 'label', 'displayName', 'name', 'title') || objectId;
+
+	return {
+		protocol: '3DXContent',
+		version: '2.0',
+		source: 'X3DSEAR_AP',
+		widgetId: '',
+		data: {
+			items: [
+				{
+					objectId,
+					objectType,
+					envId: 'OnPremise',
+					serviceId: '3DSpace',
+					displayName,
+					displayType: objectType,
+					contextId: baseInfoStore.securityContext || '',
+					objectTaxonomies: X3D_OBJECT_TAXONOMIES
+				}
+			]
+		}
+	};
+};
+
+const openWithHashJump = (appName: string, row: any) => {
+	const appId = OPEN_WITH_APP_ID[appName];
+	if (!appId) {
+		ElMessage.warning(`未知的打开方式：${appName}`);
+		return;
+	}
+	const objectId = pickOpenWithField(row, 'resourceid', 'physicalid', 'physicalId', 'id', 'objectId', 'ds6w:identifier');
+	if (!objectId) {
+		ElMessage.error('无法获取对象 physicalid');
+		return;
+	}
+
+	const encoded = encodeURIComponent(JSON.stringify(buildOpenWithPayload(row)));
+	const hashSuffix = `/app:${appId}/content:X3DContentId=${encoded}`;
+	try {
+		const topWindow: any = window.top || window.parent || window;
+		const currentHash = topWindow.location.hash || '';
+		const baseHash = currentHash.replace(/\/app:[^/]+(?:\/content:[^]*)?$/, '');
+		topWindow.location.hash = (baseHash || '#/tabId:New%20Tab') + hashSuffix;
+	} catch {
+		(window.top || window).location.href = `${window.location.origin}/3ddashboard/#/tabId:New%20Tab${hashSuffix}`;
+	}
+};
+
+const openNativeCompass = (row: any) => {
+	const objectId = pickOpenWithField(row, 'resourceid', 'physicalid', 'physicalId', 'id', 'objectId', 'ds6w:identifier');
+	if (!objectId) {
+		ElMessage.error('无法获取对象 physicalid');
+		return;
+	}
+
+	try {
+		const topWindow: any = window.top || window.parent || window;
+		const ctx = topWindow.requirejs?.s?.contexts?._ || topWindow.require?.s?.contexts?._;
+		const X3DContent = ctx?.defined?.['DS/i3DXCompass/X3DContent'];
+		const CompassManager = ctx?.defined?.['DS/Dashboard/CompassManager'];
+		if (X3DContent?.setX3DContent) X3DContent.setX3DContent(buildOpenWithPayload(row));
+		if (CompassManager?.open) CompassManager.open();
+		else topWindow.document.querySelector('.compass-small')?.click();
+	} catch (error) {
+		console.warn('[PartDetailView] 打开更多应用程序失败:', error);
+		ElMessage.warning('打开更多应用程序失败，请在 3DDashboard 中重试');
+	}
+};
+
+const handleOpenWith = (appName: string, row: any) => {
+	if (appName === 'more') openNativeCompass(row);
+	else openWithHashJump(appName, row);
+	document.body.click();
+};
+
+const buildRootOpenWithRow = () => ({
+	...partInfo.value,
+	resourceid: currentPhysicalId.value || (partInfo.value as any)?.physicalid || partInfo.value?.['ds6w:identifier'],
+	physicalid: currentPhysicalId.value || (partInfo.value as any)?.physicalid || partInfo.value?.['ds6w:identifier']
+});
+
+const handleRootOpenWith = (appName: string) => {
+	if (!partInfo.value || !currentPhysicalId.value) {
+		ElMessage.error('未获取到当前零件信息');
+		return;
+	}
+	handleOpenWith(appName, buildRootOpenWithRow());
+};
+
+const handleSelectedOpenWith = (appName: string) => {
+	const selectedRow = selectedChildrenRows.value[0];
+	if (!selectedRow) {
+		ElMessage.warning('请先选择一个对象');
+		return;
+	}
+	handleOpenWith(appName, selectedRow);
 };
 
 const handleUpdateRevisionConfirm = async (operations: UpdateRevisionOperation[]) => {
@@ -6998,6 +7557,163 @@ onUnmounted(() => {
 	background-color: #f5f7fa;
 }
 
+.tree-reorder-floating {
+	position: fixed;
+	z-index: 3200;
+	display: flex;
+	flex-direction: column;
+	min-width: 640px;
+	min-height: 360px;
+	background: #f6f7f9;
+	border: 1px solid #d7dce2;
+	box-shadow: 0 2px 10px rgb(0 0 0 / 22%);
+	box-sizing: border-box;
+}
+
+.tree-reorder-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	height: 44px;
+	padding: 0 12px;
+	background: #fff;
+	border-bottom: 1px solid #e4e7ed;
+	color: #303133;
+	font-weight: 600;
+	cursor: move;
+	user-select: none;
+}
+
+.tree-reorder-header-actions {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.tree-reorder-header-icon {
+	color: #7b838c;
+	cursor: pointer;
+	font-size: 18px;
+
+	&:hover {
+		color: #409eff;
+	}
+}
+
+.tree-reorder-body {
+	display: flex;
+	flex: 1;
+	min-height: 0;
+	padding: 12px 18px;
+	gap: 28px;
+	background: #fff;
+}
+
+.tree-reorder-table-wrap {
+	position: relative;
+	flex: 1;
+	min-width: 0;
+	overflow: auto;
+	border: 1px solid #eef0f3;
+	background: #fff;
+}
+
+.tree-reorder-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 13px;
+
+	th {
+		height: 24px;
+		padding: 0 6px;
+		background: #f2f3f5;
+		color: #5f6b7a;
+		font-weight: 400;
+		text-align: left;
+		border-bottom: 1px solid #e8ebef;
+	}
+
+	td {
+		height: 24px;
+		padding: 0 6px;
+		border-bottom: 1px solid #f1f2f4;
+		color: #202124;
+		white-space: nowrap;
+	}
+
+	tr {
+		cursor: pointer;
+
+		&.is-selected td,
+		&:hover td {
+			background: #eaf4ff;
+		}
+	}
+}
+
+.tree-reorder-empty {
+	padding: 32px 0;
+	color: #909399;
+	text-align: center;
+}
+
+.tree-reorder-side-actions {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 18px;
+	padding-top: 40px;
+}
+
+.tree-reorder-move-btn.el-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 42px;
+	height: 28px;
+	margin-left: 0;
+	padding: 0;
+
+	.el-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 14px;
+		height: 14px;
+		margin: 0;
+		line-height: 1;
+	}
+}
+
+.tree-reorder-footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	padding: 10px 12px;
+	background: #f6f7f9;
+	border-top: 1px solid #e4e7ed;
+}
+
+.tree-reorder-resize-handle {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	width: 14px;
+	height: 14px;
+	cursor: se-resize;
+
+	&::after {
+		position: absolute;
+		right: 2px;
+		bottom: 2px;
+		width: 8px;
+		height: 8px;
+		border-right: 1px solid #b8bec6;
+		border-bottom: 1px solid #b8bec6;
+		content: '';
+	}
+}
+
 .duplicate-target-cell {
 	display: flex;
 	align-items: center;
@@ -7416,6 +8132,8 @@ onUnmounted(() => {
 	border: 1px solid #d7dce2 !important;
 	border-radius: 0 !important;
 	box-shadow: 0 2px 8px rgb(0 0 0 / 18%) !important;
+	overflow: visible !important;
+	z-index: 3000 !important;
 }
 .part-action-dropdown-popper .el-popper__arrow {
 	display: none !important;
@@ -7424,6 +8142,12 @@ onUnmounted(() => {
 	padding: 0 !important;
 	border: 0 !important;
 	box-shadow: none !important;
+	overflow: visible !important;
+}
+.part-action-dropdown-popper .el-scrollbar,
+.part-action-dropdown-popper .el-scrollbar__wrap,
+.part-action-dropdown-popper .el-scrollbar__view {
+	overflow: visible !important;
 }
 .part-action-dropdown-popper .el-dropdown-menu__item {
 	display: flex !important;
@@ -7447,6 +8171,58 @@ onUnmounted(() => {
 .part-action-dropdown-popper .el-dropdown-menu__item.is-disabled {
 	color: #b8bec6 !important;
 	cursor: not-allowed !important;
+}
+.part-action-open-with-submenu {
+	position: relative;
+}
+.part-action-open-with-trigger {
+	display: flex;
+	align-items: center;
+	min-width: 226px;
+	height: 26px;
+	padding: 0 8px;
+	box-sizing: border-box;
+	color: #1f2d3d;
+	cursor: pointer;
+	font-size: 13px;
+	line-height: 26px;
+}
+.part-action-open-with-trigger:hover,
+.part-action-open-with-item:hover {
+	background-color: #ecf5ff;
+	color: #409eff;
+}
+.part-action-open-with-panel {
+	position: absolute;
+	top: 0;
+	right: 100%;
+	display: none;
+	min-width: 170px;
+	padding: 4px 0;
+	background: #fff;
+	border: 1px solid #d7dce2;
+	box-shadow: 0 2px 8px rgb(0 0 0 / 18%);
+	z-index: 30;
+}
+.part-action-open-with-submenu:hover .part-action-open-with-panel {
+	display: block;
+}
+.part-action-open-with-item {
+	display: flex;
+	align-items: center;
+	height: 26px;
+	padding: 0 8px;
+	box-sizing: border-box;
+	color: #1f2d3d;
+	cursor: pointer;
+	font-size: 13px;
+	line-height: 26px;
+	white-space: nowrap;
+}
+.part-action-open-with-item-divided {
+	margin-top: 2px;
+	border-top: 1px solid #e4e7ed;
+	padding-top: 4px;
 }
 
 .children-find-floating {
@@ -7873,6 +8649,12 @@ body.is-resizing-column {
 		cursor: pointer;
 		white-space: nowrap;
 		box-sizing: border-box;
+	}
+
+	.selected-action-open-with-item-divided {
+		margin-top: 2px;
+		border-top: 1px solid #dcdfe6;
+		padding-top: 4px;
 	}
 }
 

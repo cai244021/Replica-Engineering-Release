@@ -140,6 +140,7 @@
 												placement="bottom-end"
 												popper-class="card-dropdown-menu"
 												:teleported="true"
+												:popper-options="cardDropdownPopperOptions"
 												@command="(cmd: string) => handleCardCommand(cmd, item)"
 												@click.stop>
 												<el-icon class="dropdown-icon"><ArrowDown /></el-icon>
@@ -151,11 +152,41 @@
 															</el-icon>
 															打开
 														</el-dropdown-item>
-														<el-dropdown-item
-															command="openWith"
-															disabled>
-															打开方式
-														</el-dropdown-item>
+														<div
+															class="open-with-submenu-wrapper"
+															@click.stop
+															@mouseenter="positionSubmenu">
+															<div class="open-with-trigger">
+																打开方式
+																<el-icon class="submenu-arrow"><ArrowRight /></el-icon>
+															</div>
+															<div class="open-with-submenu">
+																<div
+																	class="submenu-item"
+																	@click="handleOpenWithClick('3D Markup', item)">
+																	<el-icon><EditPen /></el-icon>
+																	<span>3D Markup</span>
+																</div>
+																<div
+																	class="submenu-item"
+																	@click="handleOpenWithClick('3D Navigate', item)">
+																	<el-icon><Compass /></el-icon>
+																	<span>3D Navigate</span>
+																</div>
+																<div
+																	class="submenu-item"
+																	@click="handleOpenWithClick('3DPlay', item)">
+																	<el-icon><VideoPlay /></el-icon>
+																	<span>3DPlay</span>
+																</div>
+																<div
+																	class="submenu-item submenu-item-divided"
+																	@click="handleOpenWithClick('more', item)">
+																	<el-icon><Plus /></el-icon>
+																	<span>更多应用程序</span>
+																</div>
+															</div>
+														</div>
 														<el-dropdown-item command="setEnterpriseCode">设置企业项目编号</el-dropdown-item>
 														<el-dropdown-item
 															command="editContext"
@@ -382,11 +413,41 @@
 												</el-icon>
 												打开
 											</el-dropdown-item>
-											<el-dropdown-item
-												command="openWith"
-												disabled>
-												打开方式
-											</el-dropdown-item>
+											<div
+												class="open-with-submenu-wrapper"
+												@click.stop
+												@mouseenter="positionSubmenu">
+												<div class="open-with-trigger">
+													打开方式
+													<el-icon class="submenu-arrow"><ArrowRight /></el-icon>
+												</div>
+												<div class="open-with-submenu">
+													<div
+														class="submenu-item"
+														@click="handleOpenWithClick('3D Markup', row)">
+														<el-icon><EditPen /></el-icon>
+														<span>3D Markup</span>
+													</div>
+													<div
+														class="submenu-item"
+														@click="handleOpenWithClick('3D Navigate', row)">
+														<el-icon><Compass /></el-icon>
+														<span>3D Navigate</span>
+													</div>
+													<div
+														class="submenu-item"
+														@click="handleOpenWithClick('3DPlay', row)">
+														<el-icon><VideoPlay /></el-icon>
+														<span>3DPlay</span>
+													</div>
+													<div
+														class="submenu-item submenu-item-divided"
+														@click="handleOpenWithClick('more', row)">
+														<el-icon><Plus /></el-icon>
+														<span>更多应用程序</span>
+													</div>
+												</div>
+											</div>
 											<el-dropdown-item command="setEnterpriseCode">设置企业项目编号</el-dropdown-item>
 											<el-dropdown-item
 												command="editContext"
@@ -530,13 +591,29 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { Clock, Box, FolderOpened, Plus, CirclePlus, ArrowLeft, Grid, Menu, Document, ArrowDown } from '@element-plus/icons-vue';
+import {
+	Clock,
+	Box,
+	FolderOpened,
+	Plus,
+	CirclePlus,
+	ArrowLeft,
+	Grid,
+	Menu,
+	Document,
+	ArrowDown,
+	ArrowRight,
+	EditPen,
+	Compass,
+	VideoPlay
+} from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import searchApi from '@/api/searchApi';
 import recentApi from '@/api/recentApi';
 import partDetailApi from '@/api/partDetailApi';
 import { useBaseInfoStore, useDialogStore } from '@/store';
 import dsSearchInput from '@/plugins/ds-search-input';
+import { isDev } from '@/utils/env';
 
 const dialogStore = useDialogStore();
 
@@ -545,6 +622,24 @@ const router = useRouter();
 
 // Store
 const baseInfoStore = useBaseInfoStore();
+
+// 卡片下拉菜单定位选项：使用 fixed 定位避免页面扩大，动态计算最佳展开位置
+const cardDropdownPopperOptions = {
+	strategy: 'fixed' as const,
+	modifiers: [
+		{
+			name: 'flip',
+			options: {
+				fallbackPlacements: ['bottom-end', 'top-end', 'bottom-start', 'top-start', 'right-start', 'left-start'],
+				boundary: 'viewport'
+			}
+		},
+		{
+			name: 'preventOverflow',
+			options: { boundary: 'viewport', padding: 8, altAxis: true, tether: false }
+		}
+	]
+};
 
 // 默认缩略图
 // eslint-disable-next-line @stylistic/operator-linebreak
@@ -1111,6 +1206,170 @@ const getStatusType = (status: string) => {
 	}
 };
 
+// ========== 打开方式 ==========
+
+const OPEN_WITH_APP_ID: Record<string, string> = {
+	'3D Markup': 'ENOR3D_AP',
+	'3D Navigate': 'ENXDISC_AP',
+	'3DPlay': 'X3DPLAW_AP'
+};
+
+const X3D_OBJECT_TAXONOMIES = [
+	'PLMEntity',
+	'PLMReference',
+	'PLMCoreReference',
+	'LPAbstractReference',
+	'PHYSICALAbstractReference',
+	'VPMReference',
+	'3DPart',
+	'XCADExtension',
+	'CN_PartInfo'
+];
+
+const pickRowField = (row: any, ...keys: string[]): string => {
+	for (const k of keys) {
+		const v = row?.[k];
+		if (v !== undefined && v !== null && v !== '') return String(v);
+	}
+	return '';
+};
+
+const buildX3DContentPayload = (item: any) => {
+	const objectId = pickRowField(item, 'id', 'physicalid', 'mxid', 'ds6w:identifier', 'resourceid');
+	const objectType = pickRowField(item, 'type', 'ds6w:type') || 'VPMReference';
+	const displayName = pickRowField(item, 'name', 'ds6w:label', 'label', 'title') || objectId;
+
+	return {
+		protocol: '3DXContent',
+		version: '2.0',
+		source: 'X3DSEAR_AP',
+		widgetId: '',
+		data: {
+			items: [
+				{
+					objectId,
+					objectType,
+					envId: 'OnPremise',
+					serviceId: '3DSpace',
+					displayName,
+					displayType: objectType,
+					contextId: baseInfoStore.securityContext || '',
+					objectTaxonomies: X3D_OBJECT_TAXONOMIES
+				}
+			]
+		}
+	};
+};
+
+const getDashboardUrl = (): string => {
+	try {
+		const stored = window.localStorage.getItem('dashboardUrl');
+		if (stored) return stored.replace(/\/api\/.*$/, '');
+	} catch {
+		/* ignore */
+	}
+	return `${window.location.origin}/3ddashboard`;
+};
+
+const openWithHashJump = (appName: string, item: any) => {
+	const appId = OPEN_WITH_APP_ID[appName];
+	if (!appId) {
+		ElMessage.warning(`未知的打开方式：${appName}`);
+		return;
+	}
+
+	const objectId = pickRowField(item, 'id', 'physicalid');
+	if (!objectId) {
+		ElMessage.error('无法获取对象 physicalid');
+		return;
+	}
+
+	const payload = buildX3DContentPayload(item);
+	const encoded = encodeURIComponent(JSON.stringify(payload));
+	const hashSuffix = `/app:${appId}/content:X3DContentId=${encoded}`;
+
+	try {
+		const top: any = window.top || window.parent || window;
+		const currentHash = top.location.hash || '';
+		const baseHash = currentHash.replace(/\/app:[^/]+(?:\/content:[^]*)?$/, '');
+		top.location.hash = (baseHash || '#/tabId:New%20Tab') + hashSuffix;
+		console.log(`[工具栏] 打开方式: ${appName} → hash 跳转`);
+	} catch {
+		const dashboardUrl = getDashboardUrl();
+		const fullUrl = `${dashboardUrl}/#/tabId:New%20Tab${hashSuffix}`;
+		(window.top || window).location.href = fullUrl;
+		console.log('[打开方式] 修改父 hash 失败，回退到顶层跳转');
+	}
+};
+
+const openNativeCompass = async (item: any) => {
+	if (isDev) {
+		ElMessage.info('开发模式下无法打开原生罗盘');
+		return;
+	}
+
+	const objectId = pickRowField(item, 'id', 'physicalid');
+	if (!objectId) {
+		ElMessage.error('无法获取对象 physicalid');
+		return;
+	}
+
+	try {
+		const topWin: any = window.top || window.parent || window;
+		const ctx = topWin.requirejs?.s?.contexts?._ || topWin.require?.s?.contexts?._;
+
+		// 设置 X3DContent
+		const payload = buildX3DContentPayload(item);
+		const X3DContent = ctx?.defined?.['DS/i3DXCompass/X3DContent'];
+		if (X3DContent?.setX3DContent) {
+			X3DContent.setX3DContent(payload);
+			console.log('[更多应用程序] X3DContent.setX3DContent() 已设置');
+		}
+
+		// 打开罗盘
+		const CompassManager = ctx?.defined?.['DS/Dashboard/CompassManager'];
+		if (CompassManager?.open) {
+			CompassManager.open();
+			console.log('[更多应用程序] CompassManager.open() 成功');
+		} else {
+			// 备用方式：点击罗盘按钮
+			topWin.document.querySelector('.compass-small')?.click();
+		}
+	} catch (e) {
+		console.warn('[更多应用程序] 打开罗盘失败:', e);
+	}
+};
+
+const positionSubmenu = (e: MouseEvent) => {
+	const wrapper = e.currentTarget as HTMLElement;
+	const submenu = wrapper.querySelector('.open-with-submenu') as HTMLElement;
+	if (!submenu) return;
+
+	const triggerRect = wrapper.getBoundingClientRect();
+	const menuHeight = submenu.scrollHeight || 140;
+	const viewportHeight = window.innerHeight;
+
+	let top = triggerRect.top;
+	// 如果向下展开会超出视口，则向上调整
+	if (top + menuHeight > viewportHeight - 8) {
+		top = viewportHeight - menuHeight - 8;
+	}
+	if (top < 8) top = 8;
+
+	submenu.style.top = `${top}px`;
+	submenu.style.left = `${triggerRect.right}px`;
+};
+
+const handleOpenWithClick = (appName: string, item: any) => {
+	if (appName === 'more') {
+		openNativeCompass(item);
+	} else {
+		openWithHashJump(appName, item);
+	}
+	// 关闭所有弹出的 dropdown
+	document.body.click();
+};
+
 // 处理卡片下拉菜单命令
 const handleCardCommand = (command: string, item: any) => {
 	if (command === 'open') {
@@ -1594,17 +1853,85 @@ onUnmounted(() => {
 }
 
 .card-dropdown-menu {
+	position: fixed !important;
+
 	.el-dropdown-menu__item {
 		font-size: 12px;
-		padding: 4px 12px;
-		line-height: 24px;
+		padding: 2px 12px;
+		line-height: 20px;
+		height: auto;
 	}
 
 	.el-dropdown-menu {
 		max-width: 200px;
-		max-height: 400px;
-		overflow-y: auto;
+		overflow: visible;
+		padding: 2px 0;
+	}
+}
+
+.open-with-submenu-wrapper {
+	position: relative;
+
+	.open-with-trigger {
+		display: flex;
+		align-items: center;
+		padding: 2px 12px;
+		font-size: 12px;
+		line-height: 20px;
+		cursor: pointer;
+		color: var(--el-text-color-regular);
+		white-space: nowrap;
+
+		&:hover {
+			background-color: var(--el-color-primary-light-9);
+			color: var(--el-color-primary);
+		}
+
+		.submenu-arrow {
+			margin-left: auto;
+			font-size: 12px;
+		}
+	}
+
+	.open-with-submenu {
+		display: none;
+		position: fixed;
+		left: 0;
+		top: 0;
+		min-width: 160px;
+		background: #fff;
+		border: 1px solid var(--el-border-color-light);
+		border-radius: 4px;
+		box-shadow: var(--el-box-shadow-light);
 		padding: 4px 0;
+		z-index: 2050;
+
+		.submenu-item {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			padding: 2px 12px;
+			font-size: 12px;
+			line-height: 20px;
+			cursor: pointer;
+			color: var(--el-text-color-regular);
+			white-space: nowrap;
+
+			&:hover {
+				background-color: var(--el-color-primary-light-9);
+				color: var(--el-color-primary);
+			}
+		}
+
+		.submenu-item-divided {
+			margin-top: 2px;
+			border-top: 1px solid var(--el-border-color-lighter);
+			padding-top: 4px;
+		}
+	}
+
+	&:hover .open-with-submenu {
+		display: block;
 	}
 }
 

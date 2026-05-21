@@ -376,6 +376,12 @@ export interface CreateDeformedFromDeformableResponse {
 	results: CreateDeformedResult[];
 }
 
+export interface ReorderTreeResponse {
+	status: string;
+	message?: string;
+	messages?: string[];
+}
+
 export interface DuplicateProductOptionsParams {
 	data: DuplicateProductItem[];
 	command: 'duplicate';
@@ -1444,6 +1450,40 @@ class PartDetailAPI {
 			return response;
 		} catch (error) {
 			console.error('[PartDetailAPI] 创建连续材料数量关联失败:', error);
+			throw error;
+		}
+	}
+
+	async reorderTree(parentPhysicalId: string, children: string[]): Promise<ReorderTreeResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.securityContext) {
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = `/resources/product/revisions/${parentPhysicalId}`;
+		const url = `${endpoint}?securityContext=${encodeURIComponent(securityContext)}&tenant=OnPremise`;
+		const params = {
+			version: '1.0',
+			order: {
+				type: 'RTInstance',
+				count: children.length,
+				children
+			}
+		};
+
+		console.log('[PartDetailAPI] 树重新排序 URL:', url);
+		console.log('[PartDetailAPI] 树重新排序参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.put(url, params as unknown as Record<string, unknown>, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 树重新排序响应:', response);
+			return response as ReorderTreeResponse;
+		} catch (error) {
+			console.error('[PartDetailAPI] 树重新排序失败:', error);
 			throw error;
 		}
 	}
