@@ -2240,10 +2240,36 @@ const isChildrenRowSelected = (row: TreeNode) => selectedChildrenRows.value.some
 const isFlatStructureView = computed(() => structureViewMode.value === 'flat');
 const isDocumentRow = (row: TreeNode) => (row as any).type === 'Document' || row.typeDisplayName === 'Document';
 const canDownloadSelectedDocuments = computed(() => !!selectedChildrenRows.value.length && selectedChildrenRows.value.every(isDocumentRow));
-const filterManufacturableRows = (rows: TreeNode[]) =>
-	structureManufacturableOnly.value
-		? rows.filter(row => row.typeDisplayName === 'ds6w:Part' || (row as any)['ds6w:manufacturable'] === 'TRUE')
-		: rows;
+const filterManufacturableRows = (rows: TreeNode[]) => {
+	if (!structureManufacturableOnly.value) return rows;
+	return rows.filter(row => row.manufacturable !== 'FALSE');
+};
+
+/**
+ * 递归过滤可制造/可采购树：
+ * 从第一层开始，如果节点 ds6w:manufacturable === 'FALSE' 则整棵子树移除
+ * 如果没有该 key 则保留
+ */
+const filterManufacturableTree = (nodes: TreeNode[]): TreeNode[] => {
+	const result: TreeNode[] = [];
+	for (const node of nodes) {
+		console.log('[PartDetailView] 可制造/可采购过滤:', {
+			'label': node.label,
+			'resourceid': node.resourceid,
+			'level': node.level,
+			'ds6w:manufacturable': node.manufacturable
+		});
+		if (node.manufacturable === 'FALSE') {
+			continue;
+		}
+		const filtered = { ...node };
+		if (filtered.children && filtered.children.length > 0) {
+			filtered.children = filterManufacturableTree(filtered.children);
+		}
+		result.push(filtered);
+	}
+	return result;
+};
 
 const parseStructureExpandData = (response: ExpandResponse, physicalId: string) => {
 	if (structureUsageView.value === 'reference') {
@@ -4014,7 +4040,11 @@ const referenceQuantityColumn = computed<Column<TreeNode>[]>(() => {
 			dataKey: 'quantity',
 			title: '数量',
 			width: columnWidths.value.quantity,
-			headerCellRenderer: () => createResizableHeader('quantity', '数量')
+			headerCellRenderer: () => createResizableHeader('quantity', '数量'),
+			cellRenderer: ({ rowData }) => {
+				if (rowData.globalType !== 'ds6w:Part') return '';
+				return rowData.quantity || '';
+			}
 		}
 	];
 });
@@ -5449,18 +5479,73 @@ const handleStructureViewCommand = async (command: string) => {
 			await refreshCurrentStructureView();
 			break;
 		case 'manufacturableOnly':
-			structureManufacturableOnly.value = !structureManufacturableOnly.value;
-			await refreshCurrentStructureView();
+			await handleManufacturableToggle();
 			break;
 	}
 };
 
 const refreshCurrentStructureView = async () => {
+	if (structureManufacturableOnly.value) {
+		await handleManufacturableView();
+		return;
+	}
 	if (structureViewMode.value === 'flat') {
 		await handleFlatStructureView();
 		return;
 	}
 	await handleIndentedStructureView();
+};
+
+const handleManufacturableToggle = async () => {
+	const nextValue = !structureManufacturableOnly.value;
+	if (nextValue && queryModeStore.isDbMode) {
+		try {
+			await ElMessageBox.confirm(
+				'可制造/可采购视图 仅在索引模式下可用。您的数据可能未反映最新的修改。\n\n是否要切换到索引模式？',
+				'可制造/可采购视图',
+				{
+					confirmButtonText: '确定',
+					cancelButtonText: '取消',
+					type: 'warning'
+				}
+			);
+		} catch {
+			return;
+		}
+		queryModeStore.switchToIndexMode();
+	}
+	structureManufacturableOnly.value = nextValue;
+	if (structureManufacturableOnly.value) {
+		await handleManufacturableView();
+		return;
+	}
+	await refreshCurrentStructureView();
+};
+
+const handleManufacturableView = async () => {
+	const rootPhysicalId = currentPhysicalId.value;
+	if (!rootPhysicalId) {
+		ElMessage.warning('当前没有加载零件');
+		return;
+	}
+	childrenLoading.value = true;
+	try {
+		selectedChildrenRows.value = [];
+		expandingRowIds.value = new Set();
+		const params = expandApi.buildExpandRequestParams(rootPhysicalId, null, 10);
+		const response = await expandApi.expandWithParams(params);
+		let treeData = expandApi.parseExpandDataRecursive(response, rootPhysicalId, [rootPhysicalId]);
+		if (structureUsageView.value === 'reference') {
+			treeData = expandApi.parseReferenceExpandDataRecursive(response, rootPhysicalId, [rootPhysicalId]);
+		}
+		childrenData.value = filterManufacturableTree(treeData);
+		ElMessage.success('已切换到可制造/可采购视图');
+	} catch (error) {
+		console.error('[PartDetailView] 切换可制造/可采购视图失败:', error);
+		ElMessage.error('切换可制造/可采购视图失败');
+	} finally {
+		childrenLoading.value = false;
+	}
 };
 
 const handleIndentedStructureView = async () => {

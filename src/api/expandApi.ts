@@ -121,6 +121,7 @@ export interface TreeNode {
 	path: string[];
 	isDocument?: boolean;
 	quantity?: string;
+	manufacturable?: string;
 }
 
 class ExpandAPI {
@@ -734,6 +735,7 @@ class ExpandAPI {
 				identifier: de.name || '-',
 				icon: de.indexedTypeicon || de.typeicon || '',
 				typeDisplayName: 'Document',
+				manufacturable: '',
 				level,
 				children: [],
 				isExpanded: false,
@@ -1417,7 +1419,7 @@ class ExpandAPI {
 					owner: node['ds6w:responsible'] || '-',
 					reserved: node['ds6w:reserved'] === 'TRUE' || node['ds6w:reserved'] === 'true',
 					modified: modifiedText,
-					globalType: node['ds6w:type'] || '-',
+					globalType: node['ds6w:globalType'] || node['ds6w:type'] || '-',
 					identifier: node['ds6w:identifier'] || '-',
 					icon: node.icon || '',
 					type_icon_url: node.type_icon_url || node.thumbnail_2d || '',
@@ -1458,12 +1460,54 @@ class ExpandAPI {
 		return Array.from(groupedChildren.values());
 	}
 
+	parseReferenceExpandDataRecursive(response: ExpandResponse, rootPhysicalId: string, prefixPath: string[] = [rootPhysicalId]): TreeNode[] {
+		const getNodeQuantity = (node: TreeNode) => {
+			const existingQuantity = Number(node.quantity);
+			if (!Number.isNaN(existingQuantity) && existingQuantity > 0) {
+				return existingQuantity;
+			}
+			return this.getRelationQuantity(response, node.relationId);
+		};
+		const mergeNodes = (nodes: TreeNode[]): TreeNode[] => {
+			const groupedNodes = new Map<string, TreeNode>();
+			nodes.forEach(node => {
+				const quantity = getNodeQuantity(node);
+				const existingNode = groupedNodes.get(node.resourceid);
+				const mergedChildren = node.children?.length ? mergeNodes(node.children) : [];
+				if (existingNode) {
+					const currentQuantity = Number(existingNode.quantity || 0);
+					existingNode.quantity = String(currentQuantity + quantity);
+					existingNode.children = mergeNodes([...(existingNode.children || []), ...mergedChildren]);
+					existingNode.hasChildren = existingNode.children.length > 0;
+					existingNode.isExpanded = existingNode.hasChildren;
+					return;
+				}
+				groupedNodes.set(node.resourceid, {
+					...node,
+					id: `reference-${node.resourceid}-${node.level}`,
+					quantity: String(quantity),
+					children: mergedChildren,
+					hasChildren: mergedChildren.length > 0,
+					isExpanded: mergedChildren.length > 0
+				});
+			});
+			return Array.from(groupedNodes.values());
+		};
+
+		return mergeNodes(this.parseExpandDataRecursive(response, rootPhysicalId, prefixPath));
+	}
+
 	private getRelationQuantity(response: ExpandResponse, relationId?: string) {
 		if (!relationId) return 1;
 		const relation = response.results.find(item => {
 			const record = item as Partial<ExpandRelation>;
 			return record.resourceid === relationId && !!record.from && !!record.to;
 		}) as ExpandRelation | undefined;
+		console.log('[ExpandAPI] 参考视图数量字段:', {
+			'relationId': relationId,
+			'ro.VPMInstanceQuantity_Mass.V_ContQuantity': relation?.['ro.VPMInstanceQuantity_Mass.V_ContQuantity'],
+			'ro.VPMInstanceQuantity_Volume.V_ContQuantity': relation?.['ro.VPMInstanceQuantity_Volume.V_ContQuantity']
+		});
 		const massQuantity = Number(relation?.['ro.VPMInstanceQuantity_Mass.V_ContQuantity']);
 		if (!Number.isNaN(massQuantity) && massQuantity > 0) return massQuantity;
 		const volumeQuantity = Number(relation?.['ro.VPMInstanceQuantity_Volume.V_ContQuantity']);
@@ -1521,13 +1565,14 @@ class ExpandAPI {
 			owner: node['ds6w:responsible'] || '-', // 所有者
 			reserved: isReserved, // 锁定状态
 			modified: modifiedText, // 修改日期
-			globalType: node['ds6w:type'] || '-', // 类型
+			globalType: node['ds6w:globalType'] || node['ds6w:type'] || '-', // 类型
 			identifier: node['ds6w:identifier'] || '-', // 名称
 			icon: node.icon || '', // 图标
 			type_icon_url: node.type_icon_url || node.thumbnail_2d || '', // 类型图标回退
 			policy: node['ds6w:policy'] || node.policy || '',
 			cadMaster: node['ds6w:cadMaster'] || '',
 			typeDisplayName: node['ds6w:globalType'] || node['ds6w:type'] || '',
+			manufacturable: node['ds6w:manufacturable'] || '',
 			level,
 			children: [],
 			isExpanded: false,
