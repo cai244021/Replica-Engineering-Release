@@ -519,6 +519,14 @@ export interface PromoteMaturityParams {
 	cadMaster?: string;
 }
 
+export type ReservationOperation = 'reserve' | 'unreserve';
+
+export interface ReservationParams {
+	operation: ReservationOperation;
+	urls: string[];
+	isMultiSel: boolean;
+}
+
 // 解析 attributes 数组为对象
 export function parsePartInfo(rawData: PartInfoRaw): PartInfo {
 	const partInfo: PartInfo = {
@@ -1532,6 +1540,41 @@ class PartDetailAPI {
 			return response as ReorderTreeResponse;
 		} catch (error) {
 			console.error('[PartDetailAPI] 树重新排序失败:', error);
+			throw error;
+		}
+	}
+
+	async reserveOrUnreserve(params: ReservationParams): Promise<unknown> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.securityContext) {
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = `/resources/v1/collabServices/reservation/op/${params.operation}`;
+		const url = `${endpoint}?tenant=OnPremise&isMultiSel=${params.isMultiSel ? 1 : 0}&select=physicalid`;
+		const body = {
+			urls: params.urls,
+			branchorcontent: 'type',
+			metrics: {
+				UXName: params.operation === 'reserve' ? 'Lock' : 'Unlock',
+				client_app_domain: '3DEXPERIENCE 3DDashboard',
+				client_app_name: 'ENXENG_AP'
+			}
+		};
+
+		console.log('[PartDetailAPI] 锁定/解锁 URL:', url);
+		console.log('[PartDetailAPI] 锁定/解锁参数:', JSON.stringify(body, null, 2));
+
+		try {
+			const response = await http.post(url, body, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 锁定/解锁响应:', response);
+			return response;
+		} catch (error) {
+			console.error('[PartDetailAPI] 锁定/解锁失败:', error);
 			throw error;
 		}
 	}

@@ -10,13 +10,13 @@ export default defineConfig({
 			'@': path.resolve(__dirname, './src')
 		}
 	},
-  server: {
+	server: {
 		cors: true,
 		open: true,
 		port: 3000,
 		proxy: {
 			'/api': {
-				target: 'https://3dspace.r2026.v6.com/3dspace',//接口的服务器域名
+				target: 'https://3dspace.r2026.v6.com/3dspace', // 接口的服务器域名
 				changeOrigin: true,
 				secure: false,
 				rewrite: path => path.replace(/^\/api/, '')

@@ -86,9 +86,7 @@
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="revision"
-									divided
-									disabled
-									class="part-action-disabled-item">
+									divided>
 									<span class="part-action-menu-icon">☷</span>
 									<span class="part-action-menu-label">修订版</span>
 								</el-dropdown-item>
@@ -1806,6 +1804,66 @@
 			:current-physical-id="currentPhysicalId"
 			:submitting="updateRevisionSubmitting"
 			@confirm="handleUpdateRevisionConfirm" />
+		<el-dialog
+			v-model="reservationDialogVisible"
+			:title="reservationDialogTitle"
+			width="445px"
+			class="reservation-dialog"
+			:close-on-click-modal="false">
+			<div class="reservation-options">
+				<el-radio
+					v-model="reservationSelectedScope"
+					label="reference">
+					<div class="reservation-option-content">
+						<div class="reservation-option-title">
+							参考
+							<span class="reservation-info-icon">i</span>
+						</div>
+						<div class="reservation-option-subtitle">{{ reservationTargetRow?.label || '' }}</div>
+					</div>
+				</el-radio>
+				<el-radio
+					v-model="reservationSelectedScope"
+					label="instance"
+					:disabled="!reservationTargetRow?.relationId">
+					<div class="reservation-option-content">
+						<div class="reservation-option-title">
+							实例
+							<span class="reservation-info-icon">i</span>
+						</div>
+						<div class="reservation-option-subtitle">{{ reservationTargetRow?.instanceLabel || reservationTargetRow?.label || '' }}</div>
+					</div>
+				</el-radio>
+				<el-radio
+					v-model="reservationSelectedScope"
+					label="both"
+					:disabled="!reservationTargetRow?.relationId">
+					<div class="reservation-option-content">
+						<div class="reservation-option-title">
+							参考和实例
+							<span class="reservation-info-icon">i</span>
+						</div>
+						<div class="reservation-option-subtitle">
+							{{ reservationTargetRow?.label || '' }} & {{ reservationTargetRow?.instanceLabel || reservationTargetRow?.label || '' }}
+						</div>
+					</div>
+				</el-radio>
+			</div>
+			<template #footer>
+				<div class="reservation-dialog-footer">
+					<el-checkbox v-model="reservationRememberChoice">记住我的选择</el-checkbox>
+					<div>
+						<el-button
+							type="primary"
+							:loading="reservationSubmitting"
+							@click="confirmReservationDialog">
+							{{ reservationOperation === 'reserve' ? '锁定' : '解锁' }}
+						</el-button>
+						<el-button @click="reservationDialogVisible = false">取消</el-button>
+					</div>
+				</div>
+			</template>
+		</el-dialog>
 	</div>
 </template>
 
@@ -1849,6 +1907,7 @@ import type {
 	UpdateEntireStructureRevisionConfirmation,
 	VersionGraphVersion
 } from '@/api/partDetailApi';
+import type { ReservationOperation } from '@/api/partDetailApi';
 import { useBaseInfoStore } from '@/store';
 import { useDialogStore } from '@/store/modules/dialog';
 import { useQueryModeStore } from '@/store/modules/queryMode';
@@ -2068,6 +2127,135 @@ const replaceRevisionDialogVisible = ref(false);
 const replaceRevisionSelectedRows = ref<TreeNode[]>([]);
 const updateRevisionDialogVisible = ref(false);
 const updateRevisionSubmitting = ref(false);
+const getCommonRevisionSdkUrl = () => {
+	const matched = window.location.pathname.match(/^(.*\/webapps)\/[^/]+(?:\/.*)?$/);
+	const webappsBase = matched?.[1] || '/3dspace/webapps';
+	const spaceOrigin = window.location.origin.replace('3ddashboard.', '3dspace.');
+	return `${spaceOrigin}${webappsBase}/TW_CommonUtil/sdk/revision.js`;
+};
+type ReservationScope = 'reference' | 'instance' | 'both';
+const reservationStorageKey = 'partDetail.reservation.scope';
+const reservationDialogVisible = ref(false);
+const reservationSubmitting = ref(false);
+const reservationTargetRow = ref<TreeNode | null>(null);
+const reservationOperation = ref<ReservationOperation>('reserve');
+const reservationSelectedScope = ref<ReservationScope>('reference');
+const reservationRememberChoice = ref(false);
+const reservationDialogTitle = computed(() => {
+	const operationText = reservationOperation.value === 'reserve' ? '锁定' : '解锁';
+	const label = reservationTargetRow.value?.label || reservationTargetRow.value?.identifier || '';
+	const rowInstanceLabel = reservationTargetRow.value?.instanceLabel;
+	const instanceLabel = rowInstanceLabel && rowInstanceLabel !== '-' ? rowInstanceLabel : '';
+	return `${operationText} - ${label}${instanceLabel ? ` (${instanceLabel})` : ''}`;
+});
+
+const getReservationUrls = (row: TreeNode, scope: ReservationScope) => {
+	const urls = [`model/bus/${row.resourceid}`];
+	if ((scope === 'instance' || scope === 'both') && row.relationId) {
+		if (scope === 'instance') return [`model/rel/${row.relationId}`];
+		urls.push(`model/rel/${row.relationId}`);
+	}
+	return urls;
+};
+
+const executeReservationOperation = async (row: TreeNode, operation: ReservationOperation, scope: ReservationScope) => {
+	const urls = getReservationUrls(row, scope);
+	if (!urls.length) {
+		ElMessage.warning('未获取到可操作对象');
+		return;
+	}
+	reservationSubmitting.value = true;
+	try {
+		await partDetailApi.reserveOrUnreserve({
+			operation,
+			urls,
+			isMultiSel: scope === 'both'
+		});
+		row.reserved = operation === 'reserve';
+		ElMessage.success(operation === 'reserve' ? '锁定成功' : '解锁成功');
+	} catch (error) {
+		console.error('[PartDetailView] 锁定/解锁失败:', error);
+		ElMessage.error(operation === 'reserve' ? '锁定失败' : '解锁失败');
+	} finally {
+		reservationSubmitting.value = false;
+	}
+};
+
+const openReservationDialog = async (row: TreeNode) => {
+	const operation: ReservationOperation = row.reserved ? 'unreserve' : 'reserve';
+	const rememberedScope = localStorage.getItem(reservationStorageKey) as ReservationScope | null;
+	if (rememberedScope && ['reference', 'instance', 'both'].includes(rememberedScope)) {
+		await executeReservationOperation(row, operation, rememberedScope);
+		return;
+	}
+	reservationTargetRow.value = row;
+	reservationOperation.value = operation;
+	reservationSelectedScope.value = row.relationId ? 'both' : 'reference';
+	reservationRememberChoice.value = false;
+	reservationDialogVisible.value = true;
+};
+
+const confirmReservationDialog = async () => {
+	if (!reservationTargetRow.value) return;
+	if (reservationRememberChoice.value) {
+		localStorage.setItem(reservationStorageKey, reservationSelectedScope.value);
+	}
+	await executeReservationOperation(reservationTargetRow.value, reservationOperation.value, reservationSelectedScope.value);
+	reservationDialogVisible.value = false;
+};
+
+const getReservationTooltip = (row: TreeNode) => {
+	if (row.reserved) {
+		const reservedBy = row.reservedBy || row.owner || '';
+		return reservedBy ? `由 ${reservedBy} 锁定单击以锁定` : '已锁定单击以锁定';
+	}
+	return '解锁单击以锁定';
+};
+
+const renderReservationIcon = (reserved: boolean) => {
+	if (reserved) {
+		return h(
+			'svg',
+			{
+				width: '22',
+				height: '22',
+				viewBox: '0 0 24 24',
+				fill: 'none',
+				xmlns: 'http://www.w3.org/2000/svg'
+			},
+			[
+				h('circle', { 'cx': '7', 'cy': '12', 'r': '3.4', 'stroke': '#63B12F', 'stroke-width': '2.4' }),
+				h('path', {
+					'd': 'M10 12H20M16 12V15M19 12V15',
+					'stroke': '#63B12F',
+					'stroke-width': '2.4',
+					'stroke-linecap': 'round',
+					'stroke-linejoin': 'round'
+				})
+			]
+		);
+	}
+	return h(
+		'svg',
+		{
+			width: '22',
+			height: '22',
+			viewBox: '0 0 24 24',
+			fill: 'none',
+			xmlns: 'http://www.w3.org/2000/svg'
+		},
+		[
+			h('path', {
+				'd': 'M9 10V7.5C9 4.73858 11.2386 2.5 14 2.5C16.2091 2.5 18 4.29086 18 6.5',
+				'stroke': '#7A7A7A',
+				'stroke-width': '2.4',
+				'stroke-linecap': 'round'
+			}),
+			h('rect', { x: '5', y: '10', width: '13', height: '10', rx: '1.6', fill: '#7A7A7A' }),
+			h('circle', { cx: '11.5', cy: '15', r: '1.35', fill: '#FFFFFF' })
+		]
+	);
+};
 
 // 展开菜单相关数据（独立功能，不混合原有逻辑）
 const expandMenuActive = ref(false);
@@ -4234,7 +4422,16 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 		title: '锁定',
 		width: columnWidths.value.reserved,
 		headerCellRenderer: () => createResizableHeader('reserved', '锁定'),
-		cellRenderer: ({ rowData }) => h('span', createChildrenCellProps('reserved'), rowData.reserved ? '锁定' : '已解锁')
+		cellRenderer: ({ rowData }) =>
+			h(
+				'span',
+				{
+					...createChildrenCellProps('reserved', 'reservation-cell'),
+					title: getReservationTooltip(rowData),
+					onDblclick: () => openReservationDialog(rowData)
+				},
+				[renderReservationIcon(rowData.reserved)]
+			)
 	},
 	{
 		key: 'modified',
@@ -6201,7 +6398,65 @@ const handleConfirmUpdateEntireStructureRevision = async () => {
 	}
 };
 
+const loadCommonRevisionSdk = () => {
+	return new Promise<void>((resolve, reject) => {
+		const win = window as Window & {
+			TWCommonUtil?: {
+				openRevisionDialog?: (options: { physicalId: string; baseUrl?: string }) => void;
+			};
+		};
+		if (win.TWCommonUtil?.openRevisionDialog) {
+			resolve();
+			return;
+		}
+		const commonRevisionSdkUrl = getCommonRevisionSdkUrl();
+		const existing = document.querySelector(`script[src="${commonRevisionSdkUrl}"]`) as HTMLScriptElement | null;
+		if (existing) {
+			existing.addEventListener('load', () => resolve(), { once: true });
+			existing.addEventListener('error', () => reject(new Error('加载 TW_CommonUtil 修订版 SDK 失败')), { once: true });
+			return;
+		}
+		const script = document.createElement('script');
+		script.src = commonRevisionSdkUrl;
+		script.async = true;
+		script.onload = () => resolve();
+		script.onerror = () => reject(new Error('加载 TW_CommonUtil 修订版 SDK 失败'));
+		document.head.appendChild(script);
+	});
+};
+
+const openCommonRevisionDialog = async (physicalId: string) => {
+	try {
+		await loadCommonRevisionSdk();
+		const win = window as Window & {
+			TWCommonUtil?: {
+				openRevisionDialog?: (options: { physicalId: string; baseUrl?: string; lang?: string; user?: string }) => void;
+			};
+		};
+		const spaceUrl = baseInfoStore.spaceUrl || (await baseInfoStore.fetchSpaceUrl());
+		const commonUtilBaseUrl = `${String(spaceUrl).replace(/\/$/, '')}/webapps/TW_CommonUtil`;
+		const lang = localStorage.getItem('language') || navigator.language.split('-')[0] || 'zh';
+		const user = baseInfoStore.currentUser || '';
+		win.TWCommonUtil?.openRevisionDialog?.({ physicalId, baseUrl: commonUtilBaseUrl, lang, user });
+	} catch (error) {
+		console.error('[TW_EngineeringRelease] 打开公共修订版弹窗失败:', error);
+		ElMessage.error('打开修订版失败');
+	}
+};
+
 const handleHeaderActionCommand = async (command: string) => {
+	console.log('[TW_EngineeringRelease] header action command:', command);
+	if (command === 'revision') {
+		const physicalId = getParentPhysicalId();
+		console.log('[TW_EngineeringRelease] revision 点击，当前物理ID:', physicalId);
+		if (!physicalId) {
+			console.warn('[TW_EngineeringRelease] revision 点击失败：未找到当前对象物理ID');
+			ElMessage.warning('未找到当前对象物理ID');
+			return;
+		}
+		await openCommonRevisionDialog(physicalId);
+		return;
+	}
 	if (command === 'updateRevisionAll') {
 		await handleUpdateEntireStructureRevision();
 		return;
@@ -8295,6 +8550,85 @@ onUnmounted(() => {
 }
 :deep(.el-table__placeholder) {
 	display: none !important;
+}
+
+:deep(.reservation-cell) {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	cursor: pointer;
+}
+
+:deep(.reservation-dialog .el-dialog__header) {
+	padding: 14px 16px 10px;
+	margin-right: 0;
+	border-bottom: 1px solid #dcdfe6;
+}
+
+:deep(.reservation-dialog .el-dialog__title) {
+	font-size: 18px;
+	font-weight: 600;
+	color: #333;
+}
+
+:deep(.reservation-dialog .el-dialog__body) {
+	padding: 18px 12px 8px;
+}
+
+:deep(.reservation-dialog .el-dialog__footer) {
+	padding: 14px;
+	background: #f5f5f5;
+	border-top: 1px solid #dcdfe6;
+}
+
+.reservation-options {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.reservation-option-content {
+	display: inline-flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-left: 4px;
+	vertical-align: top;
+}
+
+.reservation-option-title {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	color: #333;
+	font-size: 14px;
+}
+
+.reservation-info-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	background: #606266;
+	color: #fff;
+	font-size: 10px;
+	font-weight: 700;
+	line-height: 14px;
+}
+
+.reservation-option-subtitle {
+	color: #606266;
+	font-size: 13px;
+	line-height: 18px;
+}
+
+.reservation-dialog-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
 }
 </style>
 

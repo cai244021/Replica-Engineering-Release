@@ -55,6 +55,7 @@ export interface ExpandNode {
 	'ds6w:manufacturable': string;
 	'ds6w:isLastRevision': string;
 	'ds6w:reserved': string;
+	'ds6w:reservedBy': string;
 	'ds6w:identifier': string;
 	'islastrevision': string;
 	'policy': string;
@@ -106,6 +107,7 @@ export interface TreeNode {
 	statusRaw: string; // 原始状态值（用于颜色）
 	owner: string; // 所有者
 	reserved: boolean; // 锁定状态
+	reservedBy?: string;
 	modified: string; // 修改日期
 	globalType: string; // 类型
 	identifier: string; // 名称
@@ -1418,6 +1420,7 @@ class ExpandAPI {
 					statusRaw,
 					owner: node['ds6w:responsible'] || '-',
 					reserved: node['ds6w:reserved'] === 'TRUE' || node['ds6w:reserved'] === 'true',
+					reservedBy: node['ds6w:reservedBy'] || '',
 					modified: modifiedText,
 					globalType: node['ds6w:globalType'] || node['ds6w:type'] || '-',
 					identifier: node['ds6w:identifier'] || '-',
@@ -1564,6 +1567,7 @@ class ExpandAPI {
 			statusRaw: statusRaw, // 原始状态值（用于颜色）
 			owner: node['ds6w:responsible'] || '-', // 所有者
 			reserved: isReserved, // 锁定状态
+			reservedBy: node['ds6w:reservedBy'] || '',
 			modified: modifiedText, // 修改日期
 			globalType: node['ds6w:globalType'] || node['ds6w:type'] || '-', // 类型
 			identifier: node['ds6w:identifier'] || '-', // 名称
