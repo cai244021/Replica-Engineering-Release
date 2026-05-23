@@ -19,6 +19,7 @@ installGlobalErrorMessage();
 const start = () => {
 	disableDefaultCSS(true);
 	widget.setTitle('');
+	(window as any).widget = widget;
 	const app = createApp(App);
 	for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 		app.component(key, component);

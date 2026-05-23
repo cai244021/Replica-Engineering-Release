@@ -544,6 +544,13 @@
 										<span class="selected-action-icon">拆</span>
 										<span>拆离</span>
 									</el-dropdown-item>
+									<el-dropdown-item
+										v-if="selectedChildrenRows.length === 1"
+										command="revision"
+										divided>
+										<span class="selected-action-icon">☷</span>
+										<span>修订版</span>
+									</el-dropdown-item>
 								</el-dropdown-menu>
 							</template>
 						</el-dropdown>
@@ -2060,6 +2067,7 @@ type SelectedActionCommand =
 	| 'downloadDocuments'
 	| 'instanceQuantity'
 	| 'unparent'
+	| 'revision'
 	| 'replaceLatest'
 	| 'replaceExisting'
 	| 'replaceRevision'
@@ -2127,12 +2135,6 @@ const replaceRevisionDialogVisible = ref(false);
 const replaceRevisionSelectedRows = ref<TreeNode[]>([]);
 const updateRevisionDialogVisible = ref(false);
 const updateRevisionSubmitting = ref(false);
-const getCommonRevisionSdkUrl = () => {
-	const matched = window.location.pathname.match(/^(.*\/webapps)\/[^/]+(?:\/.*)?$/);
-	const webappsBase = matched?.[1] || '/3dspace/webapps';
-	const spaceOrigin = window.location.origin.replace('3ddashboard.', '3dspace.');
-	return `${spaceOrigin}${webappsBase}/TW_CommonUtil/sdk/revision.js`;
-};
 type ReservationScope = 'reference' | 'instance' | 'both';
 const reservationStorageKey = 'partDetail.reservation.scope';
 const reservationDialogVisible = ref(false);
@@ -4793,6 +4795,16 @@ const handleReplaceRevisionConfirm = async (
 	}
 };
 
+const handleSelectedRowRevision = async () => {
+	const selectedRow = selectedChildrenRows.value[0];
+	const physicalId = selectedRow?.resourceid || selectedRow?.id;
+	if (!physicalId) {
+		ElMessage.warning('选中行未找到物理ID');
+		return;
+	}
+	await openLifecycleHistoryCmd(physicalId);
+};
+
 const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 	switch (command) {
 		case 'openSelectedPart':
@@ -4807,6 +4819,12 @@ const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 		case 'instanceQuantity':
 			openInstanceQuantityDialog();
 			break;
+		case 'unparent':
+			openUnparentDialog();
+			break;
+		case 'revision':
+			handleSelectedRowRevision();
+			break;
 		case 'replaceLatest':
 			handleReplaceLatestRevision();
 			break;
@@ -4818,9 +4836,6 @@ const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 			break;
 		case 'replaceDuplicate':
 			openReplaceDuplicateDialog();
-			break;
-		case 'unparent':
-			openUnparentDialog();
 			break;
 		default:
 			ElMessage.info('替换功能接口后续接入');
@@ -6398,48 +6413,77 @@ const handleConfirmUpdateEntireStructureRevision = async () => {
 	}
 };
 
-const loadCommonRevisionSdk = () => {
-	return new Promise<void>((resolve, reject) => {
-		const win = window as Window & {
-			TWCommonUtil?: {
-				openRevisionDialog?: (options: { physicalId: string; baseUrl?: string }) => void;
-			};
-		};
-		if (win.TWCommonUtil?.openRevisionDialog) {
-			resolve();
-			return;
+const callLifecycleHistoryEntry = (HistoryCmd: any, physicalId: string) => {
+	const HistoryCmdCtor = HistoryCmd?.default || HistoryCmd;
+	if (typeof HistoryCmdCtor !== 'function') {
+		throw new Error('DS/LifecycleCmd/HistoryCmd 不是可实例化命令类');
+	}
+	const objectType = pickOpenWithField(partInfo.value, 'ds6w:type', 'type', 'objectType', 'displayType') || 'VPMReference';
+	const displayName = pickOpenWithField(partInfo.value, 'ds6w:label', 'label', 'displayName', 'name', 'title') || physicalId;
+
+	const targetNode = {
+		getID: () => physicalId,
+		id: physicalId,
+		objectId: physicalId,
+		physicalid: physicalId,
+		physicalId,
+		type: objectType,
+		objectType,
+		displayType: objectType,
+		displayName,
+		label: displayName,
+		title: displayName,
+		tenant: 'OnPremise',
+		envId: 'OnPremise',
+		serviceId: '3DSpace',
+		contextId: baseInfoStore.securityContext || '',
+		objectTaxonomies: X3D_OBJECT_TAXONOMIES,
+		_options: {
+			relationid: physicalId
 		}
-		const commonRevisionSdkUrl = getCommonRevisionSdkUrl();
-		const existing = document.querySelector(`script[src="${commonRevisionSdkUrl}"]`) as HTMLScriptElement | null;
-		if (existing) {
-			existing.addEventListener('load', () => resolve(), { once: true });
-			existing.addEventListener('error', () => reject(new Error('加载 TW_CommonUtil 修订版 SDK 失败')), { once: true });
-			return;
-		}
-		const script = document.createElement('script');
-		script.src = commonRevisionSdkUrl;
-		script.async = true;
-		script.onload = () => resolve();
-		script.onerror = () => reject(new Error('加载 TW_CommonUtil 修订版 SDK 失败'));
-		document.head.appendChild(script);
+	};
+
+	const mockContext = {
+		getSelectedNodes: () => [targetNode],
+		getEditMode: () => false,
+		getPADTreeDocument: () => ({ getXSO: () => ({ onPostAdd: () => {}, onPostRemove: () => {}, onEmpty: () => {}, get: () => [targetNode] }) }),
+		getCurrentFolder: () => '{}',
+		addEvent: () => {},
+		selectedNodes: [targetNode]
+	};
+
+	const historyCmd = new HistoryCmdCtor({
+		ID: 'history_command',
+		context: mockContext
 	});
+
+	if (typeof historyCmd.execute !== 'function') {
+		throw new Error('DS/LifecycleCmd/HistoryCmd 实例未暴露 execute 方法');
+	}
+	historyCmd.execute();
 };
 
-const openCommonRevisionDialog = async (physicalId: string) => {
+const openLifecycleHistoryCmd = async (physicalId: string) => {
 	try {
-		await loadCommonRevisionSdk();
-		const win = window as Window & {
-			TWCommonUtil?: {
-				openRevisionDialog?: (options: { physicalId: string; baseUrl?: string; lang?: string; user?: string }) => void;
-			};
-		};
-		const spaceUrl = baseInfoStore.spaceUrl || (await baseInfoStore.fetchSpaceUrl());
-		const commonUtilBaseUrl = `${String(spaceUrl).replace(/\/$/, '')}/webapps/TW_CommonUtil`;
-		const lang = localStorage.getItem('language') || navigator.language.split('-')[0] || 'zh';
-		const user = baseInfoStore.currentUser || '';
-		win.TWCommonUtil?.openRevisionDialog?.({ physicalId, baseUrl: commonUtilBaseUrl, lang, user });
+		const topWindow = (window.top || window.parent || window) as any;
+		if (!topWindow.widget) {
+			const { widget } = await import('@widget-lab/3ddashboard-utils');
+			topWindow.widget = widget;
+			(widget as any).body = document.body;
+		} else if (!topWindow.widget.body) {
+			topWindow.widget.body = document.body;
+		}
+		const requireFn = topWindow.require || topWindow.requirejs || (window as any).require || (window as any).requirejs;
+		const HistoryCmd = await new Promise<any>((resolve, reject) => {
+			requireFn(
+				['DS/LifecycleCmd/HistoryCmd'],
+				(module: any) => resolve(module),
+				(error: unknown) => reject(error)
+			);
+		});
+		callLifecycleHistoryEntry(HistoryCmd, physicalId);
 	} catch (error) {
-		console.error('[TW_EngineeringRelease] 打开公共修订版弹窗失败:', error);
+		console.error('[TW_EngineeringRelease] 打开 Lifecycle 历史记录失败:', error);
 		ElMessage.error('打开修订版失败');
 	}
 };
@@ -6454,7 +6498,7 @@ const handleHeaderActionCommand = async (command: string) => {
 			ElMessage.warning('未找到当前对象物理ID');
 			return;
 		}
-		await openCommonRevisionDialog(physicalId);
+		await openLifecycleHistoryCmd(physicalId);
 		return;
 	}
 	if (command === 'updateRevisionAll') {
@@ -8974,6 +9018,7 @@ onUnmounted(() => {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	font-size: 12px;
 }
 .part-action-menu-arrow {
 	flex: 0 0 auto;
