@@ -86,16 +86,16 @@
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="revision"
-									divided>
+									divided
+									:disabled="lifecycleCmdLoading">
 									<span class="part-action-menu-icon">☷</span>
-									<span class="part-action-menu-label">修订版</span>
+									<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '修订版' }}</span>
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="newRevision"
-									disabled
-									class="part-action-disabled-item">
+									:disabled="lifecycleCmdLoading">
 									<span class="part-action-menu-icon">↳</span>
-									<span class="part-action-menu-label">新修订版</span>
+									<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '新修订版' }}</span>
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="newBranch"
@@ -462,25 +462,37 @@
 											class="selected-action-submenu-panel selected-action-open-with-panel">
 											<div
 												class="selected-action-submenu-item"
-												@click="handleSelectedOpenWith('3D Markup')">
+												@click="
+													handleSelectedOpenWith('3D Markup');
+													selectedOpenWithSubmenuVisible = false;
+												">
 												<span class="selected-action-icon">✎</span>
 												<span>3D Markup</span>
 											</div>
 											<div
 												class="selected-action-submenu-item"
-												@click="handleSelectedOpenWith('3D Navigate')">
+												@click="
+													handleSelectedOpenWith('3D Navigate');
+													selectedOpenWithSubmenuVisible = false;
+												">
 												<span class="selected-action-icon">🧭</span>
 												<span>3D Navigate</span>
 											</div>
 											<div
 												class="selected-action-submenu-item"
-												@click="handleSelectedOpenWith('3DPlay')">
+												@click="
+													handleSelectedOpenWith('3DPlay');
+													selectedOpenWithSubmenuVisible = false;
+												">
 												<span class="selected-action-icon">▶</span>
 												<span>3DPlay</span>
 											</div>
 											<div
 												class="selected-action-submenu-item selected-action-open-with-item-divided"
-												@click="handleSelectedOpenWith('more')">
+												@click="
+													handleSelectedOpenWith('more');
+													selectedOpenWithSubmenuVisible = false;
+												">
 												<span class="selected-action-icon">＋</span>
 												<span>更多应用程序</span>
 											</div>
@@ -510,25 +522,37 @@
 											class="selected-action-submenu-panel">
 											<div
 												class="selected-action-submenu-item"
-												@click="handleSelectedActionCommand('replaceLatest')">
+												@click="
+													handleSelectedActionCommand('replaceLatest');
+													selectedReplaceSubmenuVisible = false;
+												">
 												<span class="selected-action-icon">⇄</span>
 												<span>替换为最新修订版</span>
 											</div>
 											<div
 												class="selected-action-submenu-item"
-												@click="handleSelectedActionCommand('replaceExisting')">
+												@click="
+													handleSelectedActionCommand('replaceExisting');
+													selectedReplaceSubmenuVisible = false;
+												">
 												<span class="selected-action-icon">⇄</span>
 												<span>替换为现有项</span>
 											</div>
 											<div
 												class="selected-action-submenu-item"
-												@click="handleSelectedActionCommand('replaceRevision')">
+												@click="
+													handleSelectedActionCommand('replaceRevision');
+													selectedReplaceSubmenuVisible = false;
+												">
 												<span class="selected-action-icon">⇄</span>
 												<span>用修订版替换</span>
 											</div>
 											<div
 												class="selected-action-submenu-item"
-												@click="handleSelectedActionCommand('replaceDuplicate')">
+												@click="
+													handleSelectedActionCommand('replaceDuplicate');
+													selectedReplaceSubmenuVisible = false;
+												">
 												<span class="selected-action-icon">⇄</span>
 												<span>替换为重复项</span>
 											</div>
@@ -550,6 +574,12 @@
 										divided>
 										<span class="selected-action-icon">☷</span>
 										<span>修订版</span>
+									</el-dropdown-item>
+									<el-dropdown-item
+										command="newRevision"
+										:disabled="lifecycleCmdLoading">
+										<span class="selected-action-icon">↳</span>
+										<span>{{ lifecycleCmdLoading ? '加载中...' : '新修订版' }}</span>
 									</el-dropdown-item>
 								</el-dropdown-menu>
 							</template>
@@ -1957,6 +1987,9 @@ const defaultThumbnail = [
 // 数据
 const partInfo = ref<PartInfo | null>(null);
 const childrenData = ref<TreeNode[]>([]);
+
+// 全局存储当前 Revise 操作的 targetNodes，供 _attributeListRequest 补丁使用
+let currentReviseTargetNodes: any[] = [];
 const loading = ref(false);
 const childrenLoading = ref(false);
 const expandingRowIds = ref<Set<string>>(new Set());
@@ -2068,6 +2101,7 @@ type SelectedActionCommand =
 	| 'instanceQuantity'
 	| 'unparent'
 	| 'revision'
+	| 'newRevision'
 	| 'replaceLatest'
 	| 'replaceExisting'
 	| 'replaceRevision'
@@ -2284,6 +2318,7 @@ const maturityStates = ref<MaturityState[]>([]);
 const maturityTransitions = ref<StateTransition[]>([]);
 const maturityCurrentState = ref('');
 const maturitySelectedObject = ref<MaturityObjectParams | null>(null);
+const lifecycleCmdLoading = ref(false);
 const maturitySelectedSource = ref<'parent' | 'child'>('parent');
 const maturitySelectedRow = ref<TreeNode | null>(null);
 const includeStructureObjects = ref(false);
@@ -2985,8 +3020,8 @@ const loadDuplicateSecurityContext = async () => {
 			type: 'VPMReference',
 			xrequestedwith: 'xmlhttprequest'
 		});
-		const options: DuplicateSecurityContextOption[]
-			= createContextRes.credentials?.map((credential: { ctxname: string; prjtitle?: string; ctxtitle?: string }) => ({
+		const options: DuplicateSecurityContextOption[] =
+			createContextRes.credentials?.map((credential: { ctxname: string; prjtitle?: string; ctxtitle?: string }) => ({
 				value: credential.ctxname,
 				label: credential.prjtitle || credential.ctxtitle || credential.ctxname
 			})) || [];
@@ -4014,8 +4049,8 @@ const treeReorderSelectedIndexes = computed(() =>
 const canMoveTreeReorderUp = computed(() => !!treeReorderSelectedIndexes.value.length && treeReorderSelectedIndexes.value[0] > 0);
 const canMoveTreeReorderDown = computed(
 	() =>
-		!!treeReorderSelectedIndexes.value.length
-		&& treeReorderSelectedIndexes.value[treeReorderSelectedIndexes.value.length - 1] < treeReorderRows.value.length - 1
+		!!treeReorderSelectedIndexes.value.length &&
+		treeReorderSelectedIndexes.value[treeReorderSelectedIndexes.value.length - 1] < treeReorderRows.value.length - 1
 );
 const treeReorderDialogStyle = computed(() => ({
 	left: `${treeReorderDialogMaximized.value ? 8 : treeReorderDialogPosition.value.left}px`,
@@ -4797,12 +4832,515 @@ const handleReplaceRevisionConfirm = async (
 
 const handleSelectedRowRevision = async () => {
 	const selectedRow = selectedChildrenRows.value[0];
-	const physicalId = selectedRow?.resourceid || selectedRow?.id;
-	if (!physicalId) {
-		ElMessage.warning('选中行未找到物理ID');
+	if (!selectedRow) {
+		ElMessage.warning('请先选中一行');
 		return;
 	}
-	await openLifecycleHistoryCmd(physicalId);
+
+	const topWindow = (window.top || window.parent || window) as any;
+	const requireFn = topWindow.require || topWindow.requirejs || (window as any).require || (window as any).requirejs;
+
+	requireFn(['DS/PlatformAPI/PlatformAPI'], (PlatformAPI: any) => {
+		const subscription = PlatformAPI.subscribe('Lifecycle.Modification', (eventData: any) => {
+			// eventData 可能是 JSON 字符串，需要解析
+			let parsedData = eventData;
+			if (typeof eventData === 'string') {
+				try {
+					parsedData = JSON.parse(eventData);
+				} catch (error) {
+					console.error('[TW_EngineeringRelease] 解析 eventData 失败:', error);
+					return;
+				}
+			}
+
+			const refreshData = parsedData?.Refresh;
+			if (!refreshData) return;
+
+			// 检查是否有 Revise 操作
+			let hasReviseOperation = false;
+
+			// 检查 modified 数组
+			const modifiedData = refreshData.modified;
+			if (modifiedData && modifiedData.length > 0) {
+				for (const item of modifiedData) {
+					if (item?.operation === 'Revise') {
+						hasReviseOperation = true;
+						break;
+					}
+				}
+			}
+
+			// 检查 created 数组
+			const createdData = refreshData.created;
+			if (createdData && createdData.length > 0) {
+				for (const item of createdData) {
+					if (item?.operation === 'Revise') {
+						hasReviseOperation = true;
+						break;
+					}
+				}
+			}
+
+			if (hasReviseOperation) {
+				refreshSelectedRow(selectedRow);
+				subscription.unsubscribe();
+				return;
+			}
+		});
+
+		// 设置超时自动取消订阅（防止弹窗未触发事件）
+		setTimeout(() => {
+			try {
+				subscription.unsubscribe();
+			} catch {
+				// 忽略取消订阅错误
+			}
+		}, 60000);
+
+		const physicalId = selectedRow.resourceid || selectedRow.id;
+		openLifecycleHistoryCmd(physicalId);
+	});
+};
+
+const handleSelectedRowNewRevision = async () => {
+	const selectedRows = selectedChildrenRows.value;
+	if (!selectedRows || selectedRows.length === 0) {
+		ElMessage.warning('请先选中要升版的行');
+		return;
+	}
+	console.log('[TW_EngineeringRelease] handleSelectedRowNewRevision selectedChildrenRows:', JSON.stringify(selectedRows.slice(0, 2), null, 2));
+
+	const topWindow = (window.top || window.parent || window) as any;
+	const requireFn = topWindow.require || topWindow.requirejs || (window as any).require || (window as any).requirejs;
+
+	requireFn(['DS/PlatformAPI/PlatformAPI'], (PlatformAPI: any) => {
+		const subscription = PlatformAPI.subscribe('Lifecycle.Modification', async (eventData: any) => {
+			// eventData 可能是 JSON 字符串，需要解析
+			let parsedData = eventData;
+			if (typeof eventData === 'string') {
+				try {
+					parsedData = JSON.parse(eventData);
+				} catch (error) {
+					console.error('[TW_EngineeringRelease] 解析 eventData 失败:', error);
+					return;
+				}
+			}
+
+			const refreshData = parsedData?.Refresh;
+			if (!refreshData) return;
+
+			// 检查是否有 Revise 操作
+			let hasReviseOperation = false;
+
+			// 检查 modified 数组
+			const modifiedData = refreshData.modified;
+			if (modifiedData && modifiedData.length > 0) {
+				for (const item of modifiedData) {
+					if (item?.operation === 'Revise') {
+						hasReviseOperation = true;
+						break;
+					}
+				}
+			}
+
+			// 检查 created 数组
+			const createdData = refreshData.created;
+			if (createdData && createdData.length > 0) {
+				for (const item of createdData) {
+					if (item?.operation === 'Revise') {
+						hasReviseOperation = true;
+						break;
+					}
+				}
+			}
+
+			if (hasReviseOperation) {
+				// 刷新所有选中的行
+				await Promise.all(selectedRows.map(row => refreshSelectedRow(row)));
+				ElMessage.success('已刷新选中行');
+				subscription.unsubscribe();
+				return;
+			}
+		});
+
+		// 设置超时自动取消订阅（防止弹窗未触发事件）
+		setTimeout(() => {
+			try {
+				subscription.unsubscribe();
+			} catch {
+				// 忽略取消订阅错误
+			}
+		}, 60000);
+
+		const targetNodes = selectedRows.map(row => {
+			const pickValidField = (...keys: string[]) => {
+				for (const key of keys) {
+					const value = pickOpenWithField(row, key);
+					if (value && value !== 'undefined' && value !== 'null' && !value.includes('undefined ')) return value;
+				}
+				return '';
+			};
+			const normalizeTypeDisplayName = (value: string) => {
+				if (!value || value === 'VPMReference' || value === 'ds6w:Part') return '物理产品';
+				return value;
+			};
+			const normalizeCurrentInternal = (value: string) => {
+				if (value === '工作中') return 'IN_WORK';
+				if (value === '已发布') return 'RELEASED';
+				return value || 'IN_WORK';
+			};
+			const physicalId = row.resourceid || row.id;
+			const objectType = pickValidField('objectType', 'type') || 'VPMReference';
+			const objectName =
+				pickValidField('ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
+			const revision = pickValidField('revision', 'ds6wg:revision');
+			const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
+			const typeDisplayName = normalizeTypeDisplayName(pickValidField('typeDisplayName', 'displayType', 'globalType', 'ds6w:type'));
+			const current = pickValidField('status', 'current', 'ds6w:status', 'state') || '工作中';
+			const currentInternal = normalizeCurrentInternal(pickValidField('current_internal', 'statusRaw'));
+			const policy = pickValidField('policy', 'ds6w:policy') || 'VPLM_SMB_Definition_MajorRev';
+			const cadMaster = pickValidField('cadMaster') || '3DEXPERIENCE';
+			const imageUrl = pickValidField('type_icon_url', 'icon', 'imageUrl') || '/snresources/images/icons/small/I_VPMNavProduct.png';
+
+			console.log('[TW_EngineeringRelease] targetNode 构造字段:', {
+				physicalId,
+				objectName,
+				revision,
+				displayName,
+				typeDisplayName,
+				current,
+				currentInternal,
+				policy,
+				cadMaster,
+				imageUrl,
+				rowKeys: Object.keys(row).slice(0, 20)
+			});
+
+			return {
+				'getID': () => physicalId,
+				'id': physicalId,
+				'objectId': physicalId,
+				'physicalid': physicalId,
+				physicalId,
+				'type': objectType,
+				objectType,
+				'displayType': typeDisplayName,
+				'displayName': displayName,
+				'label': displayName,
+				'title': displayName,
+				'name': objectName,
+				'revision': revision,
+				'typeDisplayName': typeDisplayName,
+				'baseType': 'PLMEntity',
+				'current': current,
+				'current_internal': currentInternal,
+				'imageUrl': imageUrl,
+				'tenant': 'OnPremise',
+				'envId': 'OnPremise',
+				'serviceId': '3DSpace',
+				'contextId': baseInfoStore.securityContext || '',
+				'objectTaxonomies': X3D_OBJECT_TAXONOMIES,
+				'_options': {
+					relationid: row.relationId || physicalId
+				},
+				'attributes': {
+					'ds6w:label': displayName,
+					'ds6w:name': objectName,
+					'ds6w:type': objectType,
+					'PLMEntity.V_Name': objectName
+				},
+				'revisionModeInfo': {
+					revisionMode: 'major'
+				},
+				'semantic': ['E'],
+				'object': {
+					'ds6w:label': displayName,
+					'ds6w:name': objectName,
+					'ds6w:type': objectType,
+					'PLMEntity.V_Name': objectName,
+					'attribute[PLMEntity.V_Name]': objectName,
+					'displayName': displayName,
+					'name': objectName,
+					'label': displayName,
+					'title': displayName,
+					'revision': revision,
+					'current': current,
+					'current_internal': currentInternal,
+					'cadMaster': cadMaster,
+					'typeDisplayName': typeDisplayName
+				},
+				'options': {
+					'ds6w:status': current,
+					'icons': [imageUrl],
+					'ds6w:type': typeDisplayName
+				},
+				'policy': policy,
+				'cadMaster': cadMaster,
+				'locked': false,
+				'lockedBy': null,
+				'branch': null,
+				'branch.uuid': null,
+				'type.kindof[PLMReference]': 'TRUE',
+				'popup': true
+			};
+		});
+
+		currentReviseTargetNodes = targetNodes;
+
+		const mockContext = {
+			getSelectedNodes: () => targetNodes,
+			getEditMode: () => false,
+			getPADTreeDocument: () => ({ getXSO: () => ({ onPostAdd: () => {}, onPostRemove: () => {}, onEmpty: () => {}, get: () => targetNodes }) }),
+			getCurrentFolder: () => '{}',
+			addEvent: () => {},
+			selectedNodes: targetNodes
+		};
+
+		requireFn(
+			['DS/ReviseWidget/ReviseWidget', 'DS/LifecycleCmd/ReviseCmd', 'DS/WAFData/WAFData'],
+			(ReviseWidget: any, ReviseCmd: any, WAFData: any) => {
+				// 拦截 WAFData.authenticatedRequest，修正 prepare_revise_checkavailability 和 attributeList 请求参数和响应
+				if (WAFData && typeof WAFData.authenticatedRequest === 'function' && !WAFData.__twPatchReviseRequest) {
+					const originalAuthenticatedRequest = WAFData.authenticatedRequest;
+					WAFData.authenticatedRequest = function (url: string, options: any) {
+						const isReviseRequest = url && (url.includes('/prepare_revise_checkavailability') || url.includes('/attributeList'));
+
+						// 修正请求参数
+						if (isReviseRequest && options?.data) {
+							try {
+								const requestData = typeof options.data === 'string' ? JSON.parse(options.data) : options.data;
+								if (Array.isArray(requestData?.data) && Array.isArray(currentReviseTargetNodes)) {
+									const sourceById = new Map<string, any>();
+									currentReviseTargetNodes.forEach(node => {
+										const objectId = node?.objectId || node?.physicalid || node?.physicalId;
+										if (objectId) sourceById.set(objectId, node);
+									});
+									requestData.data = requestData.data.map((item: any) => {
+										const objectId = item?.physicalid;
+										const source = objectId ? sourceById.get(objectId) : null;
+										if (!source) return item;
+
+										const isValidText = (value: unknown) => {
+											if (value === undefined || value === null || value === '') return false;
+											const text = String(value);
+											return text !== 'undefined' && text !== 'null' && !text.includes('undefined ');
+										};
+
+										return {
+											...item,
+											name: isValidText(item?.name) ? item.name : source.name,
+											displayName: isValidText(item?.displayName) ? item.displayName : source.displayName,
+											typeDisplayName:
+												item?.typeDisplayName && item.typeDisplayName !== item.type && item.typeDisplayName !== 'ds6w:Part'
+													? item.typeDisplayName
+													: source.typeDisplayName,
+											current: item?.current || source.current,
+											current_internal: item?.current_internal === '工作中' ? 'IN_WORK' : item?.current_internal || source.current_internal,
+											tenant: item?.tenant || source.tenant || 'OnPremise',
+											cadMaster: item?.cadMaster || source.cadMaster || '3DEXPERIENCE'
+										};
+									});
+									options.data = JSON.stringify(requestData);
+									console.log(
+										'[TW_EngineeringRelease] 修正后的 ' +
+											(url.includes('/prepare_revise_checkavailability') ? 'prepare_revise_checkavailability' : 'attributeList') +
+											' 请求:',
+										requestData
+									);
+								}
+							} catch (error) {
+								console.error('[TW_EngineeringRelease] 修正 revise 请求失败:', error);
+							}
+						}
+
+						// 修正响应数据
+						const originalOnComplete = options?.onComplete;
+						if (isReviseRequest && originalOnComplete) {
+							options.onComplete = function (response: any) {
+								if (
+									(url.includes('/attributeList') || url.includes('/prepare_revise_checkavailability')) &&
+									response?.results &&
+									Array.isArray(response.results) &&
+									Array.isArray(currentReviseTargetNodes)
+								) {
+									const sourceById = new Map<string, any>();
+									currentReviseTargetNodes.forEach(node => {
+										const objectId = node?.objectId || node?.physicalid || node?.physicalId;
+										if (objectId) sourceById.set(objectId, node);
+									});
+									response.results.forEach((result: any) => {
+										const objectId = result?.objectId || result?.physicalid;
+										const source = objectId ? sourceById.get(objectId) : null;
+										if (!source) return;
+
+										const isValidText = (value: unknown) => {
+											if (value === undefined || value === null || value === '') return false;
+											const text = String(value);
+											return text !== 'undefined' && text !== 'null' && !text.includes('undefined ');
+										};
+
+										if (!isValidText(result.displayName)) result.displayName = source.displayName || source.name || source.title;
+										if (!isValidText(result.name)) result.name = source.name || source.displayName || source.title;
+										if (!result.revision) result.revision = source.revision;
+										if (!result.current) result.current = source.current;
+										if (!result.current_internal) result.current_internal = source.current_internal;
+										if (!result.typeDisplayName || result.typeDisplayName === result.type)
+											result.typeDisplayName = source.typeDisplayName || result.typeDisplayName;
+										if (!result.displayType || result.displayType === result.type) result.displayType = source.displayType || result.displayType;
+										if (!result.cadMaster) result.cadMaster = source.cadMaster;
+										if (!result.imageUrl) result.imageUrl = source.imageUrl;
+										if (!result.options) result.options = {};
+										if (!result.options['ds6w:status']) result.options['ds6w:status'] = source.current;
+										if (!result.options['ds6w:type']) result.options['ds6w:type'] = source.typeDisplayName || source.displayType;
+									});
+									console.log(
+										'[TW_EngineeringRelease] 修正后的 ' +
+											(url.includes('/prepare_revise_checkavailability') ? 'prepare_revise_checkavailability' : 'attributeList') +
+											' 响应:',
+										response.results
+									);
+								}
+								return originalOnComplete.call(this, response);
+							};
+						}
+
+						return originalAuthenticatedRequest.call(this, url, options);
+					};
+					WAFData.__twPatchReviseRequest = true;
+				}
+
+				const ReviseWidgetCtor = ReviseWidget?.default || ReviseWidget;
+				const reviseWidgetPrototype = ReviseWidgetCtor?.prototype;
+				if (
+					reviseWidgetPrototype &&
+					typeof reviseWidgetPrototype._attributeListRequest === 'function' &&
+					!reviseWidgetPrototype.__twMergeSelectionInfoForRevise
+				) {
+					const originalAttributeListRequest = reviseWidgetPrototype._attributeListRequest;
+					reviseWidgetPrototype._attributeListRequest = function (objects: any[], securityContext: any, callback: (results: any[]) => void) {
+						const isValidText = (value: unknown) => {
+							if (value === undefined || value === null || value === '') return false;
+							const text = String(value);
+							return text !== 'undefined' && text !== 'null' && !text.includes('undefined ');
+						};
+						const sourceById = new Map<string, any>();
+						currentReviseTargetNodes.forEach(node => {
+							const objectId = node?.objectId || node?.physicalid || node?.physicalId;
+							if (objectId) sourceById.set(objectId, node);
+						});
+						const normalizedObjects = (objects || []).map(object => {
+							const objectId = object?.objectId || object?.physicalid;
+							const source = objectId ? sourceById.get(objectId) : null;
+							if (!source) return object;
+
+							return {
+								...object,
+								displayName: isValidText(object?.displayName) ? object.displayName : source.displayName,
+								name: isValidText(object?.name) ? object.name : source.name,
+								typeDisplayName:
+									object?.typeDisplayName && object.typeDisplayName !== object.type && object.typeDisplayName !== 'ds6w:Part'
+										? object.typeDisplayName
+										: source.typeDisplayName,
+								current: object?.current || source.current,
+								current_internal: object?.current_internal === '工作中' ? 'IN_WORK' : object?.current_internal || source.current_internal,
+								revision: object?.revision || source.revision,
+								tenant: object?.tenant || source.tenant || 'OnPremise',
+								imageUrl: object?.imageUrl || source.imageUrl,
+								cadMaster: object?.cadMaster || source.cadMaster || '3DEXPERIENCE',
+								locked: object?.locked ?? source.locked ?? false,
+								lockedBy: object?.lockedBy ?? source.lockedBy ?? '',
+								policy: object?.policy || source.policy
+							};
+						});
+
+						return originalAttributeListRequest.call(this, normalizedObjects, securityContext, (results: any[]) => {
+							if (Array.isArray(results)) {
+								results.forEach(result => {
+									const objectId = result?.objectId || result?.physicalid;
+									const source = objectId ? sourceById.get(objectId) : null;
+									if (!source) return;
+
+									if (!isValidText(result.displayName)) result.displayName = source.displayName || source.name || source.title;
+									if (!isValidText(result.name)) result.name = source.name || source.displayName || source.title;
+									if (!result.revision) result.revision = source.revision;
+									if (!result.current) result.current = source.current;
+									if (!result.current_internal) result.current_internal = source.current_internal;
+									if (!result.typeDisplayName || result.typeDisplayName === result.type)
+										result.typeDisplayName = source.typeDisplayName || result.typeDisplayName;
+									if (!result.displayType || result.displayType === result.type) result.displayType = source.displayType || result.displayType;
+									if (!result.cadMaster) result.cadMaster = source.cadMaster;
+									if (!result.imageUrl) result.imageUrl = source.imageUrl;
+									if (!result.options) result.options = {};
+									if (!result.options['ds6w:status']) result.options['ds6w:status'] = source.current;
+									if (!result.options['ds6w:type']) result.options['ds6w:type'] = source.typeDisplayName || source.displayType;
+								});
+							}
+							callback(results);
+						});
+					};
+					reviseWidgetPrototype.__twMergeSelectionInfoForRevise = true;
+				}
+
+				const ReviseCmdCtor = ReviseCmd?.default || ReviseCmd;
+				if (typeof ReviseCmdCtor !== 'function') {
+					throw new Error('DS/LifecycleCmd/ReviseCmd 不是可实例化命令类');
+				}
+
+				const reviseCmd = new ReviseCmdCtor({
+					ID: 'revise_command',
+					context: mockContext
+				});
+
+				if (typeof reviseCmd.execute !== 'function') {
+					throw new Error('DS/LifecycleCmd/ReviseCmd 实例未暴露 execute 方法');
+				}
+				reviseCmd.execute();
+			}
+		);
+	});
+};
+
+const refreshSelectedRow = async (row: TreeNode) => {
+	const physicalId = row.resourceid;
+	const path = row.path || [physicalId];
+
+	try {
+		// 调用数据库模式刷新接口
+		const response = await expandApi.refreshNodeByPath(path, physicalId);
+
+		// 从响应中提取更新的节点数据
+		const updatedNode = expandApi.extractPartInfoFromDbExpand(response, physicalId);
+		if (updatedNode) {
+			// 更新树形数据中的对应节点
+			updateTreeNodeData(childrenData.value, physicalId, updatedNode);
+		}
+
+		// 如果节点已展开，重新加载子节点
+		if (row.isExpanded) {
+			await loadChildren(row, null, childData => {
+				row.children = childData;
+			});
+		}
+	} catch (error) {
+		console.error('[PartDetailView] 刷新选中行失败:', error);
+		ElMessage.error('刷新选中行失败');
+	}
+};
+
+const updateTreeNodeData = (nodes: TreeNode[], physicalId: string, updatedData: Record<string, string>): boolean => {
+	for (const node of nodes) {
+		if (node.resourceid === physicalId) {
+			// 只更新 isLastRevision 字段
+			node.isLastRevision = updatedData['ds6w:isLastRevision'] === 'TRUE';
+			return true;
+		}
+		if (node.children && node.children.length > 0) {
+			if (updateTreeNodeData(node.children, physicalId, updatedData)) {
+				return true;
+			}
+		}
+	}
+	return false;
 };
 
 const handleSelectedActionCommand = (command: SelectedActionCommand) => {
@@ -4824,6 +5362,9 @@ const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 			break;
 		case 'revision':
 			handleSelectedRowRevision();
+			break;
+		case 'newRevision':
+			handleSelectedRowNewRevision();
 			break;
 		case 'replaceLatest':
 			handleReplaceLatestRevision();
@@ -6464,6 +7005,7 @@ const callLifecycleHistoryEntry = (HistoryCmd: any, physicalId: string) => {
 };
 
 const openLifecycleHistoryCmd = async (physicalId: string) => {
+	lifecycleCmdLoading.value = true;
 	try {
 		const topWindow = (window.top || window.parent || window) as any;
 		if (!topWindow.widget) {
@@ -6482,9 +7024,411 @@ const openLifecycleHistoryCmd = async (physicalId: string) => {
 			);
 		});
 		callLifecycleHistoryEntry(HistoryCmd, physicalId);
+		// 延迟关闭 loading，给弹窗时间显示
+		setTimeout(() => {
+			lifecycleCmdLoading.value = false;
+		}, 1000);
 	} catch (error) {
 		console.error('[TW_EngineeringRelease] 打开 Lifecycle 历史记录失败:', error);
 		ElMessage.error('打开修订版失败');
+		lifecycleCmdLoading.value = false;
+	}
+};
+
+const callLifecycleReviseEntry = (ReviseCmd: any, physicalId: string) => {
+	const ReviseCmdCtor = ReviseCmd?.default || ReviseCmd;
+	if (typeof ReviseCmdCtor !== 'function') {
+		throw new Error('DS/LifecycleCmd/ReviseCmd 不是可实例化命令类');
+	}
+	console.log('[TW_EngineeringRelease] callLifecycleReviseEntry partInfo.value:', JSON.stringify(partInfo.value, null, 2));
+	const objectType = pickOpenWithField(partInfo.value, 'ds6w:type', 'type', 'objectType', 'displayType') || 'VPMReference';
+	const objectName = pickOpenWithField(partInfo.value, 'ds6w:label', 'label', 'displayName', 'name', 'title') || physicalId;
+	const revision = pickOpenWithField(partInfo.value, 'ds6wg:revision', 'revision') || '';
+	const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
+	const typeDisplayName = pickOpenWithField(partInfo.value, 'typeDisplayName', 'displayType', 'globalType') || '物理产品';
+	const current = pickOpenWithField(partInfo.value, 'ds6w:status', 'status') || '工作中';
+	const currentInternal = current === '工作中' ? 'IN_WORK' : current === '已发布' ? 'RELEASED' : current;
+	const policy = pickOpenWithField(partInfo.value, 'ds6w:policy', 'policy') || 'VPLM_SMB_Definition_MajorRev';
+	const cadMaster = pickOpenWithField(partInfo.value, 'ds6w:cadMaster', 'cadMaster') || '3DEXPERIENCE';
+	const imageUrl =
+		pickOpenWithField(partInfo.value, 'type_icon_url', 'icon', 'thumbnail_2d') || '/snresources/images/icons/small/I_VPMNavProduct.png';
+
+	console.log('[TW_EngineeringRelease] callLifecycleReviseEntry targetNode 字段:', {
+		physicalId,
+		objectName,
+		revision,
+		displayName,
+		typeDisplayName,
+		current,
+		currentInternal,
+		policy,
+		cadMaster,
+		imageUrl
+	});
+
+	const targetNode = {
+		'getID': () => physicalId,
+		'id': physicalId,
+		'objectId': physicalId,
+		'physicalid': physicalId,
+		physicalId,
+		'type': objectType,
+		objectType,
+		'displayType': typeDisplayName,
+		'displayName': displayName,
+		'label': displayName,
+		'title': displayName,
+		'name': objectName,
+		'revision': revision,
+		'typeDisplayName': typeDisplayName,
+		'baseType': 'PLMEntity',
+		'current': current,
+		'current_internal': currentInternal,
+		'imageUrl': imageUrl,
+		'tenant': 'OnPremise',
+		'envId': 'OnPremise',
+		'serviceId': '3DSpace',
+		'contextId': baseInfoStore.securityContext || '',
+		'objectTaxonomies': X3D_OBJECT_TAXONOMIES,
+		'_options': {
+			relationid: physicalId
+		},
+		'attributes': {
+			'ds6w:label': displayName,
+			'ds6w:name': objectName,
+			'ds6w:type': objectType,
+			'PLMEntity.V_Name': objectName
+		},
+		'revisionModeInfo': {
+			revisionMode: 'major'
+		},
+		'semantic': ['E'],
+		'object': {
+			'ds6w:label': displayName,
+			'ds6w:name': objectName,
+			'ds6w:type': objectType,
+			'PLMEntity.V_Name': objectName,
+			'attribute[PLMEntity.V_Name]': objectName,
+			'displayName': displayName,
+			'name': objectName,
+			'label': displayName,
+			'title': displayName,
+			'revision': revision,
+			'current': current,
+			'current_internal': currentInternal,
+			'cadMaster': cadMaster,
+			'typeDisplayName': typeDisplayName
+		},
+		'options': {
+			'ds6w:status': current,
+			'icons': [imageUrl],
+			'ds6w:type': typeDisplayName
+		},
+		'policy': policy,
+		'cadMaster': cadMaster,
+		'locked': false,
+		'lockedBy': null,
+		'branch': null,
+		'branch.uuid': null,
+		'type.kindof[PLMReference]': 'TRUE',
+		'popup': true
+	};
+
+	currentReviseTargetNodes = [targetNode];
+
+	const mockContext = {
+		getSelectedNodes: () => {
+			console.log('[TW_EngineeringRelease] 单选 mockContext.getSelectedNodes 返回:', JSON.stringify([targetNode], null, 2));
+			return [targetNode];
+		},
+		getEditMode: () => false,
+		getPADTreeDocument: () => ({ getXSO: () => ({ onPostAdd: () => {}, onPostRemove: () => {}, onEmpty: () => {}, get: () => [targetNode] }) }),
+		getCurrentFolder: () => '{}',
+		addEvent: () => {},
+		selectedNodes: [targetNode]
+	};
+
+	const reviseCmd = new ReviseCmdCtor({
+		ID: 'revise_command',
+		context: mockContext
+	});
+
+	if (typeof reviseCmd.execute !== 'function') {
+		throw new Error('DS/LifecycleCmd/ReviseCmd 实例未暴露 execute 方法');
+	}
+	reviseCmd.execute();
+};
+
+const openLifecycleReviseCmd = async (physicalId: string) => {
+	lifecycleCmdLoading.value = true;
+	try {
+		const topWindow = (window.top || window.parent || window) as any;
+		if (!topWindow.widget) {
+			const { widget } = await import('@widget-lab/3ddashboard-utils');
+			topWindow.widget = widget;
+			(widget as any).body = document.body;
+		} else if (!topWindow.widget.body) {
+			topWindow.widget.body = document.body;
+		}
+		const requireFn = topWindow.require || topWindow.requirejs || (window as any).require || (window as any).requirejs;
+		const [ReviseWidget, ReviseCmd, WAFData] = await Promise.all([
+			new Promise<any>((resolve, reject) => {
+				requireFn(
+					['DS/ReviseWidget/ReviseWidget'],
+					(module: any) => resolve(module),
+					(error: unknown) => reject(error)
+				);
+			}),
+			new Promise<any>((resolve, reject) => {
+				requireFn(
+					['DS/LifecycleCmd/ReviseCmd'],
+					(module: any) => resolve(module),
+					(error: unknown) => reject(error)
+				);
+			}),
+			new Promise<any>((resolve, reject) => {
+				requireFn(
+					['DS/WAFData/WAFData'],
+					(module: any) => resolve(module),
+					(error: unknown) => reject(error)
+				);
+			})
+		]);
+
+		// 拦截 WAFData.authenticatedRequest，修正 prepare_revise_checkavailability 和 attributeList 请求参数和响应
+		if (WAFData && typeof WAFData.authenticatedRequest === 'function' && !WAFData.__twPatchReviseRequest) {
+			const originalAuthenticatedRequest = WAFData.authenticatedRequest;
+			WAFData.authenticatedRequest = function (url: string, options: any) {
+				const isReviseRequest = url && (url.includes('/prepare_revise_checkavailability') || url.includes('/attributeList'));
+
+				// 修正请求参数
+				if (isReviseRequest && options?.data) {
+					try {
+						const requestData = typeof options.data === 'string' ? JSON.parse(options.data) : options.data;
+						if (Array.isArray(requestData?.data) && Array.isArray(currentReviseTargetNodes)) {
+							const sourceById = new Map<string, any>();
+							currentReviseTargetNodes.forEach(node => {
+								const objectId = node?.objectId || node?.physicalid || node?.physicalId;
+								if (objectId) sourceById.set(objectId, node);
+							});
+							requestData.data = requestData.data.map((item: any) => {
+								const objectId = item?.physicalid;
+								const source = objectId ? sourceById.get(objectId) : null;
+								if (!source) return item;
+
+								const isValidText = (value: unknown) => {
+									if (value === undefined || value === null || value === '') return false;
+									const text = String(value);
+									return text !== 'undefined' && text !== 'null' && !text.includes('undefined ');
+								};
+
+								return {
+									...item,
+									name: isValidText(item?.name) ? item.name : source.name,
+									displayName: isValidText(item?.displayName) ? item.displayName : source.displayName,
+									typeDisplayName:
+										item?.typeDisplayName && item.typeDisplayName !== item.type && item.typeDisplayName !== 'ds6w:Part'
+											? item.typeDisplayName
+											: source.typeDisplayName,
+									current: item?.current || source.current,
+									current_internal: item?.current_internal === '工作中' ? 'IN_WORK' : item?.current_internal || source.current_internal,
+									tenant: item?.tenant || source.tenant || 'OnPremise',
+									cadMaster: item?.cadMaster || source.cadMaster || '3DEXPERIENCE'
+								};
+							});
+							options.data = JSON.stringify(requestData);
+							console.log(
+								'[TW_EngineeringRelease] 修正后的 ' +
+									(url.includes('/prepare_revise_checkavailability') ? 'prepare_revise_checkavailability' : 'attributeList') +
+									' 请求:',
+								requestData
+							);
+						}
+					} catch (error) {
+						console.error('[TW_EngineeringRelease] 修正 revise 请求失败:', error);
+					}
+				}
+
+				// 修正响应数据
+				const originalOnComplete = options?.onComplete;
+				if (isReviseRequest && originalOnComplete) {
+					options.onComplete = function (response: any) {
+						if (
+							(url.includes('/attributeList') || url.includes('/prepare_revise_checkavailability')) &&
+							response?.results &&
+							Array.isArray(response.results) &&
+							Array.isArray(currentReviseTargetNodes)
+						) {
+							const sourceById = new Map<string, any>();
+							currentReviseTargetNodes.forEach(node => {
+								const objectId = node?.objectId || node?.physicalid || node?.physicalId;
+								if (objectId) sourceById.set(objectId, node);
+							});
+							response.results.forEach((result: any) => {
+								const objectId = result?.objectId || result?.physicalid;
+								const source = objectId ? sourceById.get(objectId) : null;
+								if (!source) return;
+
+								const isValidText = (value: unknown) => {
+									if (value === undefined || value === null || value === '') return false;
+									const text = String(value);
+									return text !== 'undefined' && text !== 'null' && !text.includes('undefined ');
+								};
+
+								if (!isValidText(result.displayName)) result.displayName = source.displayName || source.name || source.title;
+								if (!isValidText(result.name)) result.name = source.name || source.displayName || source.title;
+								if (!result.revision) result.revision = source.revision;
+								if (!result.current) result.current = source.current;
+								if (!result.current_internal) result.current_internal = source.current_internal;
+								if (!result.typeDisplayName || result.typeDisplayName === result.type)
+									result.typeDisplayName = source.typeDisplayName || result.typeDisplayName;
+								if (!result.displayType || result.displayType === result.type) result.displayType = source.displayType || result.displayType;
+								if (!result.cadMaster) result.cadMaster = source.cadMaster;
+								if (!result.imageUrl) result.imageUrl = source.imageUrl;
+								if (!result.options) result.options = {};
+								if (!result.options['ds6w:status']) result.options['ds6w:status'] = source.current;
+								if (!result.options['ds6w:type']) result.options['ds6w:type'] = source.typeDisplayName || source.displayType;
+							});
+							console.log(
+								'[TW_EngineeringRelease] 修正后的 ' +
+									(url.includes('/prepare_revise_checkavailability') ? 'prepare_revise_checkavailability' : 'attributeList') +
+									' 响应:',
+								response.results
+							);
+						}
+						return originalOnComplete.call(this, response);
+					};
+				}
+
+				return originalAuthenticatedRequest.call(this, url, options);
+			};
+			WAFData.__twPatchReviseRequest = true;
+		}
+
+		// 应用 _attributeListRequest 补丁（与多选入口保持一致）
+		const ReviseWidgetCtor = ReviseWidget?.default || ReviseWidget;
+		const reviseWidgetPrototype = ReviseWidgetCtor?.prototype;
+
+		// 拦截 executeCmd，追踪并修正传入的对象参数
+		if (reviseWidgetPrototype && typeof reviseWidgetPrototype.executeCmd === 'function' && !reviseWidgetPrototype.__twPatchExecuteCmd) {
+			const originalExecuteCmd = reviseWidgetPrototype.executeCmd;
+			reviseWidgetPrototype.executeCmd = function (objects: any[], options: any, callback: any) {
+				console.log('[TW_EngineeringRelease] ReviseWidget.executeCmd 传入对象:', JSON.stringify(objects, null, 2));
+				// 从 options.context.getSelectedNodes 获取最新数据
+				let sourceNodes = currentReviseTargetNodes;
+				if (options?.context?.getSelectedNodes && typeof options.context.getSelectedNodes === 'function') {
+					try {
+						sourceNodes = options.context.getSelectedNodes();
+						console.log(
+							'[TW_EngineeringRelease] ReviseWidget.executeCmd 从 context.getSelectedNodes 获取数据:',
+							JSON.stringify(sourceNodes, null, 2)
+						);
+					} catch (e) {
+						console.warn('[TW_EngineeringRelease] ReviseWidget.executeCmd 获取 context.getSelectedNodes 失败:', e);
+					}
+				}
+				// 确保传入的对象有正确的 name 和 displayName
+				if (Array.isArray(objects) && objects.length > 0 && Array.isArray(sourceNodes)) {
+					const sourceById = new Map<string, any>();
+					sourceNodes.forEach(node => {
+						const objectId = node?.objectId || node?.physicalid || node?.physicalId;
+						if (objectId) sourceById.set(objectId, node);
+					});
+					objects.forEach((obj: any) => {
+						const objectId = obj?.objectId || obj?.physicalid;
+						const source = objectId ? sourceById.get(objectId) : null;
+						if (source) {
+							if (!obj.name || obj.name === 'undefined') obj.name = source.name;
+							if (!obj.displayName || obj.displayName === 'undefined' || obj.displayName.includes('undefined ')) obj.displayName = source.displayName;
+							if (!obj.revision) obj.revision = source.revision;
+						}
+					});
+					console.log('[TW_EngineeringRelease] ReviseWidget.executeCmd 修正后对象:', JSON.stringify(objects, null, 2));
+				}
+				return originalExecuteCmd.call(this, objects, options, callback);
+			};
+			reviseWidgetPrototype.__twPatchExecuteCmd = true;
+		}
+
+		if (
+			reviseWidgetPrototype &&
+			typeof reviseWidgetPrototype._attributeListRequest === 'function' &&
+			!reviseWidgetPrototype.__twMergeSelectionInfoForRevise
+		) {
+			const originalAttributeListRequest = reviseWidgetPrototype._attributeListRequest;
+			reviseWidgetPrototype._attributeListRequest = function (objects: any[], securityContext: any, callback: (results: any[]) => void) {
+				const isValidText = (value: unknown) => {
+					if (value === undefined || value === null || value === '') return false;
+					const text = String(value);
+					return text !== 'undefined' && text !== 'null' && !text.includes('undefined ');
+				};
+				const sourceById = new Map<string, any>();
+				currentReviseTargetNodes.forEach(node => {
+					const objectId = node?.objectId || node?.physicalid || node?.physicalId;
+					if (objectId) sourceById.set(objectId, node);
+				});
+				const normalizedObjects = (objects || []).map(object => {
+					const objectId = object?.objectId || object?.physicalid;
+					const source = objectId ? sourceById.get(objectId) : null;
+					if (!source) return object;
+
+					return {
+						...object,
+						displayName: isValidText(object?.displayName) ? object.displayName : source.displayName,
+						name: isValidText(object?.name) ? object.name : source.name,
+						typeDisplayName:
+							object?.typeDisplayName && object.typeDisplayName !== object.type && object.typeDisplayName !== 'ds6w:Part'
+								? object.typeDisplayName
+								: source.typeDisplayName,
+						current: object?.current || source.current,
+						current_internal: object?.current_internal === '工作中' ? 'IN_WORK' : object?.current_internal || source.current_internal,
+						revision: object?.revision || source.revision,
+						tenant: object?.tenant || source.tenant || 'OnPremise',
+						imageUrl: object?.imageUrl || source.imageUrl,
+						cadMaster: object?.cadMaster || source.cadMaster || '3DEXPERIENCE',
+						locked: object?.locked ?? source.locked ?? false,
+						lockedBy: object?.lockedBy ?? source.lockedBy ?? '',
+						policy: object?.policy || source.policy
+					};
+				});
+
+				return originalAttributeListRequest.call(this, normalizedObjects, securityContext, (results: any[]) => {
+					if (Array.isArray(results)) {
+						results.forEach(result => {
+							const objectId = result?.objectId || result?.physicalid;
+							const source = objectId ? sourceById.get(objectId) : null;
+							if (!source) return;
+
+							if (!isValidText(result.displayName)) result.displayName = source.displayName || source.name || source.title;
+							if (!isValidText(result.name)) result.name = source.name || source.displayName || source.title;
+							if (!result.revision) result.revision = source.revision;
+							if (!result.current) result.current = source.current;
+							if (!result.current_internal) result.current_internal = source.current_internal;
+							if (!result.typeDisplayName || result.typeDisplayName === result.type)
+								result.typeDisplayName = source.typeDisplayName || result.typeDisplayName;
+							if (!result.displayType || result.displayType === result.type) result.displayType = source.displayType || result.displayType;
+							if (!result.cadMaster) result.cadMaster = source.cadMaster;
+							if (!result.imageUrl) result.imageUrl = source.imageUrl;
+							if (!result.options) result.options = {};
+							if (!result.options['ds6w:status']) result.options['ds6w:status'] = source.current;
+							if (!result.options['ds6w:type']) result.options['ds6w:type'] = source.typeDisplayName || source.displayType;
+						});
+					}
+					callback(results);
+				});
+			};
+			reviseWidgetPrototype.__twMergeSelectionInfoForRevise = true;
+		}
+
+		callLifecycleReviseEntry(ReviseCmd, physicalId);
+		// 延迟关闭 loading，给弹窗时间显示
+		setTimeout(() => {
+			lifecycleCmdLoading.value = false;
+		}, 1000);
+	} catch (error) {
+		console.error('[TW_EngineeringRelease] 打开 Lifecycle 修订版创建失败:', error);
+		ElMessage.error('打开新修订版失败');
+		lifecycleCmdLoading.value = false;
 	}
 };
 
@@ -6499,6 +7443,23 @@ const handleHeaderActionCommand = async (command: string) => {
 			return;
 		}
 		await openLifecycleHistoryCmd(physicalId);
+		return;
+	}
+	if (command === 'newRevision') {
+		console.log('[TW_EngineeringRelease] newRevision 检查选中行数量:', selectedChildrenRows.value.length);
+		console.log('[TW_EngineeringRelease] newRevision selectedChildrenRows:', JSON.stringify(selectedChildrenRows.value.slice(0, 2), null, 2));
+		if (selectedChildrenRows.value.length > 0) {
+			await handleSelectedRowNewRevision();
+			return;
+		}
+		const physicalId = getParentPhysicalId();
+		console.log('[TW_EngineeringRelease] newRevision 点击，当前物理ID:', physicalId);
+		if (!physicalId) {
+			console.warn('[TW_EngineeringRelease] newRevision 点击失败：未找到当前对象物理ID');
+			ElMessage.warning('未找到当前对象物理ID');
+			return;
+		}
+		await openLifecycleReviseCmd(physicalId);
 		return;
 	}
 	if (command === 'updateRevisionAll') {

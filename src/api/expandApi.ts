@@ -471,7 +471,6 @@ class ExpandAPI {
 		const label = `xEngineer-${currentUser}-${Date.now()}`;
 
 		// 构建数据库模式请求参数（同时包含 db + cv 块）
-		/* eslint-disable */
 		const params = {
 			db: {
 				'root_path_physicalid': [[physicalId]],
@@ -666,7 +665,6 @@ class ExpandAPI {
 				}
 			}
 		};
-		/* eslint-enable */
 
 		console.log('[ExpandAPI] DB模式 请求参数:', JSON.stringify(params, null, 2));
 
@@ -746,6 +744,245 @@ class ExpandAPI {
 				isDocument: true
 			};
 		});
+	}
+
+	/**
+	 * 根据路径刷新单个节点（数据库模式）
+	 * 用于修订版操作后刷新选中行
+	 * @param path 节点路径数组
+	 * @param targetPhysicalId 目标节点 physicalId
+	 * @returns 展开结构数据
+	 */
+	async refreshNodeByPath(path: string[], targetPhysicalId: string): Promise<ExpandResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			console.log('[ExpandAPI] 刷新节点 3DSpace URL 为空，先获取 URL');
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			console.log('[ExpandAPI] 刷新节点 SecurityContext 为空，先获取');
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const currentUser = baseInfoStore.currentUser || 'admin_platform';
+		const securityContext = baseInfoStore.securityContext;
+
+		const endpoint = '/resources/enoauthoring/expand/v2/progressive';
+		const url = `${endpoint}?tenant=OnPremise&SecurityContext=${encodeURIComponent(securityContext || '')}`;
+
+		console.log('[ExpandAPI] 刷新节点 URL:', url);
+		console.log('[ExpandAPI] 刷新节点路径:', path);
+		console.log('[ExpandAPI] 刷新节点目标 physicalId:', targetPhysicalId);
+
+		const label = `xEngineer-${currentUser}-${Date.now()}`;
+
+		const params = {
+			db: {
+				'root_path_physicalid': [path],
+				label,
+				'no_type_filter_rel': ['XCADBaseDependency'],
+				'type_filter_rel': ['VPMInstance', 'VPMRepInstance'],
+				'q.iterative_filter_query_bo': '(flattenedtaxonomies:"types/Drawing") OR [ds6w:globalType]:"ds6w:Part"',
+				'compute_select_bo': ['icon', 'thumbnail_2d'],
+				'expand_iter': '0',
+				'fcs_url_mode': 'REDIRECT',
+				'select_bo': [
+					'ds6w:label',
+					'ds6w:modified',
+					'ds6w:created',
+					'ds6w:description',
+					'ds6wg:revision',
+					'ds6w:cadMaster',
+					'ds6w:responsible',
+					'owner',
+					'ds6w:status',
+					'ds6w:type',
+					'ds6wg:EnterpriseExtension.V_PartNumber',
+					'ds6wg:MaterialUsageExtension.DeclaredQuantity',
+					'ds6wg:DELFmiContQuantity_Mass.V_ContQuantity',
+					'ds6wg:DELFmiContQuantity_Volume.V_ContQuantity',
+					'ds6wg:raw_material.v_dimensiontype',
+					'type',
+					'physicalid',
+					'ds6w:policy',
+					'ds6w:reservedBy',
+					'ds6w:globalType',
+					'ds6w:manufacturable',
+					'pathsr',
+					'ds6w:isLastRevision',
+					'ds6w:reserved',
+					'ds6w:identifier',
+					'cestamp'
+				],
+				'select_rel': [
+					'ds6w:label',
+					'ds6w:type',
+					'ds6wg:SynchroEBOMExt.V_InEBOMUser',
+					'physicalid',
+					'ro.plminstance.V_treeorder',
+					'ds6wg:raw_material.v_dimensiontype',
+					'ro.madefromquantity_length.V_ContQuantity',
+					'ro.madefromquantity_mass.V_ContQuantity',
+					'ro.madefromquantity_area.V_ContQuantity',
+					'ro.madefromquantity_volume.V_ContQuantity',
+					'ro.madefromquantity_AsRequired.AsRequired',
+					'ro.MadeFromQuantity_Rectangular.Length',
+					'ro.MadeFromQuantity_Rectangular.Width',
+					'ro.VPMInstanceQuantity_Area.V_ContQuantity',
+					'ro.VPMInstanceQuantity_Mass.V_ContQuantity',
+					'ro.VPMInstanceQuantity_Volume.V_ContQuantity',
+					'ro.VPMInstanceQuantity_Length.V_ContQuantity',
+					'ro.VPMInstanceQuantity_AsRequired.AsRequired',
+					'ro.VPMInstanceQuantity_Rectangular.Length',
+					'ro.VPMInstanceQuantity_Rectangular.Width',
+					'ds6w:reservedBy',
+					'cestamp'
+				],
+				'locale': 'zh',
+				'tenant': 'OnPremise',
+				'paths': [path],
+				'sequence_filter': [
+					{
+						definition: [
+							{
+								'type_filter_rel': ['VPMInstance', 'VPMRepInstance'],
+								'q.query': 'NOT ([ds6wg:SynchroEBOMExt.V_InEBOMUser]:"FALSE" )'
+							}
+						]
+					}
+				],
+				'types': ['VPMReference', 'VPMRepReference', 'VPMInstance', 'Document'],
+				'extensions': ['XCADExtension', 'XP_VPMReference_Ext', 'EnterpriseExtension', 'DELFmiContQuantity_Mass', 'DELFmiContQuantity_Volume'],
+				'source': 'cstorage',
+				'static_mapping': false,
+				'format': 'entity_relation_occurrence'
+			},
+			cv: {
+				batch: {
+					expands: [
+						{
+							filter: {
+								and: {
+									filters: [
+										{
+											prefix_filter: {
+												prefix_path: [{ physical_id_path: path }]
+											}
+										},
+										{
+											and: {
+												filters: [
+													{
+														sequence_filter: {
+															sequence: [
+																{
+																	uql: '((flattenedtaxonomies:"reltypes/VPMInstance") OR (flattenedtaxonomies:"reltypes/VPMRepInstance")) AND (NOT (ds6wg_58_synchroebomext_46_v_95_inebomuser:"FALSE" ))'
+																}
+															]
+														}
+													}
+												]
+											}
+										}
+									]
+								}
+							},
+							root: { physical_id: targetPhysicalId },
+							label,
+							graph: {
+								descending_condition_relation: {
+									uql: 'NOT (flattenedtaxonomies:"reltypes/XCADBaseDependency") AND ((flattenedtaxonomies:"reltypes/VPMInstance") OR (flattenedtaxonomies:"reltypes/VPMRepInstance"))'
+								},
+								descending_condition_object: {
+									uql: '(flattenedtaxonomies:"types/Drawing") OR ds6w_58_globaltype:"ds6w:Part"'
+								}
+							},
+							aggregation_processors: [
+								{
+									truncate: {
+										max_distance_from_prefix: 0,
+										prefix_filter: {
+											prefix_path: [{ physical_id_path: path }]
+										}
+									}
+								}
+							]
+						}
+					]
+				},
+				outputs: {
+					hits: {
+						predefined_computation: ['icons', 'urlstream|thumbnail_2d|2dthb|allrefs']
+					},
+					select_object: [
+						'ds6w:label',
+						'ds6w:modified',
+						'ds6w:created',
+						'ds6w:description',
+						'ds6wg:revision',
+						'ds6w:cadMaster',
+						'ds6w:responsible',
+						'owner',
+						'ds6w:status',
+						'ds6w:type',
+						'ds6wg:EnterpriseExtension.V_PartNumber',
+						'ds6wg:MaterialUsageExtension.DeclaredQuantity',
+						'ds6wg:DELFmiContQuantity_Mass.V_ContQuantity',
+						'ds6wg:DELFmiContQuantity_Volume.V_ContQuantity',
+						'ds6wg:raw_material.v_dimensiontype',
+						'type',
+						'physicalid',
+						'ds6w:policy',
+						'ds6w:reservedBy',
+						'ds6w:globalType',
+						'ds6w:manufacturable',
+						'pathsr',
+						'ds6w:isLastRevision',
+						'ds6w:reserved',
+						'ds6w:identifier',
+						'cestamp'
+					],
+					select_relation: [
+						'ds6w:label',
+						'ds6w:type',
+						'ds6wg:SynchroEBOMExt.V_InEBOMUser',
+						'physicalid',
+						'ro.plminstance.V_treeorder',
+						'ds6wg:raw_material.v_dimensiontype',
+						'ro.madefromquantity_length.V_ContQuantity',
+						'ro.madefromquantity_mass.V_ContQuantity',
+						'ro.madefromquantity_area.V_ContQuantity',
+						'ro.madefromquantity_volume.V_ContQuantity',
+						'ro.madefromquantity_AsRequired.AsRequired',
+						'ro.MadeFromQuantity_Rectangular.Length',
+						'ro.MadeFromQuantity_Rectangular.Width',
+						'ro.VPMInstanceQuantity_Area.V_ContQuantity',
+						'ro.VPMInstanceQuantity_Mass.V_ContQuantity',
+						'ro.VPMInstanceQuantity_Volume.V_ContQuantity',
+						'ro.VPMInstanceQuantity_Length.V_ContQuantity',
+						'ro.VPMInstanceQuantity_AsRequired.AsRequired',
+						'ro.VPMInstanceQuantity_Rectangular.Length',
+						'ro.VPMInstanceQuantity_Rectangular.Width',
+						'ds6w:reservedBy',
+						'cestamp'
+					],
+					format: 'entity_relation_occurrence'
+				}
+			}
+		};
+
+		console.log('[ExpandAPI] 刷新节点请求参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.post(url, params as unknown as Record<string, unknown>);
+			console.log('[ExpandAPI] 刷新节点响应:', response);
+			return response as ExpandResponse;
+		} catch (error) {
+			console.error('[ExpandAPI] 刷新节点失败:', error);
+			throw error;
+		}
 	}
 
 	/**
