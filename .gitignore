@@ -43,3 +43,14 @@ Interface/全部展开的返回值
 Interface/需要的多个请求参数
 Interface/展开.txt
 Interface/展开返回值.txt
+Interface/error.har
+Interface/success.har
+.agents/skills/skill-creator/scripts/__init__.py
+.agents/skills/skill-creator/scripts/aggregate_benchmark.py
+.agents/skills/skill-creator/scripts/generate_report.py
+.agents/skills/skill-creator/scripts/improve_description.py
+.agents/skills/skill-creator/scripts/package_skill.py
+.agents/skills/skill-creator/scripts/quick_validate.py
+.agents/skills/skill-creator/scripts/run_eval.py
+.agents/skills/skill-creator/scripts/run_loop.py
+.agents/skills/skill-creator/scripts/utils.py

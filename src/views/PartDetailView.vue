@@ -123,10 +123,9 @@
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="newBranch"
-									disabled
-									class="part-action-disabled-item">
+									:disabled="lifecycleCmdLoading">
 									<span class="part-action-menu-icon">⌘</span>
-									<span class="part-action-menu-label">新建分支</span>
+									<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '新建分支' }}</span>
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="newRevisionSource"
@@ -599,6 +598,12 @@
 										:disabled="lifecycleCmdLoading">
 										<span class="selected-action-icon">↳</span>
 										<span>{{ lifecycleCmdLoading ? '加载中...' : '新修订版' }}</span>
+									</el-dropdown-item>
+									<el-dropdown-item
+										command="newBranch"
+										:disabled="lifecycleCmdLoading">
+										<span class="selected-action-icon">⌘</span>
+										<span>{{ lifecycleCmdLoading ? '加载中...' : '新建分支' }}</span>
 									</el-dropdown-item>
 									<el-dropdown-item
 										command="compare"
@@ -2022,6 +2027,7 @@ const childrenData = ref<TreeNode[]>([]);
 
 // 全局存储当前 Revise 操作的 targetNodes，供 _attributeListRequest 补丁使用
 let currentReviseTargetNodes: any[] = [];
+let currentNewBranchTargetNodes: any[] = [];
 const loading = ref(false);
 const childrenLoading = ref(false);
 const expandingRowIds = ref<Set<string>>(new Set());
@@ -2135,6 +2141,7 @@ type SelectedActionCommand =
 	| 'unparent'
 	| 'revision'
 	| 'newRevision'
+	| 'newBranch'
 	| 'compare'
 	| 'relationship'
 	| 'replaceLatest'
@@ -5335,6 +5342,180 @@ const handleSelectedRowNewRevision = async () => {
 	});
 };
 
+const handleSelectedRowNewBranch = async () => {
+	const selectedRows = selectedChildrenRows.value;
+	if (!selectedRows || selectedRows.length === 0) {
+		ElMessage.warning('请先选中要新建分支的行');
+		return;
+	}
+
+	console.log('[TW_EngineeringRelease] handleSelectedRowNewBranch selectedChildrenRows:', JSON.stringify(selectedRows.slice(0, 2), null, 2));
+	lifecycleCmdLoading.value = true;
+	try {
+		const topWindow = (window.top || window.parent || window) as any;
+		if (!topWindow.widget) {
+			const { widget } = await import('@widget-lab/3ddashboard-utils');
+			topWindow.widget = widget;
+			(widget as any).body = document.body;
+		} else if (!topWindow.widget.body) {
+			topWindow.widget.body = document.body;
+		}
+
+		const requireFn = topWindow.require || topWindow.requirejs || (window as any).require || (window as any).requirejs;
+		const [NewBranchWidget, NewBranchCmd, WAFData] = await Promise.all([
+			new Promise<any>((resolve, reject) => {
+				requireFn(
+					['DS/NewBranchWidget/NewBranchWidget'],
+					(module: any) => resolve(module),
+					(error: unknown) => reject(error)
+				);
+			}),
+			new Promise<any>((resolve, reject) => {
+				requireFn(
+					['DS/LifecycleCmd/NewBranchCmd'],
+					(module: any) => resolve(module),
+					(error: unknown) => reject(error)
+				);
+			}),
+			new Promise<any>((resolve, reject) => {
+				requireFn(
+					['DS/WAFData/WAFData'],
+					(module: any) => resolve(module),
+					(error: unknown) => reject(error)
+				);
+			})
+		]);
+
+		const targetNodes = selectedRows.map(row => {
+			const pickValidField = (...keys: string[]) => {
+				for (const key of keys) {
+					const value = pickOpenWithField(row, key);
+					if (value && value !== 'undefined' && value !== 'null' && !value.includes('undefined ')) return value;
+				}
+				return '';
+			};
+			const normalizeTypeDisplayName = (value: string) => {
+				if (!value || value === 'VPMReference' || value === 'ds6w:Part') return '物理产品';
+				return value;
+			};
+			const normalizeCurrentInternal = (value: string) => {
+				if (value === '工作中') return 'IN_WORK';
+				if (value === '已发布') return 'RELEASED';
+				return value || 'IN_WORK';
+			};
+			const physicalId = row.resourceid || row.id;
+			const objectType = pickValidField('objectType', 'type') || 'VPMReference';
+			const objectName =
+				pickValidField('ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
+			const revision = pickValidField('revision', 'ds6wg:revision');
+			const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
+			const typeDisplayName = normalizeTypeDisplayName(pickValidField('typeDisplayName', 'displayType', 'globalType', 'ds6w:type'));
+			const current = pickValidField('status', 'current', 'ds6w:status', 'state') || '工作中';
+			const currentInternal = normalizeCurrentInternal(pickValidField('current_internal', 'statusRaw'));
+			const policy = pickValidField('policy', 'ds6w:policy') || 'VPLM_SMB_Definition_MajorRev';
+			const cadMaster = pickValidField('cadMaster') || '3DEXPERIENCE';
+			const imageUrl = pickValidField('type_icon_url', 'icon', 'imageUrl') || '/snresources/images/icons/small/I_VPMNavProduct.png';
+
+			return {
+				'getID': () => physicalId,
+				'id': physicalId,
+				'objectId': physicalId,
+				'physicalid': physicalId,
+				physicalId,
+				'type': objectType,
+				objectType,
+				'displayType': typeDisplayName,
+				'displayName': displayName,
+				'label': displayName,
+				'title': displayName,
+				'name': objectName,
+				'revision': revision,
+				'typeDisplayName': typeDisplayName,
+				'baseType': 'PLMEntity',
+				'current': current,
+				'current_internal': currentInternal,
+				'imageUrl': imageUrl,
+				'tenant': 'OnPremise',
+				'envId': 'OnPremise',
+				'serviceId': '3DSpace',
+				'contextId': baseInfoStore.securityContext || '',
+				'objectTaxonomies': X3D_OBJECT_TAXONOMIES,
+				'_options': {
+					relationid: row.relationId || physicalId
+				},
+				'attributes': {
+					'ds6w:label': displayName,
+					'ds6w:name': objectName,
+					'ds6w:type': objectType,
+					'PLMEntity.V_Name': objectName
+				},
+				'object': {
+					'ds6w:label': displayName,
+					'ds6w:name': objectName,
+					'ds6w:type': objectType,
+					'PLMEntity.V_Name': objectName,
+					'attribute[PLMEntity.V_Name]': objectName,
+					'displayName': displayName,
+					'name': objectName,
+					'label': displayName,
+					'title': displayName,
+					'revision': revision,
+					'current': current,
+					'current_internal': currentInternal,
+					'cadMaster': cadMaster,
+					'typeDisplayName': typeDisplayName
+				},
+				'options': {
+					'ds6w:status': current,
+					'icons': [imageUrl],
+					'ds6w:type': typeDisplayName
+				},
+				'policy': policy,
+				'cadMaster': cadMaster,
+				'locked': false,
+				'lockedBy': null,
+				'branch': null,
+				'branch.uuid': null,
+				'type.kindof[PLMReference]': 'TRUE',
+				'popup': true
+			};
+		});
+
+		currentNewBranchTargetNodes = targetNodes;
+		const mockContext = {
+			getSelectedNodes: () => targetNodes,
+			getEditMode: () => false,
+			getPADTreeDocument: () => ({ getXSO: () => ({ onPostAdd: () => {}, onPostRemove: () => {}, onEmpty: () => {}, get: () => targetNodes }) }),
+			getCurrentFolder: () => '{}',
+			addEvent: () => {},
+			selectedNodes: targetNodes
+		};
+
+		applyNewBranchWidgetPatches(NewBranchWidget, WAFData);
+		const NewBranchCmdCtor = NewBranchCmd?.default || NewBranchCmd;
+		if (typeof NewBranchCmdCtor !== 'function') {
+			throw new Error('DS/LifecycleCmd/NewBranchCmd 不是可实例化命令类');
+		}
+
+		const newBranchCmd = new NewBranchCmdCtor({
+			ID: 'newbranch_command',
+			context: mockContext
+		});
+
+		if (typeof newBranchCmd.execute !== 'function') {
+			throw new Error('DS/LifecycleCmd/NewBranchCmd 实例未暴露 execute 方法');
+		}
+		newBranchCmd.execute();
+		setTimeout(() => {
+			lifecycleCmdLoading.value = false;
+		}, 1000);
+	} catch (error) {
+		console.error('[TW_EngineeringRelease] 打开 Lifecycle 新建分支失败:', error);
+		ElMessage.error('打开新建分支失败');
+		lifecycleCmdLoading.value = false;
+	}
+};
+
 const refreshSelectedRow = async (row: TreeNode) => {
 	const physicalId = row.resourceid;
 	const path = row.path || [physicalId];
@@ -5484,6 +5665,9 @@ const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 			break;
 		case 'newRevision':
 			handleSelectedRowNewRevision();
+			break;
+		case 'newBranch':
+			handleSelectedRowNewBranch();
 			break;
 		case 'compare':
 			handleSelectedCompare();
@@ -7563,6 +7747,247 @@ const callLifecycleReviseEntry = (ReviseCmd: any, physicalId: string) => {
 	reviseCmd.execute();
 };
 
+const openLifecycleNewBranchCmd = async (physicalId: string) => {
+	lifecycleCmdLoading.value = true;
+	try {
+		const topWindow = (window.top || window.parent || window) as any;
+		if (!topWindow.widget) {
+			const { widget } = await import('@widget-lab/3ddashboard-utils');
+			topWindow.widget = widget;
+			(widget as any).body = document.body;
+		} else if (!topWindow.widget.body) {
+			topWindow.widget.body = document.body;
+		}
+		const requireFn = topWindow.require || topWindow.requirejs || (window as any).require || (window as any).requirejs;
+		const [NewBranchWidget, NewBranchCmd, WAFData] = await Promise.all([
+			new Promise<any>((resolve, reject) => {
+				requireFn(
+					['DS/NewBranchWidget/NewBranchWidget'],
+					(module: any) => resolve(module),
+					(error: unknown) => reject(error)
+				);
+			}),
+			new Promise<any>((resolve, reject) => {
+				requireFn(
+					['DS/LifecycleCmd/NewBranchCmd'],
+					(module: any) => resolve(module),
+					(error: unknown) => reject(error)
+				);
+			}),
+			new Promise<any>((resolve, reject) => {
+				requireFn(
+					['DS/WAFData/WAFData'],
+					(module: any) => resolve(module),
+					(error: unknown) => reject(error)
+				);
+			})
+		]);
+
+		applyNewBranchWidgetPatches(NewBranchWidget, WAFData);
+		callLifecycleNewBranchEntry(NewBranchCmd, physicalId);
+		setTimeout(() => {
+			lifecycleCmdLoading.value = false;
+		}, 1000);
+	} catch (error) {
+		console.error('[TW_EngineeringRelease] 打开 Lifecycle 新修订版源失败:', error);
+		ElMessage.error('打开新修订版源失败');
+		lifecycleCmdLoading.value = false;
+	}
+};
+
+const patchNewBranchObject = (target: any, source: any) => {
+	if (!target || !source) return target;
+	const isValidText = (value: unknown) => {
+		if (value === undefined || value === null || value === '') return false;
+		const text = String(value);
+		return text !== 'undefined' && text !== 'null' && !text.includes('undefined ');
+	};
+
+	if (!isValidText(target.name)) target.name = source.name || source.displayName || source.title;
+	if (!isValidText(target.displayName)) target.displayName = source.displayName || source.name || source.title;
+	if (!isValidText(target.typeDisplayName) || target.typeDisplayName === target.type) target.typeDisplayName = source.typeDisplayName || source.displayType;
+	if (!isValidText(target.current)) target.current = source.current;
+	if (!isValidText(target.current_internal) || String(target.current_internal).includes('.')) target.current_internal = source.current_internal;
+	if (!isValidText(target.cadMaster)) target.cadMaster = source.cadMaster;
+	if (!target.revision) target.revision = source.revision;
+	if (!target.imageUrl) target.imageUrl = source.imageUrl;
+	if (!target.policy) target.policy = source.policy;
+	if (!target.serviceId) target.serviceId = source.serviceId || '3DSpace';
+	if (!target.tenant) target.tenant = source.tenant || 'OnPremise';
+	if (target.locked === undefined || target.locked === null) target.locked = source.locked ?? false;
+	if (target.lockedBy === undefined || target.lockedBy === null) target.lockedBy = source.lockedBy ?? '';
+	return target;
+};
+
+const applyNewBranchWidgetPatches = (NewBranchWidget: any, WAFData: any) => {
+	const getSourceById = (objectId: string) => currentNewBranchTargetNodes.find(node => node?.objectId === objectId || node?.physicalid === objectId || node?.physicalId === objectId);
+
+	if (WAFData && typeof WAFData.authenticatedRequest === 'function' && !WAFData.__twPatchNewBranchRequest) {
+		const originalAuthenticatedRequest = WAFData.authenticatedRequest;
+		WAFData.authenticatedRequest = function (url: string, options: any) {
+			const isNewBranchRequest = url && url.includes('/lifecycle/newbranch/prepare_newbranch_completesel');
+			if (isNewBranchRequest && options?.data) {
+				try {
+					const requestData = typeof options.data === 'string' ? JSON.parse(options.data) : options.data;
+					if (Array.isArray(requestData?.data)) {
+						requestData.data = requestData.data.map((item: any) => patchNewBranchObject({ ...item }, getSourceById(item?.physicalid)));
+						options.data = JSON.stringify(requestData);
+						console.log('[TW_EngineeringRelease] 修正后的 prepare_newbranch_completesel 请求:', requestData);
+					}
+				} catch (error) {
+					console.error('[TW_EngineeringRelease] 修正 newBranch 请求失败:', error);
+				}
+			}
+
+			const originalOnComplete = options?.onComplete;
+			if (isNewBranchRequest && originalOnComplete) {
+				options.onComplete = function (response: any) {
+					if (Array.isArray(response?.results)) {
+						response.results.forEach((result: any) => patchNewBranchObject(result, getSourceById(result?.physicalid || result?.objectId)));
+						console.log('[TW_EngineeringRelease] 修正后的 prepare_newbranch_completesel 响应:', response.results);
+					}
+					return originalOnComplete.call(this, response);
+				};
+			}
+
+			return originalAuthenticatedRequest.call(this, url, options);
+		};
+		WAFData.__twPatchNewBranchRequest = true;
+	}
+
+	const NewBranchWidgetCtor = NewBranchWidget?.default || NewBranchWidget;
+	const newBranchWidgetPrototype = NewBranchWidgetCtor?.prototype;
+	if (newBranchWidgetPrototype && typeof newBranchWidgetPrototype.executeCmd === 'function' && !newBranchWidgetPrototype.__twPatchExecuteCmd) {
+		const originalExecuteCmd = newBranchWidgetPrototype.executeCmd;
+		newBranchWidgetPrototype.executeCmd = function (objects: any[], options: any, callback: any) {
+			let sourceNodes = currentNewBranchTargetNodes;
+			if (options?.context?.getSelectedNodes && typeof options.context.getSelectedNodes === 'function') {
+				try {
+					sourceNodes = options.context.getSelectedNodes();
+				} catch (error) {
+					console.warn('[TW_EngineeringRelease] NewBranchWidget.executeCmd 获取 context.getSelectedNodes 失败:', error);
+				}
+			}
+			if (Array.isArray(objects) && Array.isArray(sourceNodes)) {
+				objects.forEach((object: any) => {
+					const objectId = object?.objectId || object?.physicalid || object?.physicalId;
+					const source = objectId ? sourceNodes.find((node: any) => node?.objectId === objectId || node?.physicalid === objectId || node?.physicalId === objectId) : null;
+					patchNewBranchObject(object, source);
+				});
+			}
+			return originalExecuteCmd.call(this, objects, options, callback);
+		};
+		newBranchWidgetPrototype.__twPatchExecuteCmd = true;
+	}
+};
+
+const callLifecycleNewBranchEntry = (NewBranchCmd: any, physicalId: string) => {
+	const NewBranchCmdCtor = NewBranchCmd?.default || NewBranchCmd;
+	if (typeof NewBranchCmdCtor !== 'function') {
+		throw new Error('DS/LifecycleCmd/NewBranchCmd 不是可实例化命令类');
+	}
+	const objectType = pickOpenWithField(partInfo.value, 'ds6w:type', 'type', 'objectType', 'displayType') || 'VPMReference';
+	const objectName = pickOpenWithField(partInfo.value, 'ds6w:label', 'label', 'displayName', 'name', 'title') || physicalId;
+	const revision = pickOpenWithField(partInfo.value, 'ds6wg:revision', 'revision') || '';
+	const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
+	const typeDisplayName = pickOpenWithField(partInfo.value, 'typeDisplayName', 'displayType', 'globalType') || '物理产品';
+	const current = pickOpenWithField(partInfo.value, 'ds6w:status', 'status') || '工作中';
+	const currentInternal = current === '工作中' ? 'IN_WORK' : current === '已发布' ? 'RELEASED' : current;
+	const policy = pickOpenWithField(partInfo.value, 'ds6w:policy', 'policy') || 'VPLM_SMB_Definition_MajorRev';
+	const cadMaster = pickOpenWithField(partInfo.value, 'ds6w:cadMaster', 'cadMaster') || '3DEXPERIENCE';
+	const imageUrl =
+		pickOpenWithField(partInfo.value, 'type_icon_url', 'icon', 'thumbnail_2d') || '/snresources/images/icons/small/I_VPMNavProduct.png';
+
+	const targetNode = {
+		'getID': () => physicalId,
+		'id': physicalId,
+		'objectId': physicalId,
+		'physicalid': physicalId,
+		physicalId,
+		'type': objectType,
+		objectType,
+		'displayType': typeDisplayName,
+		'displayName': displayName,
+		'label': displayName,
+		'title': displayName,
+		'name': objectName,
+		'revision': revision,
+		'typeDisplayName': typeDisplayName,
+		'baseType': 'PLMEntity',
+		'current': current,
+		'current_internal': currentInternal,
+		'imageUrl': imageUrl,
+		'tenant': 'OnPremise',
+		'envId': 'OnPremise',
+		'serviceId': '3DSpace',
+		'contextId': baseInfoStore.securityContext || '',
+		'objectTaxonomies': X3D_OBJECT_TAXONOMIES,
+		'_options': {
+			relationid: physicalId
+		},
+		'attributes': {
+			'ds6w:label': displayName,
+			'ds6w:name': objectName,
+			'ds6w:type': objectType,
+			'PLMEntity.V_Name': objectName
+		},
+		'revisionModeInfo': {
+			revisionMode: 'major'
+		},
+		'semantic': ['E'],
+		'object': {
+			'ds6w:label': displayName,
+			'ds6w:name': objectName,
+			'ds6w:type': objectType,
+			'PLMEntity.V_Name': objectName,
+			'attribute[PLMEntity.V_Name]': objectName,
+			'displayName': displayName,
+			'name': objectName,
+			'label': displayName,
+			'title': displayName,
+			'revision': revision,
+			'current': current,
+			'current_internal': currentInternal,
+			'cadMaster': cadMaster,
+			'typeDisplayName': typeDisplayName
+		},
+		'options': {
+			'ds6w:status': current,
+			'icons': [imageUrl],
+			'ds6w:type': typeDisplayName
+		},
+		'policy': policy,
+		'cadMaster': cadMaster,
+		'locked': false,
+		'lockedBy': null,
+		'branch': null,
+		'branch.uuid': null,
+		'type.kindof[PLMReference]': 'TRUE',
+		'popup': true
+	};
+
+	currentNewBranchTargetNodes = [targetNode];
+
+	const mockContext = {
+		getSelectedNodes: () => [targetNode],
+		getEditMode: () => false,
+		getPADTreeDocument: () => ({ getXSO: () => ({ onPostAdd: () => {}, onPostRemove: () => {}, onEmpty: () => {}, get: () => [targetNode] }) }),
+		getCurrentFolder: () => '{}',
+		addEvent: () => {},
+		selectedNodes: [targetNode]
+	};
+
+	const newBranchCmd = new NewBranchCmdCtor({
+		ID: 'newbranch_command',
+		context: mockContext
+	});
+
+	if (typeof newBranchCmd.execute !== 'function') {
+		throw new Error('DS/LifecycleCmd/NewBranchCmd 实例未暴露 execute 方法');
+	}
+	newBranchCmd.execute();
+};
+
 const openLifecycleReviseCmd = async (physicalId: string) => {
 	lifecycleCmdLoading.value = true;
 	try {
@@ -7926,6 +8351,17 @@ const handleHeaderActionCommand = async (command: string) => {
 			return;
 		}
 		await openLifecycleReviseCmd(physicalId);
+		return;
+	}
+	if (command === 'newBranch') {
+		const physicalId = getParentPhysicalId();
+		console.log('[TW_EngineeringRelease] newBranch 点击，当前物理ID:', physicalId);
+		if (!physicalId) {
+			console.warn('[TW_EngineeringRelease] newBranch 点击失败：未找到当前对象物理ID');
+			ElMessage.warning('未找到当前对象物理ID');
+			return;
+		}
+		await openLifecycleNewBranchCmd(physicalId);
 		return;
 	}
 	if (command === 'updateRevisionAll') {

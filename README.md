@@ -47,3 +47,5 @@ pnpm lint
 ```sh
 pnpm lint:stylelint
 ```
+
+npx skills add anthropics/skills --skill skill-creator -y
