@@ -14,6 +14,25 @@
 					<el-dropdown
 						popper-class="part-action-dropdown-popper"
 						trigger="click"
+						placement="right-start"
+						:popper-options="{
+							placement: 'right-start',
+							modifiers: [
+								{
+									name: 'flip',
+									options: {
+										fallbackPlacements: ['bottom-start', 'left-start', 'top-start']
+									}
+								},
+								{
+									name: 'preventOverflow',
+									options: {
+										boundary: 'viewport',
+										padding: 8
+									}
+								}
+							]
+						}"
 						@command="handleHeaderActionCommand">
 						<el-button
 							:size="'small'"
@@ -2512,7 +2531,7 @@ const isCreateMenuDisabled = computed(() => {
 		return false;
 	}
 	// 检查是否有任何勾选的行不是 VPMReference 类型（使用 globalType 判断）
-	return selectedChildrenRows.value.some(row => row.globalType !== 'VPMReference');
+	return selectedChildrenRows.value.some(row => row.globalType !== 'ds6w:Part');
 });
 
 const isRowExpanding = (row: TreeNode) => expandingRowIds.value.has(row.id);
@@ -9729,11 +9748,11 @@ onUnmounted(() => {
 	display: flex !important;
 	align-items: center !important;
 	gap: 8px !important;
-	height: 24px !important;
-	padding: 0 8px 0 16px !important;
+	height: 23px !important;
+	padding: 0 7px 0 16px !important;
 	color: #1f2d3d !important;
 	font-size: 12px !important;
-	line-height: 24px !important;
+	line-height: 23px !important;
 	white-space: nowrap !important;
 }
 .children-create-dropdown .el-dropdown-menu__item:not(.is-disabled):focus,
@@ -9768,12 +9787,12 @@ onUnmounted(() => {
 .part-action-dropdown-popper .el-dropdown-menu__item {
 	display: flex !important;
 	align-items: center !important;
-	min-width: 226px !important;
-	height: 26px !important;
-	padding: 0 8px !important;
+	min-width: 200px !important;
+	height: 23px !important;
+	padding: 0 7px !important;
 	box-sizing: border-box !important;
-	font-size: 13px !important;
-	line-height: 26px !important;
+	font-size: 12px !important;
+	line-height: 23px !important;
 	color: #1f2d3d !important;
 }
 .part-action-dropdown-popper .el-dropdown-menu__item--divided {
@@ -9810,14 +9829,14 @@ onUnmounted(() => {
 .part-action-open-with-trigger {
 	display: flex;
 	align-items: center;
-	min-width: 226px;
-	height: 26px;
-	padding: 0 8px;
+	min-width: 200px;
+	height: 23px;
+	padding: 0 7px;
 	box-sizing: border-box;
 	color: #1f2d3d;
 	cursor: pointer;
-	font-size: 13px;
-	line-height: 26px;
+	font-size: 12px;
+	line-height: 23px;
 }
 .part-action-open-with-trigger:hover,
 .part-action-open-with-item:hover {
@@ -9829,7 +9848,7 @@ onUnmounted(() => {
 	top: 0;
 	right: 100%;
 	display: none;
-	min-width: 170px;
+	min-width: 150px;
 	padding: 4px 0;
 	background: #fff;
 	border: 1px solid #d7dce2;
@@ -9842,13 +9861,13 @@ onUnmounted(() => {
 .part-action-open-with-item {
 	display: flex;
 	align-items: center;
-	height: 26px;
-	padding: 0 8px;
+	height: 23px;
+	padding: 0 7px;
 	box-sizing: border-box;
 	color: #1f2d3d;
 	cursor: pointer;
-	font-size: 13px;
-	line-height: 26px;
+	font-size: 12px;
+	line-height: 23px;
 	white-space: nowrap;
 }
 .part-action-open-with-item-divided {
@@ -9967,12 +9986,12 @@ onUnmounted(() => {
 
 .part-action-menu-icon {
 	display: inline-flex;
-	flex: 0 0 24px;
+	flex: 0 0 22px;
 	align-items: center;
 	justify-content: center;
-	width: 24px;
+	width: 22px;
 	color: #6b7c8d;
-	font-size: 14px;
+	font-size: 13px;
 }
 .part-action-menu-label {
 	flex: 1 1 auto;
@@ -9983,7 +10002,7 @@ onUnmounted(() => {
 }
 .part-action-menu-arrow {
 	flex: 0 0 auto;
-	margin-left: 8px;
+	margin-left: 7px;
 	color: #606266;
 	font-size: 12px;
 }
@@ -9991,8 +10010,8 @@ onUnmounted(() => {
 	position: relative;
 	display: inline-block;
 	flex: 0 0 auto;
-	width: 13px;
-	height: 13px;
+	width: 22px;
+	height: 22px;
 	color: #687887;
 }
 .children-create-dropdown .create-menu-icon::before,
@@ -10232,15 +10251,17 @@ body.is-resizing-column {
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		min-width: 160px;
-		height: 28px;
-		line-height: 28px;
+		min-width: 200px;
+		height: 23px;
+		line-height: 23px;
+		padding: 0 7px !important;
 	}
 
 	.selected-action-icon {
-		width: 18px;
+		width: 22px;
 		color: #5f6b7a;
 		text-align: center;
+		font-size: 13px;
 	}
 
 	.selected-action-submenu {
@@ -10251,16 +10272,18 @@ body.is-resizing-column {
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		min-width: 160px;
-		height: 28px;
-		padding: 0 16px;
+		min-width: 200px;
+		height: 23px;
+		padding: 0 7px;
 		color: #606266;
 		cursor: pointer;
 		box-sizing: border-box;
+		font-size: 12px;
 	}
 
 	.selected-action-submenu-trigger .el-icon {
-		margin-left: auto;
+		margin-left: 7px;
+		font-size: 12px;
 	}
 
 	.selected-action-submenu-panel {
@@ -10268,7 +10291,7 @@ body.is-resizing-column {
 		top: 0;
 		left: 100%;
 		display: none;
-		min-width: 170px;
+		min-width: 150px;
 		padding: 4px 0;
 		background: #fff;
 		border: 1px solid #dcdfe6;
@@ -10290,12 +10313,13 @@ body.is-resizing-column {
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		height: 28px;
-		padding: 0 14px;
+		height: 23px;
+		padding: 0 7px;
 		color: #606266;
 		cursor: pointer;
 		white-space: nowrap;
 		box-sizing: border-box;
+		font-size: 12px;
 	}
 
 	.selected-action-open-with-item-divided {

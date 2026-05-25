@@ -1857,15 +1857,15 @@ onUnmounted(() => {
 
 	.el-dropdown-menu__item {
 		font-size: 12px;
-		padding: 2px 12px;
-		line-height: 20px;
-		height: auto;
+		padding: 0 7px;
+		line-height: 23px;
+		height: 23px;
 	}
 
 	.el-dropdown-menu {
 		max-width: 200px;
 		overflow: visible;
-		padding: 2px 0;
+		padding: 0;
 	}
 }
 
@@ -1875,9 +1875,9 @@ onUnmounted(() => {
 	.open-with-trigger {
 		display: flex;
 		align-items: center;
-		padding: 2px 12px;
+		padding: 0 7px;
 		font-size: 12px;
-		line-height: 20px;
+		line-height: 23px;
 		cursor: pointer;
 		color: var(--el-text-color-regular);
 		white-space: nowrap;
@@ -1888,7 +1888,7 @@ onUnmounted(() => {
 		}
 
 		.submenu-arrow {
-			margin-left: auto;
+			margin-left: 7px;
 			font-size: 12px;
 		}
 	}
@@ -1898,7 +1898,7 @@ onUnmounted(() => {
 		position: fixed;
 		left: 0;
 		top: 0;
-		min-width: 160px;
+		min-width: 150px;
 		background: #fff;
 		border: 1px solid var(--el-border-color-light);
 		border-radius: 4px;
@@ -1910,9 +1910,9 @@ onUnmounted(() => {
 			display: flex;
 			align-items: center;
 			gap: 6px;
-			padding: 2px 12px;
+			padding: 0 7px;
 			font-size: 12px;
-			line-height: 20px;
+			line-height: 23px;
 			cursor: pointer;
 			color: var(--el-text-color-regular);
 			white-space: nowrap;
