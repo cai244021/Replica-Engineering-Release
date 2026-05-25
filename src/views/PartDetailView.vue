@@ -150,7 +150,10 @@
 									<span class="part-action-menu-icon">⧉</span>
 									<span class="part-action-menu-label">复制</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="compare"><span class="part-action-menu-icon">↔</span><span class="part-action-menu-label">比较</span></el-dropdown-item>
+								<el-dropdown-item command="compare">
+									<span class="part-action-menu-icon">↔</span>
+									<span class="part-action-menu-label">比较</span>
+								</el-dropdown-item>
 								<el-dropdown-item
 									command="maturity"
 									disabled
@@ -158,18 +161,11 @@
 									<span class="part-action-menu-icon">♻</span>
 									<span class="part-action-menu-label">成熟度</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="lock"
-									divided
-									disabled
-									class="part-action-disabled-item">
+								<el-dropdown-item command="lock" divided>
 									<span class="part-action-menu-icon">🔒</span>
 									<span class="part-action-menu-label">锁定</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="unlock"
-									disabled
-									class="part-action-disabled-item">
+								<el-dropdown-item command="unlock">
 									<span class="part-action-menu-icon">🔓</span>
 									<span class="part-action-menu-label">解锁</span>
 								</el-dropdown-item>
@@ -524,12 +520,6 @@
 									<el-dropdown-item command="setEnterpriseCode">
 										<span class="selected-action-icon">↔</span>
 										<span>设置企业编码</span>
-									</el-dropdown-item>
-									<el-dropdown-item
-										command="delete"
-										:disabled="lifecycleCmdLoading">
-										<span class="selected-action-icon">⌫</span>
-										<span>{{ lifecycleCmdLoading ? '加载中...' : '删除' }}</span>
 									</el-dropdown-item>
 									<el-dropdown-item
 										v-if="canDownloadSelectedDocuments"
@@ -1981,6 +1971,7 @@ import type {
 	ReparentSourceItem,
 	ReparentTargetItem,
 	ReplaceByLatestRevisionOperation,
+	DeleteReportItem,
 	UnparentResponseResult,
 	UpdateEntireStructureRevisionConfirmation,
 	VersionGraphVersion
@@ -7022,7 +7013,6 @@ const refreshAfterTableCreate = async () => {
 };
 // 返回上一页
 const handleBack = () => {
-	console.log('[PartDetailView] handleBack 被调用，跳转到主页');
 	router.push('/');
 };
 
@@ -7205,6 +7195,159 @@ const buildLifecycleTargetNodeFromPartInfo = (physicalId: string) =>
 		icon: pickOpenWithField(partInfo.value, 'type_icon_url', 'icon', 'thumbnail_2d') || ''
 	});
 
+const getDeleteTargetLabel = (target: any) =>
+	pickOpenWithField(target, 'label', 'displayName', 'title', 'name', 'objectName', 'identifier') ||
+	pickOpenWithField(target, 'physicalid', 'physicalId', 'objectId', 'id') ||
+	'-';
+
+const showDeleteReportDialog = (report: DeleteReportItem[]) => {
+	ElMessageBox.alert(
+		h('div', { class: 'delete-report-dialog-body' }, [
+			h('div', { class: 'delete-report-count' }, `记录总数： ${report.length}`),
+			h('div', { class: 'delete-report-table' }, [
+				h('div', { class: 'delete-report-header' }, [
+					h('span', '状态'),
+					h('span', '标题'),
+					h('span', '类型'),
+					h('span', '修订版'),
+					h('span', '成熟度状态'),
+					h('span', '锁定'),
+					h('span', '消息')
+				]),
+				...report.map(item =>
+					h('div', { class: 'delete-report-row' }, [
+						h('span', { class: 'delete-report-status' }, '×'),
+						h(
+							'span',
+							{ title: String(item['attribute[PLMEntity.V_Name]'] || item.name || '') },
+							String(item['attribute[PLMEntity.V_Name]'] || item.name || '-')
+						),
+						h('span', String(item.displaytype || item.type || '-')),
+						h('span', String(item.revision || '-')),
+						h('span', String(item.stateUserName || item.current || '-')),
+						h('span', String(item.reserved === 'TRUE' ? '🔑' : '🔓')),
+						h('span', { title: String(item.error || '') }, String(item.error || '-'))
+					])
+				)
+			])
+		]),
+		'报告',
+		{
+			draggable: true,
+			customClass: 'delete-report-message-box',
+			confirmButtonText: '关闭'
+		}
+	);
+};
+
+const confirmDeleteTargets = async (targetNodes: any[]) => {
+	const includeStructure = ref(false);
+	const unrecoverableChecked = ref(false);
+	const title = targetNodes.length === 1 ? `删除 - ${getDeleteTargetLabel(targetNodes[0])}` : `删除 - ${targetNodes.length} 个对象`;
+	const message = targetNodes.length === 1 ? `是否要删除 ${getDeleteTargetLabel(targetNodes[0])}?` : `是否要删除选中的 ${targetNodes.length} 个对象?`;
+
+	const updateConfirmButtonDisabled = () => {
+		const confirmButton = document.querySelector('.el-message-box__btns .el-button--primary') as HTMLButtonElement;
+		if (confirmButton) {
+			const shouldDisable = includeStructure.value && !unrecoverableChecked.value;
+			confirmButton.disabled = shouldDisable;
+			if (shouldDisable) {
+				confirmButton.classList.add('is-disabled');
+			} else {
+				confirmButton.classList.remove('is-disabled');
+			}
+		}
+	};
+
+	await ElMessageBox({
+		title,
+		type: 'warning',
+		draggable: true,
+		showCancelButton: true,
+		confirmButtonText: '删除',
+		cancelButtonText: '取消',
+		beforeClose: (action, instance, done) => {
+			if (action === 'confirm' && includeStructure.value && !unrecoverableChecked.value) return;
+			done();
+		},
+		message: () =>
+			h('div', { class: 'delete-confirm-content' }, [
+				h('div', { class: 'delete-confirm-message' }, [h('div', message), h('div', '此操作是永久性的且无法撤消。')]),
+				h('div', { class: 'delete-confirm-checkboxes' }, [
+					h(
+						ElCheckbox,
+						{
+							'modelValue': includeStructure.value,
+							'onUpdate:modelValue': (value: unknown) => {
+								includeStructure.value = value === true;
+								setTimeout(() => updateConfirmButtonDisabled(), 0);
+							}
+						},
+						() => '包括结构对象'
+					),
+					includeStructure.value
+						? h(
+								ElCheckbox,
+								{
+									'modelValue': unrecoverableChecked.value,
+									'onUpdate:modelValue': (value: unknown) => {
+										unrecoverableChecked.value = value === true;
+										setTimeout(() => updateConfirmButtonDisabled(), 0);
+									}
+								},
+								() => '我知道无法恢复删除的对象。'
+							)
+						: null
+				])
+			])
+	});
+
+	return includeStructure.value;
+};
+
+const executeDeleteTargets = async (targetNodes: any[], onDeleted: () => void | Promise<void>) => {
+	if (!targetNodes.length) {
+		ElMessage.warning('未找到要删除的对象');
+		return;
+	}
+	const physicalIds = targetNodes.map(node => pickOpenWithField(node, 'physicalid', 'physicalId', 'objectId', 'id')).filter(Boolean);
+	if (!physicalIds.length) {
+		ElMessage.warning('未找到要删除的对象 physicalid');
+		return;
+	}
+	try {
+		const includeStructure = await confirmDeleteTargets(targetNodes);
+		lifecycleCmdLoading.value = true;
+		const accessResponse = await partDetailApi.checkDeleteAccess(physicalIds);
+		const noAccessItems = (accessResponse.results || []).filter((item: any) => item?.hasDeleteAccess !== true);
+		if (accessResponse.status === 'failure' || noAccessItems.length) {
+			ElMessage.error('没有删除权限');
+			if (accessResponse.report?.length) showDeleteReportDialog(accessResponse.report);
+			return;
+		}
+		const deleteResponse = await partDetailApi.deleteStructure(physicalIds, includeStructure);
+		if (deleteResponse.status === 'success') {
+			await onDeleted();
+			return;
+		}
+		if (deleteResponse.report?.length) {
+			showDeleteReportDialog(deleteResponse.report);
+		} else {
+			ElMessage.error('删除失败');
+		}
+	} catch (error: any) {
+		if (error === 'cancel' || error === 'close') return;
+		console.error('[TW_EngineeringRelease] 删除失败:', error);
+		if (error?.report?.length) {
+			showDeleteReportDialog(error.report);
+		} else {
+			ElMessage.error('删除失败');
+		}
+	} finally {
+		lifecycleCmdLoading.value = false;
+	}
+};
+
 const openLifecycleDeleteCmd = async (targetNodes: any[], onDeleted: () => void | Promise<void>) => {
 	if (!targetNodes.length) {
 		ElMessage.warning('未找到要删除的对象');
@@ -7225,10 +7368,18 @@ const openLifecycleDeleteCmd = async (targetNodes: any[], onDeleted: () => void 
 		const requireFn = topWindow.require || topWindow.requirejs || (window as any).require || (window as any).requirejs;
 		const [DeleteCmd, PlatformAPI] = await Promise.all([
 			new Promise<any>((resolve, reject) => {
-				requireFn(['DS/LifecycleCmd/DeleteCmd'], (module: any) => resolve(module), (error: unknown) => reject(error));
+				requireFn(
+					['DS/LifecycleCmd/DeleteCmd'],
+					(module: any) => resolve(module),
+					(error: unknown) => reject(error)
+				);
 			}),
 			new Promise<any>((resolve, reject) => {
-				requireFn(['DS/PlatformAPI/PlatformAPI'], (module: any) => resolve(module), (error: unknown) => reject(error));
+				requireFn(
+					['DS/PlatformAPI/PlatformAPI'],
+					(module: any) => resolve(module),
+					(error: unknown) => reject(error)
+				);
 			})
 		]);
 		const targetIds = targetNodes.map(node => node?.objectId || node?.physicalid || node?.physicalId || node?.id).filter(Boolean);
@@ -7695,7 +7846,7 @@ const handleHeaderActionCommand = async (command: string) => {
 			ElMessage.warning('未找到当前对象物理ID');
 			return;
 		}
-		await openLifecycleDeleteCmd([buildLifecycleTargetNodeFromPartInfo(physicalId)], async () => {
+		await executeDeleteTargets([buildLifecycleTargetNodeFromPartInfo(physicalId)], async () => {
 			ElMessage.success('删除成功');
 			await router.push('/');
 		});
@@ -7707,6 +7858,46 @@ const handleHeaderActionCommand = async (command: string) => {
 	}
 	if (command === 'relationship') {
 		handleRootOpenWith('relationship');
+		return;
+	}
+	if (command === 'lock') {
+		const physicalId = getParentPhysicalId();
+		if (!physicalId) {
+			ElMessage.warning('未找到当前对象物理ID');
+			return;
+		}
+		try {
+			await partDetailApi.reserveOrUnreserve({
+				operation: 'reserve',
+				urls: [`model/bus/${physicalId}`],
+				isMultiSel: false
+			});
+			ElMessage.success('锁定成功');
+			await loadPartDetail(physicalId);
+		} catch (error) {
+			console.error('[PartDetailView] 锁定失败:', error);
+			ElMessage.error('锁定失败');
+		}
+		return;
+	}
+	if (command === 'unlock') {
+		const physicalId = getParentPhysicalId();
+		if (!physicalId) {
+			ElMessage.warning('未找到当前对象物理ID');
+			return;
+		}
+		try {
+			await partDetailApi.reserveOrUnreserve({
+				operation: 'unreserve',
+				urls: [`model/bus/${physicalId}`],
+				isMultiSel: false
+			});
+			ElMessage.success('解锁成功');
+			await loadPartDetail(physicalId);
+		} catch (error) {
+			console.error('[PartDetailView] 解锁失败:', error);
+			ElMessage.error('解锁失败');
+		}
 		return;
 	}
 	if (command === 'revision') {
@@ -10731,6 +10922,16 @@ body.is-resizing-column {
 		text-align: center;
 		color: #606266;
 		font-size: 14px;
+	}
+}
+
+/* 删除确认对话框样式 */
+.delete-confirm-content {
+	.delete-confirm-checkboxes {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		margin-top: 15px;
 	}
 }
 </style>

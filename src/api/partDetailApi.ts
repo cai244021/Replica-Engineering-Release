@@ -236,6 +236,35 @@ export interface UpdateInstanceQuantityResponse {
 	[key: string]: unknown;
 }
 
+export interface DeleteAccessResult {
+	hasDeleteAccess?: boolean;
+	physicalid?: string;
+	[key: string]: unknown;
+}
+
+export interface DeleteReportItem {
+	'displaytype'?: string;
+	'majorid'?: string;
+	'physicalid'?: string;
+	'type'?: string;
+	'revision'?: string;
+	'current'?: string;
+	'stateUserName'?: string;
+	'reserved'?: string;
+	'reservedby'?: string | null;
+	'name'?: string;
+	'error'?: string;
+	'attribute[PLMEntity.V_Name]'?: string;
+	[key: string]: unknown;
+}
+
+export interface DeleteLifecycleResponse {
+	report?: DeleteReportItem[];
+	results?: Array<Record<string, unknown>>;
+	status?: 'success' | 'failure' | string;
+	[key: string]: unknown;
+}
+
 export interface UnparentResponseResult {
 	status: string;
 	parent?: string;
@@ -1540,6 +1569,81 @@ class PartDetailAPI {
 			return response as ReorderTreeResponse;
 		} catch (error) {
 			console.error('[PartDetailAPI] 树重新排序失败:', error);
+			throw error;
+		}
+	}
+
+	async checkDeleteAccess(physicalIds: string[]): Promise<DeleteLifecycleResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.securityContext) {
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/lifecycle/Delete/checkDeleteAccess';
+		const url = `${endpoint}?tenant=OnPremise`;
+		const params = {
+			data: physicalIds.map(physicalid => ({ physicalid })),
+			notificationTimeout: 300
+		};
+
+		console.log('[PartDetailAPI] 检查删除权限 URL:', url);
+		console.log('[PartDetailAPI] 检查删除权限参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.post(url, params, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 检查删除权限响应:', response);
+			return response as DeleteLifecycleResponse;
+		} catch (error) {
+			console.error('[PartDetailAPI] 检查删除权限失败:', error);
+			throw error;
+		}
+	}
+
+	async deleteStructure(physicalIds: string[], wholeStructure: boolean): Promise<DeleteLifecycleResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.securityContext) {
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/lifecycle/Delete/structure';
+		const url = `${endpoint}?tenant=OnPremise`;
+		const params = {
+			data: physicalIds.map(physicalid => ({ physicalid })),
+			notificationTimeout: 300,
+			options: [
+				{
+					nlsKey: '包括结构对象',
+					type: 'checkbox',
+					value: wholeStructure,
+					key: 'wholeStructure',
+					conditional: true,
+					conditionaltext: '我知道无法恢复删除的对象。'
+				}
+			],
+			metrics: {
+				UXName: 'Delete',
+				client_app_domain: '3DEXPERIENCE 3DDashboard',
+				client_app_name: 'ENXENG_AP'
+			}
+		};
+
+		console.log('[PartDetailAPI] 删除结构 URL:', url);
+		console.log('[PartDetailAPI] 删除结构参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.post(url, params, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 删除结构响应:', response);
+			return response as DeleteLifecycleResponse;
+		} catch (error) {
+			console.error('[PartDetailAPI] 删除结构失败:', error);
 			throw error;
 		}
 	}

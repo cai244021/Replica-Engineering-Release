@@ -199,11 +199,7 @@
 															disabled>
 															编辑配置上下文
 														</el-dropdown-item>
-														<el-dropdown-item
-															command="delete"
-															disabled>
-															删除
-														</el-dropdown-item>
+														<el-dropdown-item command="delete">删除</el-dropdown-item>
 														<el-dropdown-item
 															command="revision"
 															disabled>
@@ -235,16 +231,8 @@
 															disabled>
 															成熟度
 														</el-dropdown-item>
-														<el-dropdown-item
-															command="lock"
-															disabled>
-															锁定
-														</el-dropdown-item>
-														<el-dropdown-item
-															command="unlock"
-															disabled>
-															解锁
-														</el-dropdown-item>
+														<el-dropdown-item command="lock">锁定</el-dropdown-item>
+														<el-dropdown-item command="unlock">解锁</el-dropdown-item>
 														<el-dropdown-item
 															command="move"
 															disabled>
@@ -458,11 +446,7 @@
 												disabled>
 												编辑配置上下文
 											</el-dropdown-item>
-											<el-dropdown-item
-												command="delete"
-												disabled>
-												删除
-											</el-dropdown-item>
+											<el-dropdown-item command="delete">删除</el-dropdown-item>
 											<el-dropdown-item
 												command="revision"
 												disabled>
@@ -494,16 +478,8 @@
 												disabled>
 												成熟度
 											</el-dropdown-item>
-											<el-dropdown-item
-												command="lock"
-												disabled>
-												锁定
-											</el-dropdown-item>
-											<el-dropdown-item
-												command="unlock"
-												disabled>
-												解锁
-											</el-dropdown-item>
+											<el-dropdown-item command="lock">锁定</el-dropdown-item>
+											<el-dropdown-item command="unlock">解锁</el-dropdown-item>
 											<el-dropdown-item
 												command="move"
 												disabled>
@@ -585,7 +561,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { ref, computed, h, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import {
 	Clock,
@@ -603,10 +579,11 @@ import {
 	Compass,
 	VideoPlay
 } from '@element-plus/icons-vue';
-import { ElMessage } from 'element-plus';
+import { ElCheckbox, ElMessage, ElMessageBox } from 'element-plus';
 import searchApi from '@/api/searchApi';
 import recentApi from '@/api/recentApi';
 import partDetailApi from '@/api/partDetailApi';
+import type { DeleteReportItem } from '@/api/partDetailApi';
 import { useBaseInfoStore, useDialogStore } from '@/store';
 import dsSearchInput from '@/plugins/ds-search-input';
 import { isDev } from '@/utils/env';
@@ -1369,16 +1346,220 @@ const handleOpenWithClick = (appName: string, item: any) => {
 	document.body.click();
 };
 
+const getDeleteTargetLabel = (target: any) => target?.name || target?.title || target?.identifier || target?.id || '-';
+
+const showDeleteReportDialog = (report: DeleteReportItem[]) => {
+	ElMessageBox.alert(
+		h('div', { class: 'delete-report-dialog-body' }, [
+			h('div', { class: 'delete-report-count' }, `记录总数： ${report.length}`),
+			h('div', { class: 'delete-report-table' }, [
+				h('div', { class: 'delete-report-header' }, [
+					h('span', '状态'),
+					h('span', '标题'),
+					h('span', '类型'),
+					h('span', '修订版'),
+					h('span', '成熟度状态'),
+					h('span', '锁定'),
+					h('span', '消息')
+				]),
+				...report.map(item =>
+					h('div', { class: 'delete-report-row' }, [
+						h('span', { class: 'delete-report-status' }, '×'),
+						h(
+							'span',
+							{ title: String(item['attribute[PLMEntity.V_Name]'] || item.name || '') },
+							String(item['attribute[PLMEntity.V_Name]'] || item.name || '-')
+						),
+						h('span', String(item.displaytype || item.type || '-')),
+						h('span', String(item.revision || '-')),
+						h('span', String(item.stateUserName || item.current || '-')),
+						h('span', String(item.reserved === 'TRUE' ? '🔑' : '🔓')),
+						h('span', { title: String(item.error || '') }, String(item.error || '-'))
+					])
+				)
+			])
+		]),
+		'报告',
+		{
+			draggable: true,
+			customClass: 'delete-report-message-box',
+			confirmButtonText: '关闭'
+		}
+	);
+};
+
+const confirmDeleteProduct = async (item: any) => {
+	const includeStructure = ref(false);
+	const unrecoverableChecked = ref(false);
+
+	const updateConfirmButtonDisabled = () => {
+		const confirmButton = document.querySelector('.el-message-box__btns .el-button--primary') as HTMLButtonElement;
+		if (confirmButton) {
+			const shouldDisable = includeStructure.value && !unrecoverableChecked.value;
+			confirmButton.disabled = shouldDisable;
+			if (shouldDisable) {
+				confirmButton.classList.add('is-disabled');
+			} else {
+				confirmButton.classList.remove('is-disabled');
+			}
+		}
+	};
+
+	await ElMessageBox({
+		title: `删除 - ${getDeleteTargetLabel(item)}`,
+		type: 'warning',
+		draggable: true,
+		showCancelButton: true,
+		confirmButtonText: '删除',
+		cancelButtonText: '取消',
+		beforeClose: (action, instance, done) => {
+			if (action === 'confirm' && includeStructure.value && !unrecoverableChecked.value) return;
+			done();
+		},
+		message: () =>
+			h('div', { class: 'delete-confirm-content' }, [
+				h('div', { class: 'delete-confirm-message' }, [
+					h('div', `是否要删除 ${getDeleteTargetLabel(item)}?`),
+					h('div', '此操作是永久性的且无法撤消。')
+				]),
+				h('div', { class: 'delete-confirm-checkboxes' }, [
+					h(
+						ElCheckbox,
+						{
+							'modelValue': includeStructure.value,
+							'onUpdate:modelValue': (value: unknown) => {
+								includeStructure.value = value === true;
+								setTimeout(() => updateConfirmButtonDisabled(), 0);
+							}
+						},
+						() => '包括结构对象'
+					),
+					includeStructure.value
+						? h(
+								ElCheckbox,
+								{
+									'modelValue': unrecoverableChecked.value,
+									'onUpdate:modelValue': (value: unknown) => {
+										unrecoverableChecked.value = value === true;
+										setTimeout(() => updateConfirmButtonDisabled(), 0);
+									}
+								},
+								() => '我知道无法恢复删除的对象。'
+							)
+						: null
+				])
+			])
+	});
+	return includeStructure.value;
+};
+
+const refreshCurrentHomeView = async () => {
+	if (currentNav.value === 'myProducts') {
+		await fetchMyProducts();
+		return;
+	}
+	if (currentNav.value === 'recent') {
+		await fetchRecentProducts();
+		return;
+	}
+	productList.value = productList.value.filter(product => product.id);
+};
+
+const handleDeleteProduct = async (item: any) => {
+	const physicalId = item?.id || item?.physicalid || item?.physicalId;
+	if (!physicalId) {
+		ElMessage.warning('未找到要删除的对象 physicalid');
+		return;
+	}
+	try {
+		const includeStructure = await confirmDeleteProduct(item);
+		loading.value = true;
+		const accessResponse = await partDetailApi.checkDeleteAccess([physicalId]);
+		const hasDeleteAccess =
+			accessResponse.status !== 'failure' && (accessResponse.results || []).every((result: any) => result?.hasDeleteAccess === true);
+		if (!hasDeleteAccess) {
+			ElMessage.error('没有删除权限');
+			if (accessResponse.report?.length) showDeleteReportDialog(accessResponse.report);
+			return;
+		}
+		const deleteResponse = await partDetailApi.deleteStructure([physicalId], includeStructure);
+		if (deleteResponse.status === 'success') {
+			ElMessage.success('删除成功');
+			await refreshCurrentHomeView();
+			return;
+		}
+		if (deleteResponse.report?.length) {
+			showDeleteReportDialog(deleteResponse.report);
+		} else {
+			ElMessage.error('删除失败');
+		}
+	} catch (error: any) {
+		if (error === 'cancel' || error === 'close') return;
+		console.error('[HomeView] 删除失败:', error);
+		if (error?.report?.length) {
+			showDeleteReportDialog(error.report);
+		} else {
+			ElMessage.error('删除失败');
+		}
+	} finally {
+		loading.value = false;
+	}
+};
+
 // 处理卡片下拉菜单命令
 const handleCardCommand = (command: string, item: any) => {
 	if (command === 'open') {
 		handleRowDoubleClick(item);
 	} else if (command === 'setEnterpriseCode') {
 		openEnterpriseCodeDialog(item);
+	} else if (command === 'delete') {
+		handleDeleteProduct(item);
 	} else if (command === 'compare') {
 		handleOpenWithClick('compare', item);
 	} else if (command === 'relationship') {
 		handleOpenWithClick('relationship', item);
+	} else if (command === 'lock') {
+		handleLockItem(item);
+	} else if (command === 'unlock') {
+		handleUnlockItem(item);
+	}
+};
+
+const handleLockItem = async (item: any) => {
+	if (!item || !item.id) {
+		ElMessage.warning('无法获取对象ID');
+		return;
+	}
+	try {
+		await partDetailApi.reserveOrUnreserve({
+			operation: 'reserve',
+			urls: [`model/bus/${item.id}`],
+			isMultiSel: false
+		});
+		ElMessage.success('锁定成功');
+		await refreshCurrentHomeView();
+	} catch (error) {
+		console.error('[HomeView] 锁定失败:', error);
+		ElMessage.error('锁定失败');
+	}
+};
+
+const handleUnlockItem = async (item: any) => {
+	if (!item || !item.id) {
+		ElMessage.warning('无法获取对象ID');
+		return;
+	}
+	try {
+		await partDetailApi.reserveOrUnreserve({
+			operation: 'unreserve',
+			urls: [`model/bus/${item.id}`],
+			isMultiSel: false
+		});
+		ElMessage.success('解锁成功');
+		await refreshCurrentHomeView();
+	} catch (error) {
+		console.error('[HomeView] 解锁失败:', error);
+		ElMessage.error('解锁失败');
 	}
 };
 
@@ -1963,6 +2144,16 @@ onUnmounted(() => {
 			flex: 1;
 			color: #303133;
 		}
+	}
+}
+
+/* 删除确认对话框样式 */
+.delete-confirm-content {
+	.delete-confirm-checkboxes {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		margin-top: 15px;
 	}
 }
 </style>
