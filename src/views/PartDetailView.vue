@@ -74,6 +74,12 @@
 											<span>3DPlay</span>
 										</div>
 										<div
+											class="part-action-open-with-item"
+											@click="handleRootOpenWith('Collaborative Lifecycle')">
+											<span class="part-action-menu-icon">↻</span>
+											<span>Collaborative Lifecycle</span>
+										</div>
+										<div
 											class="part-action-open-with-item part-action-open-with-item-divided"
 											@click="handleRootOpenWith('more')">
 											<span class="part-action-menu-icon">＋</span>
@@ -90,10 +96,9 @@
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="delete"
-									disabled
-									class="part-action-disabled-item">
+									:disabled="lifecycleCmdLoading">
 									<span class="part-action-menu-icon">⌫</span>
-									<span class="part-action-menu-label">删除</span>
+									<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '删除' }}</span>
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="manageBrowsingStructure"
@@ -145,13 +150,7 @@
 									<span class="part-action-menu-icon">⧉</span>
 									<span class="part-action-menu-label">复制</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="compare"
-									disabled
-									class="part-action-disabled-item">
-									<span class="part-action-menu-icon">↔</span>
-									<span class="part-action-menu-label">比较</span>
-								</el-dropdown-item>
+								<el-dropdown-item command="compare"><span class="part-action-menu-icon">↔</span><span class="part-action-menu-label">比较</span></el-dropdown-item>
 								<el-dropdown-item
 									command="maturity"
 									disabled
@@ -188,11 +187,7 @@
 									<span class="part-action-menu-icon">↗</span>
 									<span class="part-action-menu-label">共享</span>
 								</el-dropdown-item>
-								<el-dropdown-item
-									command="relationship"
-									divided
-									disabled
-									class="part-action-disabled-item">
+								<el-dropdown-item command="relationship">
 									<span class="part-action-menu-icon">⚭</span>
 									<span class="part-action-menu-label">关系</span>
 								</el-dropdown-item>
@@ -507,6 +502,15 @@
 												<span>3DPlay</span>
 											</div>
 											<div
+												class="selected-action-submenu-item"
+												@click="
+													handleSelectedOpenWith('Collaborative Lifecycle');
+													selectedOpenWithSubmenuVisible = false;
+												">
+												<span class="selected-action-icon">↻</span>
+												<span>Collaborative Lifecycle</span>
+											</div>
+											<div
 												class="selected-action-submenu-item selected-action-open-with-item-divided"
 												@click="
 													handleSelectedOpenWith('more');
@@ -520,6 +524,12 @@
 									<el-dropdown-item command="setEnterpriseCode">
 										<span class="selected-action-icon">↔</span>
 										<span>设置企业编码</span>
+									</el-dropdown-item>
+									<el-dropdown-item
+										command="delete"
+										:disabled="lifecycleCmdLoading">
+										<span class="selected-action-icon">⌫</span>
+										<span>{{ lifecycleCmdLoading ? '加载中...' : '删除' }}</span>
 									</el-dropdown-item>
 									<el-dropdown-item
 										v-if="canDownloadSelectedDocuments"
@@ -599,6 +609,18 @@
 										:disabled="lifecycleCmdLoading">
 										<span class="selected-action-icon">↳</span>
 										<span>{{ lifecycleCmdLoading ? '加载中...' : '新修订版' }}</span>
+									</el-dropdown-item>
+									<el-dropdown-item
+										command="compare"
+										:disabled="selectedChildrenRows.length === 0 || selectedChildrenRows.length > 2">
+										<span class="selected-action-icon">↔</span>
+										<span>比较</span>
+									</el-dropdown-item>
+									<el-dropdown-item
+										command="relationship"
+										:disabled="selectedChildrenRows.length !== 1">
+										<span class="selected-action-icon">⚭</span>
+										<span>关系</span>
 									</el-dropdown-item>
 								</el-dropdown-menu>
 							</template>
@@ -2116,11 +2138,14 @@ type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger';
 type SelectedActionCommand =
 	| 'openSelectedPart'
 	| 'setEnterpriseCode'
+	| 'delete'
 	| 'downloadDocuments'
 	| 'instanceQuantity'
 	| 'unparent'
 	| 'revision'
 	| 'newRevision'
+	| 'compare'
+	| 'relationship'
 	| 'replaceLatest'
 	| 'replaceExisting'
 	| 'replaceRevision'
@@ -5362,6 +5387,87 @@ const updateTreeNodeData = (nodes: TreeNode[], physicalId: string, updatedData: 
 	return false;
 };
 
+const buildLifecycleTargetNodeFromRow = (row: TreeNode | Record<string, any>) => {
+	const source = row as Record<string, any>;
+	const physicalId = source.resourceid || source.id;
+	const objectName = source.label || source.identifier || source.instanceLabel || physicalId;
+	const revision = source.revision || source['ds6wg:revision'] || '';
+	const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
+	const objectType = source.globalType || source.type || 'VPMReference';
+	const typeDisplayName = source.typeDisplayName || source.globalType || '物理产品';
+	const current = source.status || '工作中';
+	const currentInternal = source.statusRaw || (current === '工作中' ? 'IN_WORK' : current === '已发布' ? 'RELEASED' : current);
+	const imageUrl = source.icon || source.type_icon_url || '/snresources/images/icons/small/I_VPMNavProduct.png';
+	return {
+		getID: () => physicalId,
+		id: physicalId,
+		objectId: physicalId,
+		physicalid: physicalId,
+		physicalId,
+		type: objectType,
+		objectType,
+		displayType: typeDisplayName,
+		displayName,
+		label: displayName,
+		title: displayName,
+		name: objectName,
+		revision,
+		typeDisplayName,
+		baseType: 'PLMEntity',
+		current,
+		current_internal: currentInternal,
+		imageUrl,
+		tenant: 'OnPremise',
+		envId: 'OnPremise',
+		serviceId: '3DSpace',
+		contextId: baseInfoStore.securityContext || '',
+		_options: {
+			relationid: source.relationId || physicalId
+		},
+		attributes: {
+			'ds6w:label': displayName,
+			'ds6w:name': objectName,
+			'ds6w:type': objectType,
+			'PLMEntity.V_Name': objectName
+		},
+		semantic: ['E'],
+		options: {
+			'ds6w:status': current,
+			'icons': [imageUrl],
+			'ds6w:type': typeDisplayName
+		},
+		popup: true
+	};
+};
+
+const refreshAfterSelectedRowsDelete = async (rows: TreeNode[]) => {
+	queryModeStore.switchToDbMode();
+	const parentRows = rows.map(row => findParentNodeByChildId(childrenData.value, row.id)).filter((row): row is TreeNode => !!row);
+	if (parentRows.length) {
+		await Promise.all([...new Map(parentRows.map(row => [row.id, row])).values()].map(row => reloadAndExpandRow(row)));
+		return;
+	}
+	if (currentPhysicalId.value) {
+		await loadPartDetail(currentPhysicalId.value);
+	}
+};
+
+const handleSelectedRowsDelete = async () => {
+	const selectedRows = [...selectedChildrenRows.value];
+	if (!selectedRows.length) {
+		ElMessage.warning('请先选中要删除的行');
+		return;
+	}
+	await openLifecycleDeleteCmd(
+		selectedRows.map(row => buildLifecycleTargetNodeFromRow(row)),
+		async () => {
+			await refreshAfterSelectedRowsDelete(selectedRows);
+			selectedChildrenRows.value = [];
+			ElMessage.success('删除成功，已刷新父节点');
+		}
+	);
+};
+
 const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 	switch (command) {
 		case 'openSelectedPart':
@@ -5369,6 +5475,9 @@ const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 			break;
 		case 'setEnterpriseCode':
 			openEnterpriseCodeDialogForSelectedRows();
+			break;
+		case 'delete':
+			handleSelectedRowsDelete();
 			break;
 		case 'downloadDocuments':
 			handleDownloadSelectedDocuments();
@@ -5384,6 +5493,12 @@ const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 			break;
 		case 'newRevision':
 			handleSelectedRowNewRevision();
+			break;
+		case 'compare':
+			handleSelectedCompare();
+			break;
+		case 'relationship':
+			handleSelectedOpenWith('relationship');
 			break;
 		case 'replaceLatest':
 			handleReplaceLatestRevision();
@@ -6907,7 +7022,8 @@ const refreshAfterTableCreate = async () => {
 };
 // 返回上一页
 const handleBack = () => {
-	router.back();
+	console.log('[PartDetailView] handleBack 被调用，跳转到主页');
+	router.push('/');
 };
 
 const handlePartDetailPrevious = async () => {
@@ -7050,6 +7166,124 @@ const openLifecycleHistoryCmd = async (physicalId: string) => {
 	} catch (error) {
 		console.error('[TW_EngineeringRelease] 打开 Lifecycle 历史记录失败:', error);
 		ElMessage.error('打开修订版失败');
+		lifecycleCmdLoading.value = false;
+	}
+};
+
+const isLifecycleDeleteEvent = (eventData: any, targetIds: string[]) => {
+	let parsedData = eventData;
+	if (typeof eventData === 'string') {
+		try {
+			parsedData = JSON.parse(eventData);
+		} catch (error) {
+			console.error('[TW_EngineeringRelease] 解析 Delete eventData 失败:', error);
+			return false;
+		}
+	}
+	const refreshData = parsedData?.Refresh;
+	if (!refreshData) return false;
+	const deletedData = Array.isArray(refreshData.deleted) ? refreshData.deleted : [];
+	return deletedData.some((item: any) => {
+		const operation = String(item?.operation || item?.Operation || '').toLowerCase();
+		const objectId = item?.physicalid || item?.objectId || item?.physicalId || item?.id;
+		return operation === 'delete' && (!targetIds.length || targetIds.includes(objectId));
+	});
+};
+
+const buildLifecycleTargetNodeFromPartInfo = (physicalId: string) =>
+	buildLifecycleTargetNodeFromRow({
+		id: physicalId,
+		rowId: physicalId,
+		resourceid: physicalId,
+		label: pickOpenWithField(partInfo.value, 'ds6w:label', 'label', 'displayName', 'name', 'title') || physicalId,
+		identifier: pickOpenWithField(partInfo.value, 'identifier', 'name') || physicalId,
+		revision: pickOpenWithField(partInfo.value, 'ds6wg:revision', 'revision') || '',
+		globalType: pickOpenWithField(partInfo.value, 'ds6w:type', 'type', 'objectType', 'displayType') || 'VPMReference',
+		typeDisplayName: pickOpenWithField(partInfo.value, 'typeDisplayName', 'displayType', 'globalType') || '物理产品',
+		status: pickOpenWithField(partInfo.value, 'ds6w:status', 'status') || '工作中',
+		statusRaw: pickOpenWithField(partInfo.value, 'current_internal', 'statusRaw') || '',
+		icon: pickOpenWithField(partInfo.value, 'type_icon_url', 'icon', 'thumbnail_2d') || ''
+	});
+
+const openLifecycleDeleteCmd = async (targetNodes: any[], onDeleted: () => void | Promise<void>) => {
+	if (!targetNodes.length) {
+		ElMessage.warning('未找到要删除的对象');
+		return;
+	}
+	lifecycleCmdLoading.value = true;
+	let subscription: any = null;
+	let completed = false;
+	try {
+		const topWindow = (window.top || window.parent || window) as any;
+		if (!topWindow.widget) {
+			const { widget } = await import('@widget-lab/3ddashboard-utils');
+			topWindow.widget = widget;
+			(widget as any).body = document.body;
+		} else if (!topWindow.widget.body) {
+			topWindow.widget.body = document.body;
+		}
+		const requireFn = topWindow.require || topWindow.requirejs || (window as any).require || (window as any).requirejs;
+		const [DeleteCmd, PlatformAPI] = await Promise.all([
+			new Promise<any>((resolve, reject) => {
+				requireFn(['DS/LifecycleCmd/DeleteCmd'], (module: any) => resolve(module), (error: unknown) => reject(error));
+			}),
+			new Promise<any>((resolve, reject) => {
+				requireFn(['DS/PlatformAPI/PlatformAPI'], (module: any) => resolve(module), (error: unknown) => reject(error));
+			})
+		]);
+		const targetIds = targetNodes.map(node => node?.objectId || node?.physicalid || node?.physicalId || node?.id).filter(Boolean);
+		subscription = PlatformAPI.subscribe('Lifecycle.Modification', async (eventData: any) => {
+			if (!isLifecycleDeleteEvent(eventData, targetIds)) return;
+			if (completed) return;
+			completed = true;
+			try {
+				await onDeleted();
+			} finally {
+				try {
+					subscription?.unsubscribe();
+				} catch {
+					// 忽略取消订阅错误
+				}
+				lifecycleCmdLoading.value = false;
+			}
+		});
+		setTimeout(() => {
+			try {
+				subscription?.unsubscribe();
+			} catch {
+				// 忽略取消订阅错误
+			}
+			if (!completed) lifecycleCmdLoading.value = false;
+		}, 60000);
+
+		const DeleteCmdCtor = DeleteCmd?.default || DeleteCmd;
+		const mockContext = {
+			getSelectedNodes: () => targetNodes,
+			getEditMode: () => false,
+			getPADTreeDocument: () => ({ getXSO: () => ({ onPostAdd: () => {}, onPostRemove: () => {}, onEmpty: () => {}, get: () => targetNodes }) }),
+			getCurrentFolder: () => '{}',
+			addEvent: () => {},
+			selectedNodes: targetNodes
+		};
+		const deleteCmd = new DeleteCmdCtor({
+			ID: 'delete_command',
+			context: mockContext
+		});
+		if (typeof deleteCmd.execute !== 'function') {
+			throw new Error('DS/LifecycleCmd/DeleteCmd 实例未暴露 execute 方法');
+		}
+		deleteCmd.execute(targetNodes);
+		setTimeout(() => {
+			if (!completed) lifecycleCmdLoading.value = false;
+		}, 1000);
+	} catch (error) {
+		console.error('[TW_EngineeringRelease] 打开 Lifecycle 删除失败:', error);
+		ElMessage.error('打开删除失败');
+		try {
+			subscription?.unsubscribe();
+		} catch {
+			// 忽略取消订阅错误
+		}
 		lifecycleCmdLoading.value = false;
 	}
 };
@@ -7453,6 +7687,28 @@ const openLifecycleReviseCmd = async (physicalId: string) => {
 
 const handleHeaderActionCommand = async (command: string) => {
 	console.log('[TW_EngineeringRelease] header action command:', command);
+	if (command === 'delete') {
+		const physicalId = getParentPhysicalId();
+		console.log('[TW_EngineeringRelease] delete 点击，当前物理ID:', physicalId);
+		if (!physicalId) {
+			console.warn('[TW_EngineeringRelease] delete 点击失败：未找到当前对象物理ID');
+			ElMessage.warning('未找到当前对象物理ID');
+			return;
+		}
+		await openLifecycleDeleteCmd([buildLifecycleTargetNodeFromPartInfo(physicalId)], async () => {
+			ElMessage.success('删除成功');
+			await router.push('/');
+		});
+		return;
+	}
+	if (command === 'compare') {
+		handleRootOpenWith('compare');
+		return;
+	}
+	if (command === 'relationship') {
+		handleRootOpenWith('relationship');
+		return;
+	}
 	if (command === 'revision') {
 		const physicalId = getParentPhysicalId();
 		console.log('[TW_EngineeringRelease] revision 点击，当前物理ID:', physicalId);
@@ -7527,7 +7783,10 @@ const showReplaceFailureMessage = (message: string) => {
 const OPEN_WITH_APP_ID: Record<string, string> = {
 	'3D Markup': 'ENOR3D_AP',
 	'3D Navigate': 'ENXDISC_AP',
-	'3DPlay': 'X3DPLAW_AP'
+	'3DPlay': 'X3DPLAW_AP',
+	'Collaborative Lifecycle': 'ENOLCMI_AP',
+	'compare': 'ENOCOMP_AP',
+	'relationship': 'ENORIPE_AP'
 };
 
 const X3D_OBJECT_TAXONOMIES = [
@@ -7601,6 +7860,40 @@ const openWithHashJump = (appName: string, row: any) => {
 	}
 };
 
+const openWithHashJumpForCompare = (row1: any, row2: any) => {
+	const appId = OPEN_WITH_APP_ID['compare'];
+	if (!appId) {
+		ElMessage.warning('未知的打开方式：compare');
+		return;
+	}
+	const objectId1 = pickOpenWithField(row1, 'resourceid', 'physicalid', 'physicalId', 'id', 'objectId', 'ds6w:identifier');
+	const objectId2 = pickOpenWithField(row2, 'resourceid', 'physicalid', 'physicalId', 'id', 'objectId', 'ds6w:identifier');
+	if (!objectId1 || !objectId2) {
+		ElMessage.error('无法获取对象 physicalid');
+		return;
+	}
+
+	const payload1 = buildOpenWithPayload(row1);
+	const payload2 = buildOpenWithPayload(row2);
+	const combinedPayload = {
+		...payload1,
+		data: {
+			items: [...payload1.data.items, ...payload2.data.items]
+		}
+	};
+
+	const encoded = encodeURIComponent(JSON.stringify(combinedPayload));
+	const hashSuffix = `/app:${appId}/content:X3DContentId=${encoded}`;
+	try {
+		const topWindow: any = window.top || window.parent || window;
+		const currentHash = topWindow.location.hash || '';
+		const baseHash = currentHash.replace(/\/app:[^/]+(?:\/content:[^]*)?$/, '');
+		topWindow.location.hash = (baseHash || '#/tabId:New%20Tab') + hashSuffix;
+	} catch {
+		(window.top || window).location.href = `${window.location.origin}/3ddashboard/#/tabId:New%20Tab${hashSuffix}`;
+	}
+};
+
 const openNativeCompass = (row: any) => {
 	const objectId = pickOpenWithField(row, 'resourceid', 'physicalid', 'physicalId', 'id', 'objectId', 'ds6w:identifier');
 	if (!objectId) {
@@ -7649,6 +7942,25 @@ const handleSelectedOpenWith = (appName: string) => {
 		return;
 	}
 	handleOpenWith(appName, selectedRow);
+};
+
+const handleSelectedCompare = () => {
+	const count = selectedChildrenRows.value.length;
+	if (count === 0) {
+		ElMessage.warning('请先选择对象');
+		return;
+	}
+	if (count === 1) {
+		handleSelectedOpenWith('compare');
+		return;
+	}
+	if (count === 2) {
+		const row1 = selectedChildrenRows.value[0];
+		const row2 = selectedChildrenRows.value[1];
+		openWithHashJumpForCompare(row1, row2);
+		return;
+	}
+	ElMessage.warning('比较功能仅支持选择1或2个对象');
 };
 
 const handleUpdateRevisionConfirm = async (operations: UpdateRevisionOperation[]) => {

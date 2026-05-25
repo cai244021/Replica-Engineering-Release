@@ -180,6 +180,12 @@
 																	<span>3DPlay</span>
 																</div>
 																<div
+																	class="submenu-item"
+																	@click="handleOpenWithClick('Collaborative Lifecycle', item)">
+																	<el-icon><Refresh /></el-icon>
+																	<span>Collaborative Lifecycle</span>
+																</div>
+																<div
 																	class="submenu-item submenu-item-divided"
 																	@click="handleOpenWithClick('more', item)">
 																	<el-icon><Plus /></el-icon>
@@ -223,11 +229,7 @@
 															disabled>
 															复制
 														</el-dropdown-item>
-														<el-dropdown-item
-															command="compare"
-															disabled>
-															比较
-														</el-dropdown-item>
+														<el-dropdown-item command="compare">比较</el-dropdown-item>
 														<el-dropdown-item
 															command="maturity"
 															disabled>
@@ -253,11 +255,7 @@
 															disabled>
 															共享
 														</el-dropdown-item>
-														<el-dropdown-item
-															command="relationship"
-															disabled>
-															关系
-														</el-dropdown-item>
+														<el-dropdown-item command="relationship">关系</el-dropdown-item>
 														<el-dropdown-item
 															command="relatedChanges"
 															disabled>
@@ -441,6 +439,12 @@
 														<span>3DPlay</span>
 													</div>
 													<div
+														class="submenu-item"
+														@click="handleOpenWithClick('Collaborative Lifecycle', row)">
+														<el-icon><Refresh /></el-icon>
+														<span>Collaborative Lifecycle</span>
+													</div>
+													<div
 														class="submenu-item submenu-item-divided"
 														@click="handleOpenWithClick('more', row)">
 														<el-icon><Plus /></el-icon>
@@ -484,11 +488,7 @@
 												disabled>
 												复制
 											</el-dropdown-item>
-											<el-dropdown-item
-												command="compare"
-												disabled>
-												比较
-											</el-dropdown-item>
+											<el-dropdown-item command="compare">比较</el-dropdown-item>
 											<el-dropdown-item
 												command="maturity"
 												disabled>
@@ -514,11 +514,7 @@
 												disabled>
 												共享
 											</el-dropdown-item>
-											<el-dropdown-item
-												command="relationship"
-												disabled>
-												关系
-											</el-dropdown-item>
+											<el-dropdown-item command="relationship">关系</el-dropdown-item>
 											<el-dropdown-item
 												command="relatedChanges"
 												disabled>
@@ -1211,7 +1207,10 @@ const getStatusType = (status: string) => {
 const OPEN_WITH_APP_ID: Record<string, string> = {
 	'3D Markup': 'ENOR3D_AP',
 	'3D Navigate': 'ENXDISC_AP',
-	'3DPlay': 'X3DPLAW_AP'
+	'3DPlay': 'X3DPLAW_AP',
+	'Collaborative Lifecycle': 'ENOLCMI_AP',
+	'compare': 'ENOCOMP_AP',
+	'relationship': 'ENORIPE_AP'
 };
 
 const X3D_OBJECT_TAXONOMIES = [
@@ -1376,6 +1375,10 @@ const handleCardCommand = (command: string, item: any) => {
 		handleRowDoubleClick(item);
 	} else if (command === 'setEnterpriseCode') {
 		openEnterpriseCodeDialog(item);
+	} else if (command === 'compare') {
+		handleOpenWithClick('compare', item);
+	} else if (command === 'relationship') {
+		handleOpenWithClick('relationship', item);
 	}
 };
 

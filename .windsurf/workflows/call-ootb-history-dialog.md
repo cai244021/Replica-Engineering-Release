@@ -1628,9 +1628,10 @@ const handleSelectedRowNewRevision = async () => {
 ## 参考资源
 
 - 达索本地示例: `D:\AI\2026webapp\2026webapp\ENOXEngineer\ENOXEngineer.js`
-- ReviseWidget 源码: `D:\AI\TWX_PSE\webapps\ReviseWidget.js`
-- LifecycleCmd 源码: `D:\AI\TWX_PSE\webapps\LifecycleCmd.js`
+
 - HistoryCmd 源码: `D:\AI\TWX_PSE\LifecycleCmd\LifecycleCmd.js`
 - HistoryExplorer 源码: `D:\AI\2026webapp\2026webapp\HistoryExplorer\HistoryExplorer.js`
 - ReviseCmd 源码: `D:\AI\2026webapp\2026webapp\LifecycleCmd\LifecycleCmd.js`
 - D:\AI\TWX_PSE\webapps\ReviseWidget.js
+- LifecycleCmd 源码:D:\AI\TWX_PSE\TW_EngineeringRelease\OOTBSources\LifecycleCmd.js
+- ReviseWidget 源码: D:\AI\TWX_PSE\TW_EngineeringRelease\OOTBSources\ReviseWidget.js
