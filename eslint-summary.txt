@@ -1,0 +1,117 @@
+
+D:\AI\TWX_PSE\TW_EngineeringRelease\src\composables\dialogs.ts
+1:15 @typescript-eslint/no-unused-vars 'computed' is defined but never used.
+
+D:\AI\TWX_PSE\TW_EngineeringRelease\src\composables\dragDrop.ts
+1:15 @typescript-eslint/no-unused-vars 'computed' is defined but never used.
+
+D:\AI\TWX_PSE\TW_EngineeringRelease\src\composables\lifecycleCommands.ts
+55:5 null Parsing error: Expression expected.
+
+D:\AI\TWX_PSE\TW_EngineeringRelease\src\composables\treeOperations.ts
+1:10 @typescript-eslint/no-unused-vars 'ref' is defined but never used.
+4:11 @typescript-eslint/no-unused-vars 'TreeNode' is defined but never used.
+
+D:\AI\TWX_PSE\TW_EngineeringRelease\src\plugins\ds-search-input.ts
+42:25 @stylistic/operator-linebreak '=' should be placed at the beginning of the line.
+
+D:\AI\TWX_PSE\TW_EngineeringRelease\src\utils\lodash.ts
+7:9 @typescript-eslint/no-this-alias Unexpected aliasing of 'this' to local variable.
+25:9 @typescript-eslint/no-this-alias Unexpected aliasing of 'this' to local variable.
+
+D:\AI\TWX_PSE\TW_EngineeringRelease\src\views\HomeView.vue
+1439:1 @stylistic/indent Expected indentation of 7 tabs but found 8.
+1440:1 @stylistic/indent Expected indentation of 7 tabs but found 8.
+1441:1 @stylistic/indent Expected indentation of 8 tabs but found 9.
+1442:1 @stylistic/indent Expected indentation of 8 tabs but found 9.
+1443:1 @stylistic/indent Expected indentation of 9 tabs but found 10.
+1444:1 @stylistic/indent Expected indentation of 9 tabs but found 10.
+1445:1 @stylistic/indent Expected indentation of 8 tabs but found 9.
+1446:1 @stylistic/indent Expected indentation of 7 tabs but found 8.
+1447:1 @stylistic/indent Expected indentation of 7 tabs but found 8.
+1448:1 @stylistic/indent Expected indentation of 6 tabs but found 7.
+1478:25 @stylistic/operator-linebreak '=' should be placed at the beginning of the line.
+
+D:\AI\TWX_PSE\TW_EngineeringRelease\src\views\NewDrawingDialog.vue
+236:32 @typescript-eslint/no-unused-vars 'nextTick' is defined but never used.
+241:55 @typescript-eslint/no-unused-vars 'ModelerAPI' is defined but never used.
+247:15 @typescript-eslint/no-unused-vars 'CreateContentParams' is defined but never used.
+463:7 @typescript-eslint/no-unused-vars 'oldClassificationData' is assigned a value but never used.
+693:7 @typescript-eslint/no-unused-vars 'handleClassClick' is assigned a value but never used.
+964:37 @stylistic/operator-linebreak '||' should be placed at the beginning of the line.
+
+D:\AI\TWX_PSE\TW_EngineeringRelease\src\views\NewPartDialog.vue
+283:32 @typescript-eslint/no-unused-vars 'nextTick' is defined but never used.
+296:15 @typescript-eslint/no-unused-vars 'CreateContentParams' is defined but never used.
+775:7 @typescript-eslint/no-unused-vars 'handleClassClick' is assigned a value but never used.
+
+D:\AI\TWX_PSE\TW_EngineeringRelease\src\views\NewProductDialog.vue
+236:32 @typescript-eslint/no-unused-vars 'nextTick' is defined but never used.
+249:15 @typescript-eslint/no-unused-vars 'CreateContentParams' is defined but never used.
+489:7 @typescript-eslint/no-unused-vars 'oldClassificationData' is assigned a value but never used.
+698:7 @typescript-eslint/no-unused-vars 'handleClassClick' is assigned a value but never used.
+
+D:\AI\TWX_PSE\TW_EngineeringRelease\src\views\PartDetailView.vue
+2003:15 @typescript-eslint/no-unused-vars 'UpdateRevisionOperation' is defined but never used.
+2060:11 @typescript-eslint/no-unused-vars 'ChildDragItem' is defined but never used.
+2501:72 @typescript-eslint/no-unused-vars 'handleChildRowDragStart' is assigned a value but never used.
+2501:97 @typescript-eslint/no-unused-vars 'handleChildRowDragEnd' is assigned a value but never used.
+2544:34 @typescript-eslint/no-unused-vars 'handleExpandSelected' is assigned a value but never used.
+2544:56 @typescript-eslint/no-unused-vars 'handleExpandAll' is assigned a value but never used.
+2544:73 @typescript-eslint/no-unused-vars 'handleCollapseAll' is assigned a value but never used.
+2555:9 @typescript-eslint/no-unused-vars 'handleOpenWith' is assigned a value but never used.
+2749:2 @typescript-eslint/no-unused-vars 'deformDialogSize' is assigned a value but never used.
+2751:2 @typescript-eslint/no-unused-vars 'handleDeformDialogResizeMove' is assigned a value but never used.
+3064:51 @stylistic/operator-linebreak '=' should be placed at the beginning of the line.
+3871:45 @stylistic/operator-linebreak '&&' should be placed at the beginning of the line.
+4346:7 @typescript-eslint/no-unused-vars 'getRowDisplayName' is assigned a value but never used.
+4350:7 @typescript-eslint/no-unused-vars 'getLatestVersion' is assigned a value but never used.
+4595:21 @stylistic/operator-linebreak '=' should be placed at the beginning of the line.
+4760:96 @stylistic/operator-linebreak '&&' should be placed at the beginning of the line.
+4761:28 @stylistic/operator-linebreak '&&' should be placed at the beginning of the line.
+4762:42 @stylistic/operator-linebreak '&&' should be placed at the beginning of the line.
+4812:28 @stylistic/operator-linebreak '&&' should be placed at the beginning of the line.
+4813:72 @stylistic/operator-linebreak '&&' should be placed at the beginning of the line.
+4963:21 @stylistic/operator-linebreak '=' should be placed at the beginning of the line.
+5762:37 @typescript-eslint/no-unused-vars 'handleManufacturableToggle' is assigned a value but never used.
+5762:65 @typescript-eslint/no-unused-vars 'handleManufacturableView' is assigned a value but never used.
+5762:91 @typescript-eslint/no-unused-vars 'handleIndentedStructureView' is assigned a value but never used.
+5762:120 @typescript-eslint/no-unused-vars 'handleFlatStructureView' is assigned a value but never used.
+5762:146 @stylistic/operator-linebreak '=' should be placed at the beginning of the line.
+5784:2 @typescript-eslint/no-unused-vars 'getReplaceFailureMessage' is assigned a value but never used.
+5786:2 @typescript-eslint/no-unused-vars 'getCatflNlsMessage' is assigned a value but never used.
+5809:2 @typescript-eslint/no-unused-vars 'buildFindUql' is assigned a value but never used.
+5810:2 @typescript-eslint/no-unused-vars 'buildFindInStructureParams' is assigned a value but never used.
+5811:2 @typescript-eslint/no-unused-vars 'getPathTargetPhysicalIds' is assigned a value but never used.
+5812:2 @typescript-eslint/no-unused-vars 'expandSearchTreeNodes' is assigned a value but never used.
+5813:2 @typescript-eslint/no-unused-vars 'mergeSearchTreeNodes' is assigned a value but never used.
+5814:2 @typescript-eslint/no-unused-vars 'rowContainsFindKeyword' is assigned a value but never used.
+5815:2 @typescript-eslint/no-unused-vars 'scrollToFindResult' is assigned a value but never used.
+5816:2 @typescript-eslint/no-unused-vars 'setFindResults' is assigned a value but never used.
+6248:7 @typescript-eslint/no-unused-vars 'updateTableDataAfterExpandAll' is assigned a value but never used.
+6524:97 @stylistic/operator-linebreak '||' should be placed at the beginning of the line.
+6525:74 @stylistic/operator-linebreak '||' should be placed at the beginning of the line.
+6615:1 @stylistic/indent Expected indentation of 7 tabs but found 8.
+6616:1 @stylistic/indent Expected indentation of 7 tabs but found 8.
+6617:1 @stylistic/indent Expected indentation of 8 tabs but found 9.
+6618:1 @stylistic/indent Expected indentation of 8 tabs but found 9.
+6619:1 @stylistic/indent Expected indentation of 9 tabs but found 10.
+6620:1 @stylistic/indent Expected indentation of 9 tabs but found 10.
+6621:1 @stylistic/indent Expected indentation of 8 tabs but found 9.
+6622:1 @stylistic/indent Expected indentation of 7 tabs but found 8.
+6623:1 @stylistic/indent Expected indentation of 7 tabs but found 8.
+6624:1 @stylistic/indent Expected indentation of 6 tabs but found 7.
+6779:24 @stylistic/operator-linebreak '=' should be placed at the beginning of the line.
+6789:17 @stylistic/operator-linebreak '=' should be placed at the beginning of the line.
+7051:24 @stylistic/operator-linebreak '=' should be placed at the beginning of the line.
+7061:17 @stylistic/operator-linebreak '=' should be placed at the beginning of the line.
+7260:24 @stylistic/operator-linebreak '=' should be placed at the beginning of the line.
+7270:17 @stylistic/operator-linebreak '=' should be placed at the beginning of the line.
+7445:94 @stylistic/operator-linebreak '&&' should be placed at the beginning of the line.
+7446:26 @stylistic/operator-linebreak '&&' should be placed at the beginning of the line.
+7447:40 @stylistic/operator-linebreak '&&' should be placed at the beginning of the line.
+7540:26 @stylistic/operator-linebreak '&&' should be placed at the beginning of the line.
+7541:70 @stylistic/operator-linebreak '&&' should be placed at the beginning of the line.
+
+D:\AI\TWX_PSE\TW_EngineeringRelease\src\views\UploadDocumentDialog.vue
+145:10 @typescript-eslint/no-unused-vars 'ElMessage' is defined but never used.

@@ -129,10 +129,9 @@
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="newRevisionSource"
-									disabled
-									class="part-action-disabled-item">
+									:disabled="lifecycleCmdLoading">
 									<span class="part-action-menu-icon">⌁</span>
-									<span class="part-action-menu-label">新修订版源</span>
+									<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '新修订版源' }}</span>
 								</el-dropdown-item>
 								<el-dropdown-item command="updateRevision">
 									<span class="part-action-menu-icon">↯</span>
@@ -144,10 +143,9 @@
 								</el-dropdown-item>
 								<el-dropdown-item
 									command="copy"
-									disabled
-									class="part-action-disabled-item">
+									:disabled="lifecycleCmdLoading">
 									<span class="part-action-menu-icon">⧉</span>
-									<span class="part-action-menu-label">复制</span>
+									<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '复制' }}</span>
 								</el-dropdown-item>
 								<el-dropdown-item command="compare">
 									<span class="part-action-menu-icon">↔</span>
@@ -160,7 +158,9 @@
 									<span class="part-action-menu-icon">♻</span>
 									<span class="part-action-menu-label">成熟度</span>
 								</el-dropdown-item>
-								<el-dropdown-item command="lock" divided>
+								<el-dropdown-item
+									command="lock"
+									divided>
 									<span class="part-action-menu-icon">🔒</span>
 									<span class="part-action-menu-label">锁定</span>
 								</el-dropdown-item>
@@ -844,8 +844,8 @@
 					<el-dropdown
 						trigger="click"
 						:disabled="isFlatStructureView"
-						@command="handleExpandMenuCommand"
-						popper-class="expand-menu-dropdown">
+						popper-class="expand-menu-dropdown"
+						@command="handleExpandMenuCommand">
 						<el-button
 							size="small"
 							circle
@@ -1099,8 +1099,8 @@
 					<!-- 结构视图菜单按钮 -->
 					<el-dropdown
 						trigger="click"
-						@command="handleStructureViewCommand"
-						popper-class="structure-view-dropdown">
+						popper-class="structure-view-dropdown"
+						@command="handleStructureViewCommand">
 						<el-button
 							size="small"
 							circle
@@ -2003,6 +2003,18 @@ import UpdateRevisionDialog from './UpdateRevisionDialog.vue';
 import type { UpdateRevisionOperation } from './UpdateRevisionDialog.vue';
 import catflNlsZh from '@/i18n/lang/zh-CN/CATFLNls_zh.json';
 import catflNlsEn from '@/i18n/lang/en-US/CATFLNls_en.json';
+import { useLifecycleCommands } from '@/composables/lifecycleCommands';
+import { useDragDrop } from '@/composables/dragDrop';
+import { useDialogs } from '@/composables/dialogs';
+import { useTreeOperations } from '@/composables/treeOperations';
+import { useExportImport } from '@/composables/exportImport';
+import { useOpenWith, pickOpenWithField, X3D_OBJECT_TAXONOMIES } from '@/composables/openWith';
+import { useClipboard } from '@/composables/clipboard';
+import { useStructureView } from '@/composables/structureView';
+import { useReplaceRevision } from '@/composables/replaceRevision';
+import { useFindInStructure } from '@/composables/findInStructure';
+import { useDeformDialog } from '@/composables/deformDialog';
+import { useHeaderActions } from '@/composables/headerActions';
 
 // 路由
 const route = useRoute();
@@ -2028,14 +2040,13 @@ const childrenData = ref<TreeNode[]>([]);
 // 全局存储当前 Revise 操作的 targetNodes，供 _attributeListRequest 补丁使用
 let currentReviseTargetNodes: any[] = [];
 let currentNewBranchTargetNodes: any[] = [];
+let currentDuplicateTargetNodes: any[] = [];
 const loading = ref(false);
 const childrenLoading = ref(false);
 const expandingRowIds = ref<Set<string>>(new Set());
 const currentPhysicalId = ref<string>('');
 const tableRef = ref<any>(null);
 const enterpriseTableRef = ref<any>(null);
-const draggingChildRowId = ref('');
-const dragOverChildRowId = ref('');
 
 interface EnterpriseCodeRow {
 	id: string;
@@ -2164,10 +2175,6 @@ type CreateMenuCommand =
 	| 'newDrawing'
 	| 'existingDrawing';
 
-const enterpriseDialogVisible = ref(false);
-const exportDialogVisible = ref(false);
-const exportPercentage = ref(0);
-const exportStatusText = ref('准备导出...');
 const enterpriseCodeRows = ref<EnterpriseCodeRow[]>([]);
 const selectedChildrenRows = ref<TreeNode[]>([]);
 const partDetailNavigationStack = ref<string[]>([]);
@@ -2185,8 +2192,6 @@ const structureViewMode = ref<StructureDisplayView>('indented');
 const structureUsageView = ref<StructureUsageView>('usage');
 const structureManufacturableOnly = ref(false);
 const hoveredChildrenColumnKey = ref<string>('');
-const instanceQuantityDialogVisible = ref(false);
-const instanceQuantitySubmitting = ref(false);
 const instanceQuantityRows = ref<InstanceQuantityRow[]>([]);
 const instanceQuantityBaseRows = ref<InstanceQuantityRow[]>([]);
 const instanceQuantitySelectedRow = ref<TreeNode | null>(null);
@@ -2194,27 +2199,12 @@ const instanceQuantityValue = ref(1);
 const headerOpenWithSubmenuVisible = ref(false);
 const selectedOpenWithSubmenuVisible = ref(false);
 const selectedReplaceSubmenuVisible = ref(false);
-const unparentDialogVisible = ref(false);
-const unparentSubmitting = ref(false);
-const unparentReportVisible = ref(false);
-const unparentSuccessMessages = ref<string[]>([]);
-const unparentFailureMessages = ref<string[]>([]);
 const unparentSelectedRowsSnapshot = ref<TreeNode[]>([]);
-const replaceLatestReportVisible = ref(false);
-const replaceLatestReportMessages = ref<string[]>([]);
-const replaceReportTitle = ref('替换为最新修订版报告');
-const updateEntireStructureRevisionDialogVisible = ref(false);
-const updateEntireStructureRevisionLoading = ref(false);
 const updateEntireStructureRevisionConfirmations = ref<UpdateEntireStructureRevisionConfirmation[]>([]);
 const updateEntireStructureRevisionReplaceList = ref<ReplaceByLatestRevisionOperation[]>([]);
-const replaceRevisionDialogVisible = ref(false);
 const replaceRevisionSelectedRows = ref<TreeNode[]>([]);
-const updateRevisionDialogVisible = ref(false);
-const updateRevisionSubmitting = ref(false);
 type ReservationScope = 'reference' | 'instance' | 'both';
 const reservationStorageKey = 'partDetail.reservation.scope';
-const reservationDialogVisible = ref(false);
-const reservationSubmitting = ref(false);
 const reservationTargetRow = ref<TreeNode | null>(null);
 const reservationOperation = ref<ReservationOperation>('reserve');
 const reservationSelectedScope = ref<ReservationScope>('reference');
@@ -2338,9 +2328,6 @@ const renderReservationIcon = (reserved: boolean) => {
 // 展开菜单相关数据（独立功能，不混合原有逻辑）
 const expandMenuActive = ref(false);
 const structureViewActive = ref(false);
-const treeReorderDialogVisible = ref(false);
-const treeReorderLoading = ref(false);
-const treeReorderSubmitting = ref(false);
 const treeReorderRows = ref<TreeReorderRow[]>([]);
 const treeReorderOriginalRows = ref<TreeReorderRow[]>([]);
 const treeReorderSelectedRowIds = ref<string[]>([]);
@@ -2349,23 +2336,17 @@ const treeReorderParentRow = ref<TreeNode | null>(null);
 const treeReorderDialogPosition = ref({ left: Math.max(20, Math.round((window.innerWidth - 1024) / 2)), top: 60 });
 const treeReorderDialogSize = ref({ width: 1024, height: 560 });
 const treeReorderDialogMaximized = ref(false);
-const expandNDialogVisible = ref(false);
 const expandNLevel = ref(2);
 const expandMenuLoading = ref(false);
 const selectedEnterpriseRows = ref<EnterpriseCodeRow[]>([]);
-const maturityDialogVisible = ref(false);
-const maturityLoading = ref(false);
 const maturityDialogTitle = ref('');
 const maturityStates = ref<MaturityState[]>([]);
 const maturityTransitions = ref<StateTransition[]>([]);
 const maturityCurrentState = ref('');
 const maturitySelectedObject = ref<MaturityObjectParams | null>(null);
-const lifecycleCmdLoading = ref(false);
 const maturitySelectedSource = ref<'parent' | 'child'>('parent');
 const maturitySelectedRow = ref<TreeNode | null>(null);
 const includeStructureObjects = ref(false);
-const duplicateDialogVisible = ref(false);
-const duplicateSubmitting = ref(false);
 const duplicatePrefix = ref('');
 const duplicateIncludeStructure = ref(true);
 const duplicateDialogMode = ref<'insert' | 'replace'>('insert');
@@ -2400,36 +2381,17 @@ const instanceQuantityDialogTitle = computed(() => {
 	if (!row) return '数量';
 	return `数量 - ${row.label || row.identifier || ''} ${row.revision || ''} (${instanceQuantityRows.value.length})`.trim();
 });
-const deformDialogVisible = ref(false);
-const deformSubmitting = ref(false);
 const deformPrefix = ref('');
 const deformTargets = ref<DeformableProductInfo[]>([]);
-const deformDialogSize = ref({
-	width: 720,
-	height: 300
-});
-const deformDialogStyle = computed(() => ({
-	width: `${deformDialogSize.value.width}px`,
-	height: `${deformDialogSize.value.height}px`
-}));
-let deformDialogResizing = false;
-let deformDialogResizeStartX = 0;
-let deformDialogResizeStartY = 0;
-let deformDialogResizeStartWidth = 0;
-let deformDialogResizeStartHeight = 0;
 
 // 上传文档对话框
-const uploadDocumentDialogVisible = ref(false);
-const uploadProgressVisible = ref(false);
 const uploadProgressList = ref<UploadItem[]>([]);
 
 // 材料数量对话框
-const materialQuantityDialogVisible = ref(false);
 const selectedMaterialName = ref('');
 const pendingMaterialQuantity = ref<{ materialPhysicalId: string; quantityName: string; value: string; unit: string } | null>(null);
 
 // 现有原材料对话框
-const existingMaterialDialogVisible = ref(false);
 const selectedExistingMaterialName = ref('');
 const pendingExistingMaterial = ref<{ materialPhysicalId: string; materialName: string } | null>(null);
 const columnWidths = ref<Record<string, number>>({
@@ -2464,37 +2426,6 @@ const normalizeEnterpriseCode = (value?: string) => {
 	return value && value.trim() ? value : '无';
 };
 
-const handleDeformDialogResizeMove = (event: MouseEvent) => {
-	if (!deformDialogResizing) return;
-	const nextWidth = Math.max(480, deformDialogResizeStartWidth + event.clientX - deformDialogResizeStartX);
-	const nextHeight = Math.max(300, deformDialogResizeStartHeight + event.clientY - deformDialogResizeStartY);
-	deformDialogSize.value = {
-		width: nextWidth,
-		height: nextHeight
-	};
-};
-
-const handleDeformDialogResizeEnd = () => {
-	if (!deformDialogResizing) return;
-	deformDialogResizing = false;
-	document.body.classList.remove('deform-dialog-resizing');
-	window.removeEventListener('mousemove', handleDeformDialogResizeMove);
-	window.removeEventListener('mouseup', handleDeformDialogResizeEnd);
-};
-
-const handleDeformDialogResizeStart = (event: MouseEvent) => {
-	event.preventDefault();
-	event.stopPropagation();
-	deformDialogResizing = true;
-	deformDialogResizeStartX = event.clientX;
-	deformDialogResizeStartY = event.clientY;
-	deformDialogResizeStartWidth = deformDialogSize.value.width;
-	deformDialogResizeStartHeight = deformDialogSize.value.height;
-	document.body.classList.add('deform-dialog-resizing');
-	window.addEventListener('mousemove', handleDeformDialogResizeMove);
-	window.addEventListener('mouseup', handleDeformDialogResizeEnd);
-};
-
 const getParentEnterpriseCode = () => {
 	return normalizeEnterpriseCode(partInfo.value?.['ds6wg:EnterpriseExtension.V_PartNumber']);
 };
@@ -2503,7 +2434,7 @@ const getChildEnterpriseCode = (row: TreeNode) => {
 	return normalizeEnterpriseCode(row.partNumber);
 };
 
-const isChildrenRowSelected = (row: TreeNode) => selectedChildrenRows.value.some(item => item.id === row.id);
+const isChildrenRowSelected = (row: any) => selectedChildrenRows.value.some(item => item.id === row.id);
 const isFlatStructureView = computed(() => structureViewMode.value === 'flat');
 const isDocumentRow = (row: TreeNode) => (row as any).type === 'Document' || row.typeDisplayName === 'Document';
 const canDownloadSelectedDocuments = computed(() => !!selectedChildrenRows.value.length && selectedChildrenRows.value.every(isDocumentRow));
@@ -2564,6 +2495,70 @@ const getParentPhysicalId = () => partInfo.value?.resourceid || partInfo.value?.
 const getParentTypeName = () => partInfo.value?.['ds6w:globalType'] || partInfo.value?.['ds6w:type'] || '';
 
 const getChildTypeName = (row: TreeNode) => row.typeDisplayName || row.globalType || '';
+
+// 初始化 composables
+const { lifecycleCmdLoading, openLifecycleReviseFromCmd } = useLifecycleCommands(partInfo, baseInfoStore);
+const { draggingChildRowId, dragOverChildRowId, getChildrenV2RowProps, handleChildRowDragStart, handleChildRowDragEnd } = useDragDrop(
+	selectedChildrenRows,
+	isFlatStructureView,
+	isChildrenRowSelected,
+	childrenData
+);
+const {
+	enterpriseDialogVisible,
+	exportDialogVisible,
+	exportPercentage,
+	exportStatusText,
+	instanceQuantityDialogVisible,
+	instanceQuantitySubmitting,
+	unparentDialogVisible,
+	unparentSubmitting,
+	unparentReportVisible,
+	unparentSuccessMessages,
+	unparentFailureMessages,
+	replaceLatestReportVisible,
+	replaceLatestReportMessages,
+	replaceReportTitle,
+	updateEntireStructureRevisionDialogVisible,
+	updateEntireStructureRevisionLoading,
+	replaceRevisionDialogVisible,
+	updateRevisionDialogVisible,
+	updateRevisionSubmitting,
+	reservationDialogVisible,
+	reservationSubmitting,
+	treeReorderDialogVisible,
+	treeReorderLoading,
+	treeReorderSubmitting,
+	expandNDialogVisible,
+	maturityDialogVisible,
+	maturityLoading,
+	duplicateDialogVisible,
+	duplicateSubmitting,
+	deformDialogVisible,
+	deformSubmitting,
+	uploadDocumentDialogVisible,
+	uploadProgressVisible,
+	materialQuantityDialogVisible,
+	existingMaterialDialogVisible
+} = useDialogs();
+const { handleExpandMenuCommand, handleExpandSelected, handleExpandAll, handleCollapseAll } = useTreeOperations(
+	currentPhysicalId,
+	selectedChildrenRows,
+	childrenData,
+	expandNDialogVisible,
+	expandNLevel,
+	expandMenuActive,
+	partDetailApi,
+	isFlatStructureView
+);
+const { handleExportCSV } = useExportImport(partInfo, childrenData, partDetailApi);
+const { handleOpenWith, handleRootOpenWith, handleSelectedOpenWith, handleSelectedCompare } = useOpenWith(
+	partInfo,
+	currentPhysicalId,
+	selectedChildrenRows,
+	baseInfoStore.securityContext
+);
+const { handleCopyProducts, handleCutProducts } = useClipboard(selectedChildrenRows, copiedProductRows, copiedProductMode);
 
 const getSelectedParentContextPhysicalIds = () => {
 	const selectedRows = [...selectedChildrenRows.value];
@@ -2750,6 +2745,26 @@ const refreshAfterExistingProductInsert = async (parents: ExistingProductParentC
 	}
 };
 
+const {
+	deformDialogSize,
+	deformDialogStyle,
+	handleDeformDialogResizeMove,
+	handleDeformDialogResizeEnd,
+	handleDeformDialogResizeStart,
+	submitDeformedProducts
+} = useDeformDialog(
+	deformDialogVisible,
+	deformSubmitting,
+	deformTargets,
+	deformPrefix,
+	partDetailApi,
+	getExistingProductParentContexts,
+	validateChildInsertParentContext,
+	getInsertExistingFailureMessage,
+	showInsertExistingReport,
+	refreshAfterExistingProductInsert
+);
+
 const refreshAfterProductPaste = async (parents: ExistingProductParentContext[], sourceRows: TreeNode[]) => {
 	if (copiedProductMode.value !== 'cut') {
 		await refreshAfterExistingProductInsert(parents);
@@ -2771,22 +2786,6 @@ const refreshAfterProductPaste = async (parents: ExistingProductParentContext[],
 		await Promise.all(latestRows.map(row => reloadAndExpandRow(row)));
 	}
 };
-
-const cacheSelectedProducts = (mode: 'copy' | 'cut') => {
-	const rows = [...selectedChildrenRows.value];
-	if (!rows.length) {
-		ElMessage.warning(mode === 'cut' ? '请先选择要剪切的数据' : '请先选择要复制的数据');
-		return;
-	}
-	copiedProductRows.value = rows;
-	copiedProductMode.value = mode;
-	const names = rows.map(row => row.label || row.instanceLabel || row.identifier || row.resourceid).join('、');
-	ElMessage.success(`已${mode === 'cut' ? '剪切' : '复制'} ${rows.length} 个对象：${names}`);
-};
-
-const handleCopyProducts = () => cacheSelectedProducts('copy');
-
-const handleCutProducts = () => cacheSelectedProducts('cut');
 
 const getCopiedProductSourceItems = (): Array<string | ReparentSourceItem> => {
 	if (copiedProductMode.value !== 'cut') {
@@ -3680,166 +3679,6 @@ const handleExistingMaterialConfirm = async (data: { materialPhysicalId: string;
 	}
 };
 
-// 导出 CSV 功能
-const handleExportCSV = async () => {
-	// 即使没有子节点，只要有根节点就可以导出
-	if (!partInfo.value) {
-		ElMessage.warning('没有可导出的数据');
-		return;
-	}
-
-	exportDialogVisible.value = true;
-	exportPercentage.value = 0;
-	exportStatusText.value = '准备导出...';
-
-	try {
-		// 定义导出列（按顺序）
-		const exportColumns: { key: string; title: string; isRoot?: boolean }[] = [
-			{ key: 'level', title: '级别' },
-			{ key: 'label', title: '标题' },
-			{ key: 'partNumber', title: '企业项目编号' },
-			{ key: 'revision', title: '修订版' },
-			{ key: 'instanceLabel', title: '标题(实例)' },
-			{ key: 'isLastRevision', title: '最新修订版' },
-			{ key: 'status', title: '成熟度状态' },
-			{ key: 'owner', title: '所有者' },
-			{ key: 'reserved', title: '锁定' },
-			{ key: 'modified', title: '修改日期' },
-			{ key: 'globalType', title: '类型' },
-			{ key: 'identifier', title: '名称' }
-		];
-
-		const headers = exportColumns.map(col => col.title);
-
-		// 添加 BOM 以支持中文
-		const BOM = '\uFEFF';
-
-		// 构建所有行数据
-		const allRows: { level: number; data: Record<string, any> }[] = [];
-
-		// 1. 添加根节点（级别 0）
-		const rootData: Record<string, any> = {
-			label: partInfo.value['ds6w:label'] || '',
-			partNumber: partInfo.value['ds6wg:EnterpriseExtension.V_PartNumber'] || '',
-			revision: partInfo.value['ds6wg:revision'] || '',
-			instanceLabel: '',
-			isLastRevision: partInfo.value['ds6w:isLastRevision'] || '',
-			status: partInfo.value['ds6w:status'] || '',
-			owner: partInfo.value['owner'] || '',
-			reserved: partInfo.value['ds6w:reserved'] || '',
-			modified: partInfo.value['ds6w:modified'] || '',
-			globalType: partInfo.value['ds6w:globalType'] || '',
-			identifier: partInfo.value['ds6w:identifier'] || ''
-		};
-		allRows.push({ level: 0, data: rootData });
-
-		// 2. 添加子节点（通过 childrenData 树结构递归计算层级）
-		// 创建一个映射：节点 id -> 层级
-		const nodeLevelMap = new Map<string, number>();
-
-		// 递归遍历树形结构，记录每个节点的层级
-		// childrenData 是根节点的子节点，所以层级从 1 开始
-		const calculateLevels = (nodes: TreeNode[], parentLevel: number = 1) => {
-			for (const node of nodes) {
-				nodeLevelMap.set(node.id, parentLevel);
-				if (node.children?.length) {
-					calculateLevels(node.children, parentLevel + 1);
-				}
-			}
-		};
-		calculateLevels(childrenData.value);
-
-		const childrenRows = flattenChildrenData.value.map(row => ({
-			level: nodeLevelMap.get(row.id) ?? 0,
-			data: {
-				label: row.label || '',
-				partNumber: row.partNumber || '',
-				revision: row.revision || '',
-				instanceLabel: row.instanceLabel || '',
-				isLastRevision: row.isLastRevision ?? '',
-				status: row.status || '',
-				owner: row.owner || '',
-				reserved: row.reserved ?? false,
-				modified: row.modified || '',
-				globalType: row.globalType || '',
-				identifier: row.identifier || ''
-			}
-		}));
-		allRows.push(...childrenRows);
-
-		// 构建 CSV 行
-		const csvRows: string[][] = [];
-		const totalRows = allRows.length;
-
-		for (let i = 0; i < totalRows; i++) {
-			const rowInfo = allRows[i];
-			const rowValues = exportColumns.map(col => {
-				let value = '';
-				if (col.key === 'level') {
-					value = String(rowInfo.level);
-				} else {
-					const rawValue = rowInfo.data[col.key];
-					// 处理特殊字段
-					if (col.key === 'isLastRevision') {
-						const boolVal = typeof rawValue === 'boolean' ? rawValue : rawValue === 'true';
-						value = boolVal ? '是' : '否';
-					} else if (col.key === 'reserved') {
-						const boolVal = typeof rawValue === 'boolean' ? rawValue : rawValue === 'true';
-						value = boolVal ? '锁定' : '已解锁';
-					} else {
-						value = String(rawValue ?? '');
-					}
-				}
-				// 转义 CSV 特殊字符
-				if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-					value = `"${value.replace(/"/g, '""')}"`;
-				}
-				return value;
-			});
-			csvRows.push(rowValues);
-
-			// 更新进度
-			if (i % 100 === 0 || i === totalRows - 1) {
-				exportPercentage.value = Math.round(((i + 1) / totalRows) * 100);
-				exportStatusText.value = `正在导出: ${i + 1}/${totalRows}`;
-				// 让 UI 有机会更新
-				await new Promise(resolve => setTimeout(resolve, 0));
-			}
-		}
-
-		exportStatusText.value = '生成文件...';
-
-		// 构建 CSV 字符串
-		const headerRow = headers.join(',');
-		const dataRows = csvRows.map(row => row.join(',')).join('\n');
-		const csvContent = BOM + headerRow + '\n' + dataRows;
-
-		// 创建下载
-		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-		const url = URL.createObjectURL(blob);
-		const link = document.createElement('a');
-		link.href = url;
-		link.download = `导出_${partInfo.value['ds6w:label'] || '数据'}_${new Date().toISOString().slice(0, 10)}.csv`;
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
-		URL.revokeObjectURL(url);
-
-		exportPercentage.value = 100;
-		exportStatusText.value = '导出完成!';
-
-		// 延迟关闭对话框
-		setTimeout(() => {
-			exportDialogVisible.value = false;
-			ElMessage.success('导出成功');
-		}, 1000);
-	} catch (error) {
-		console.error('[PartDetailView] 导出 CSV 失败:', error);
-		exportDialogVisible.value = false;
-		ElMessage.error('导出失败: ' + (error as Error).message);
-	}
-};
-
 const openNewShapeRepresentationDialogFromChildrenTable = () => {
 	const precond = `(((flattenedtaxonomies:"types/VPMReference") AND (NOT (flattenedtaxonomies:"types/AxisSystemReference" OR flattenedtaxonomies:"types/VPMReferenceExtPos" OR flattenedtaxonomies:"types/ENOStrRefinementVDRPSpec"))) AND flattenedtaxonomies:"types/VPMReference" AND flattenedtaxonomies:"interfaces/PrdDeformableExtension")`;
 	dsSearchInput(
@@ -3871,68 +3710,6 @@ const openNewShapeRepresentationDialogFromChildrenTable = () => {
 		},
 		{ precond }
 	);
-};
-
-const submitDeformedProducts = async () => {
-	if (!deformTargets.value.length) {
-		ElMessage.warning('未选择待变形产品');
-		return;
-	}
-	const parents = getExistingProductParentContexts();
-	if (!parents.length) {
-		ElMessage.warning('未获取到插入父节点');
-		return;
-	}
-	const canInsert = await validateChildInsertParentContext(parents.map(parent => parent.physicalId));
-	if (!canInsert) return;
-	deformSubmitting.value = true;
-	try {
-		const prefix = deformPrefix.value || '';
-		const createdResults = await Promise.all(
-			deformTargets.value.map(product => {
-				const options = prefix ? [{ nlsKey: 'Prefix:', type: 'text', value: prefix, key: 'prefix' }] : [];
-				return partDetailApi.createDeformedFromDeformable([{ cestamp: product.cestamp, deformableID: product.resourceid }], options);
-			})
-		);
-
-		const deformedIds = createdResults
-			.flatMap(r => r.results || [])
-			.filter(r => r.status === 'success')
-			.map(r => r.deformedID);
-
-		if (!deformedIds.length) {
-			ElMessage.error('创建变形件失败');
-			return;
-		}
-
-		const operations = parents.flatMap(parent =>
-			deformedIds.map(childId => ({
-				parent: {
-					isInstanceOf: parent.physicalId,
-					children: parent.children
-				},
-				child: {
-					isInstanceOf: childId
-				}
-			}))
-		);
-
-		const response = await partDetailApi.insertExistingProducts(operations);
-		if (response.status !== 'success') {
-			ElMessage.error(getInsertExistingFailureMessage(response) || '插入变形件失败');
-			return;
-		}
-
-		await showInsertExistingReport(response.results || [], parents);
-		await refreshAfterExistingProductInsert(parents);
-		deformDialogVisible.value = false;
-		ElMessage.success('变形件创建并插入成功');
-	} catch (error) {
-		console.error('[PartDetailView] 创建变形件失败:', error);
-		ElMessage.error('创建变形件失败');
-	} finally {
-		deformSubmitting.value = false;
-	}
 };
 
 // 处理上传文档提交
@@ -4128,121 +3905,6 @@ const handleChildrenTableClick = (event: MouseEvent) => {
 
 	selectedChildrenRows.value = [];
 };
-
-const getChildDragRows = (row: TreeNode) => (isChildrenRowSelected(row) ? selectedChildrenRows.value : [row]);
-
-const getChildDragObjectType = () => 'VPMReference';
-
-let childDragSequence = 0;
-
-const findParentRowByChildRowId = (nodes: TreeNode[], childRowId: string): TreeNode | null => {
-	for (const node of nodes) {
-		if (node.children?.some(child => child.id === childRowId)) {
-			return node;
-		}
-		if (node.children?.length) {
-			const parent = findParentRowByChildRowId(node.children, childRowId);
-			if (parent) return parent;
-		}
-	}
-	return null;
-};
-
-const toChildDragItem = (row: TreeNode): ChildDragItem => {
-	const objectType = getChildDragObjectType();
-	const displayName = `${row.label || row.identifier || row.resourceid} ${row.revision || ''}`.trim();
-	const sourceParentRow = findParentRowByChildRowId(childrenData.value, row.id);
-
-	return {
-		'objectId': row.resourceid,
-		'physicalId': row.resourceid,
-		'physicalid': row.resourceid,
-		displayName,
-		'title': displayName,
-		'name': row.identifier || row.label,
-		'objectName': row.identifier || row.label,
-		'type': objectType,
-		objectType,
-		'displayType': row.typeDisplayName || 'Physical Product',
-		'typeName': objectType,
-		'ds6w:type': objectType,
-		'ds6w:label': row.label,
-		'ds6wg:revision': row.revision,
-		'cestamp': row.revision,
-		'relationId': row.relationId,
-		'path': row.path,
-		'sourceParentRowId': sourceParentRow?.id,
-		'rowId': row.id
-	};
-};
-
-const buildChildRowDragPayload = (dragRows: TreeNode[]) => {
-	const items = dragRows.map(toChildDragItem);
-	const dragSourceUuid = `TW_EngineeringRelease_PartDetailView_${Date.now()}_${childDragSequence++}`;
-
-	return {
-		source: {
-			uuid: dragSourceUuid,
-			amd: 'TW_EngineeringRelease/PartDetailView'
-		},
-		data: {
-			items
-		}
-	};
-};
-
-const setDragData = (event: DragEvent, payload: unknown) => {
-	const payloadText = JSON.stringify(payload);
-	event.dataTransfer?.clearData();
-	event.dataTransfer?.setData('text', payloadText);
-	event.dataTransfer?.setData('text/plain', payloadText);
-	try {
-		event.dataTransfer?.setData('application/json', payloadText);
-	} catch {
-		return;
-	}
-};
-
-const setChildRowDragImage = (event: DragEvent, dragRows: TreeNode[], dragRow: TreeNode) => {
-	if (!event.dataTransfer) return;
-
-	const dragImage = document.createElement('div');
-	const dragTitle = dragRows.length > 1 ? `全部选定对象 (${dragRows.length})` : dragRow.label;
-	dragImage.className = 'child-row-drag-image';
-	dragImage.innerHTML = `<span class="child-row-drag-add">+</span><span class="child-row-drag-title">${dragTitle}</span>`;
-	document.body.appendChild(dragImage);
-	event.dataTransfer.setDragImage(dragImage, 12, 12);
-	window.setTimeout(() => {
-		document.body.removeChild(dragImage);
-	}, 0);
-};
-
-const handleChildRowDragStart = (event: DragEvent, row: TreeNode) => {
-	if (isFlatStructureView.value) {
-		event.preventDefault();
-		return;
-	}
-	const dragRows = getChildDragRows(row);
-	const payload = buildChildRowDragPayload(dragRows);
-	draggingChildRowId.value = row.id;
-
-	if (event.dataTransfer) {
-		event.dataTransfer.effectAllowed = 'copyMove';
-	}
-	setDragData(event, payload);
-	setChildRowDragImage(event, dragRows, row);
-};
-
-const handleChildRowDragEnd = () => {
-	draggingChildRowId.value = '';
-};
-
-const getChildrenV2RowProps = ({ rowData }: { rowData: TreeNode }) => ({
-	'draggable': !isFlatStructureView.value,
-	'data-child-row-id': rowData.id,
-	'onDragstart': (event: DragEvent) => handleChildRowDragStart(event, rowData),
-	'onDragend': handleChildRowDragEnd
-});
 
 const startColumnResize = (event: MouseEvent, key: string) => {
 	event.preventDefault();
@@ -4725,70 +4387,6 @@ const handleDownloadSelectedDocuments = async () => {
 	}
 };
 
-const handleReplaceLatestRevision = async () => {
-	const rows = [...selectedChildrenRows.value];
-	if (!rows.length) return;
-
-	const operations = [];
-	const ignoredMessages: string[] = [];
-
-	try {
-		for (const row of rows) {
-			if (!row.resourceid || !row.relationId) {
-				ElMessage.error('未获取到选中对象的物理ID或关系ID');
-				return;
-			}
-			const parentPhysicalId = getInstanceQuantityParentPhysicalId(row);
-			if (!parentPhysicalId) {
-				ElMessage.error('未获取到选中对象的父ID');
-				return;
-			}
-			const versionGraph = await partDetailApi.getVersionGraph(row.resourceid);
-			const latestVersion = getLatestVersion(versionGraph.graphs?.[0]?.versions || []);
-			if (!latestVersion?.id) {
-				ElMessage.warning(`未找到对象 ${getRowDisplayName(row)} 的最新修订版`);
-				continue;
-			}
-			const oldName = getRowDisplayName(row);
-			const newName = `${latestVersion.label || row.label || row.identifier || latestVersion.id} ${latestVersion.code || ''}`.trim();
-			if (latestVersion.id === row.resourceid) {
-				ignoredMessages.push(`替换操作已被忽略，因为对象 ${oldName} 已是最新修订版。`);
-				continue;
-			}
-			operations.push({
-				hasParent: parentPhysicalId,
-				instance: row.relationId,
-				isInstanceOf: latestVersion.id,
-				oldName,
-				newName
-			});
-		}
-
-		if (!operations.length) {
-			if (ignoredMessages.length) {
-				ElMessage.info(ignoredMessages.join('\n'));
-			}
-			return;
-		}
-
-		const response = await partDetailApi.replaceByLatestRevision(operations);
-		const successResults = (response.results || []).filter(result => String(result.status).toLowerCase() === 'success');
-		replaceReportTitle.value = '替换为最新修订版报告';
-		replaceLatestReportMessages.value = successResults.length
-			? successResults.map(result => `成功将 ${result.oldName || ''} 替换为 ${result.newName || ''}。`)
-			: operations.map(operation => `成功将 ${operation.oldName} 替换为 ${operation.newName}。`);
-		replaceLatestReportVisible.value = true;
-		selectedChildrenRows.value = [];
-		queryModeStore.switchToDbMode();
-		if (currentPhysicalId.value) {
-			await loadPartDetail(currentPhysicalId.value);
-		}
-	} catch (error) {
-		console.error('[PartDetailView] 替换为最新修订版失败:', error);
-		ElMessage.error('替换为最新修订版失败');
-	}
-};
-
 const handleConfirmUnparent = async () => {
 	const selectedRows = unparentSelectedRowsSnapshot.value.length ? unparentSelectedRowsSnapshot.value : selectedChildrenRows.value;
 	const instances = selectedRows.map(row => row.relationId).filter((relationId): relationId is string => !!relationId);
@@ -4830,45 +4428,6 @@ const handleConfirmUnparent = async () => {
 		unparentReportVisible.value = true;
 	} finally {
 		unparentSubmitting.value = false;
-	}
-};
-
-const openReplaceRevisionDialog = () => {
-	const rows = [...selectedChildrenRows.value];
-	if (!rows.length) {
-		ElMessage.warning('请先选择要替换的行');
-		return;
-	}
-	for (const row of rows) {
-		if (!row.resourceid || !row.relationId) {
-			ElMessage.error('未获取到选中对象的物理ID或关系ID');
-			return;
-		}
-	}
-	replaceRevisionSelectedRows.value = rows;
-	replaceRevisionDialogVisible.value = true;
-};
-
-const handleReplaceRevisionConfirm = async (
-	operations: Array<{ hasParent: string; instance: string; isInstanceOf: string; oldName: string; newName: string }>
-) => {
-	try {
-		const response = await partDetailApi.replaceByLatestRevision(operations);
-		const successResults = (response.results || []).filter(result => String(result.status).toLowerCase() === 'success');
-		replaceReportTitle.value = '替换为修订版报告';
-		replaceLatestReportMessages.value = successResults.length
-			? successResults.map(result => `成功将 ${result.oldName || ''} 替换为 ${result.newName || ''}。`)
-			: operations.map(op => `成功将 ${op.oldName} 替换为 ${op.newName}。`);
-		replaceRevisionDialogVisible.value = false;
-		replaceLatestReportVisible.value = true;
-		selectedChildrenRows.value = [];
-		queryModeStore.switchToDbMode();
-		if (currentPhysicalId.value) {
-			await loadPartDetail(currentPhysicalId.value);
-		}
-	} catch (error) {
-		console.error('[PartDetailView] 替换为修订版失败:', error);
-		ElMessage.error('替换为修订版失败');
 	}
 };
 
@@ -5184,9 +4743,7 @@ const handleSelectedRowNewRevision = async () => {
 									});
 									options.data = JSON.stringify(requestData);
 									console.log(
-										'[TW_EngineeringRelease] 修正后的 ' +
-											(url.includes('/prepare_revise_checkavailability') ? 'prepare_revise_checkavailability' : 'attributeList') +
-											' 请求:',
+										`[TW_EngineeringRelease] 修正后的 ${url.includes('/prepare_revise_checkavailability') ? 'prepare_revise_checkavailability' : 'attributeList'} 请求:`,
 										requestData
 									);
 								}
@@ -5236,9 +4793,7 @@ const handleSelectedRowNewRevision = async () => {
 										if (!result.options['ds6w:type']) result.options['ds6w:type'] = source.typeDisplayName || source.displayType;
 									});
 									console.log(
-										'[TW_EngineeringRelease] 修正后的 ' +
-											(url.includes('/prepare_revise_checkavailability') ? 'prepare_revise_checkavailability' : 'attributeList') +
-											' 响应:',
+										`[TW_EngineeringRelease] 修正后的 ${url.includes('/prepare_revise_checkavailability') ? 'prepare_revise_checkavailability' : 'attributeList'} 响应:`,
 										response.results
 									);
 								}
@@ -6204,6 +5759,76 @@ const loadExpandData = async (physicalId: string) => {
 	}
 };
 
+const { handleStructureViewCommand, handleManufacturableToggle, handleManufacturableView, handleIndentedStructureView, handleFlatStructureView } =
+	useStructureView(
+		currentPhysicalId,
+		structureViewMode,
+		structureUsageView,
+		structureManufacturableOnly,
+		childrenLoading,
+		childrenData,
+		selectedChildrenRows,
+		expandingRowIds,
+		queryModeStore,
+		expandApi,
+		loadPartDetail,
+		loadExpandData,
+		filterManufacturableRows,
+		filterManufacturableTree
+	);
+const {
+	handleReplaceLatestRevision,
+	openReplaceRevisionDialog,
+	handleReplaceRevisionConfirm,
+	handleUpdateRevisionConfirm,
+	getReplaceFailureMessage,
+	showReplaceFailureMessage,
+	getCatflNlsMessage
+} = useReplaceRevision(
+	selectedChildrenRows,
+	childrenData,
+	currentPhysicalId,
+	partDetailApi,
+	queryModeStore,
+	loadPartDetail,
+	replaceReportTitle,
+	replaceLatestReportMessages,
+	replaceLatestReportVisible,
+	replaceRevisionSelectedRows,
+	replaceRevisionDialogVisible,
+	updateRevisionSubmitting,
+	updateRevisionDialogVisible,
+	catflNlsEn,
+	catflNlsZh
+);
+const {
+	handleFindInStructure,
+	goToPreviousFindResult,
+	goToNextFindResult,
+	selectAllFindResults,
+	buildFindUql,
+	buildFindInStructureParams,
+	getPathTargetPhysicalIds,
+	expandSearchTreeNodes,
+	mergeSearchTreeNodes,
+	rowContainsFindKeyword,
+	scrollToFindResult,
+	setFindResults
+} = useFindInStructure(
+	currentPhysicalId,
+	findKeyword,
+	findLoading,
+	findActiveKeyword,
+	findMatchedRowIds,
+	findCurrentIndex,
+	childrenData,
+	flattenChildrenData,
+	selectedChildrenRows,
+	tableRef,
+	expandApi,
+	baseInfoStore
+);
+
 // 加载子节点（树形展开）
 const loadChildren = async (row: TreeNode, treeNode: any, resolve: (data: TreeNode[]) => void) => {
 	console.log(
@@ -6355,7 +5980,7 @@ const applyTreeReorderToSourceChildren = (sourceChildren: TreeNode[], reorderedP
 const getTreeReorderFailureMessage = (response: { status?: string; messages?: string[] }) => {
 	if (String(response.status).toLowerCase() !== 'failure' && !response.messages?.length) return '';
 	return (response.messages || [])
-		.map(message => (message.startsWith('ERR_') ? getCatflNlsMessage(message) : message))
+		.map(message => (message.startsWith('ERR_') ? getCatflMessage(message) : message))
 		.join('\n')
 		.replace(/<br>/g, '\n');
 };
@@ -6474,305 +6099,6 @@ const reloadAndExpandRow = async (row: TreeNode) => {
 	}
 };
 
-// ============================================================
-// 展开菜单功能（独立方法，不混合原有逻辑）
-// ============================================================
-
-/**
- * 处理展开菜单命令
- * 独立方法，不混合原有 reloadAndExpandRow 逻辑
- */
-const handleExpandMenuCommand = async (command: string) => {
-	if (isFlatStructureView.value) return;
-	console.log('[PartDetailView] 展开菜单命令:', command);
-	expandMenuActive.value = true;
-
-	try {
-		switch (command) {
-			case 'expand':
-				await handleExpandSelected();
-				break;
-			case 'expandAll':
-				await handleExpandAll();
-				break;
-			case 'expandN':
-				expandNDialogVisible.value = true;
-				break;
-			case 'collapseAll':
-				await handleCollapseAll();
-				break;
-		}
-	} catch (error) {
-		console.error('[PartDetailView] 展开菜单命令执行失败:', error);
-		ElMessage.error('展开操作失败');
-	}
-};
-
-/**
- * 处理结构视图菜单命令
- */
-const handleStructureViewCommand = async (command: string) => {
-	console.log('[PartDetailView] 结构视图命令:', command);
-	structureViewActive.value = true;
-
-	switch (command) {
-		case 'indented':
-			structureViewMode.value = 'indented';
-			await refreshCurrentStructureView();
-			break;
-		case 'flat':
-			structureViewMode.value = 'flat';
-			await refreshCurrentStructureView();
-			break;
-		case 'leaf':
-			structureViewMode.value = 'leaf';
-			await refreshCurrentStructureView();
-			break;
-		case 'material':
-			structureViewMode.value = 'material';
-			await refreshCurrentStructureView();
-			break;
-		case 'usage':
-			structureUsageView.value = 'usage';
-			await refreshCurrentStructureView();
-			break;
-		case 'reference':
-			structureUsageView.value = 'reference';
-			await refreshCurrentStructureView();
-			break;
-		case 'manufacturableOnly':
-			await handleManufacturableToggle();
-			break;
-	}
-};
-
-const refreshCurrentStructureView = async () => {
-	if (structureManufacturableOnly.value) {
-		await handleManufacturableView();
-		return;
-	}
-	if (structureViewMode.value === 'flat') {
-		await handleFlatStructureView();
-		return;
-	}
-	await handleIndentedStructureView();
-};
-
-const handleManufacturableToggle = async () => {
-	const nextValue = !structureManufacturableOnly.value;
-	if (nextValue && queryModeStore.isDbMode) {
-		try {
-			await ElMessageBox.confirm(
-				'可制造/可采购视图 仅在索引模式下可用。您的数据可能未反映最新的修改。\n\n是否要切换到索引模式？',
-				'可制造/可采购视图',
-				{
-					confirmButtonText: '确定',
-					cancelButtonText: '取消',
-					type: 'warning'
-				}
-			);
-		} catch {
-			return;
-		}
-		queryModeStore.switchToIndexMode();
-	}
-	structureManufacturableOnly.value = nextValue;
-	if (structureManufacturableOnly.value) {
-		await handleManufacturableView();
-		return;
-	}
-	await refreshCurrentStructureView();
-};
-
-const handleManufacturableView = async () => {
-	const rootPhysicalId = currentPhysicalId.value;
-	if (!rootPhysicalId) {
-		ElMessage.warning('当前没有加载零件');
-		return;
-	}
-	childrenLoading.value = true;
-	try {
-		selectedChildrenRows.value = [];
-		expandingRowIds.value = new Set();
-		const params = expandApi.buildExpandRequestParams(rootPhysicalId, null, 10);
-		const response = await expandApi.expandWithParams(params);
-		let treeData = expandApi.parseExpandDataRecursive(response, rootPhysicalId, [rootPhysicalId]);
-		if (structureUsageView.value === 'reference') {
-			treeData = expandApi.parseReferenceExpandDataRecursive(response, rootPhysicalId, [rootPhysicalId]);
-		}
-		childrenData.value = filterManufacturableTree(treeData);
-		ElMessage.success('已切换到可制造/可采购视图');
-	} catch (error) {
-		console.error('[PartDetailView] 切换可制造/可采购视图失败:', error);
-		ElMessage.error('切换可制造/可采购视图失败');
-	} finally {
-		childrenLoading.value = false;
-	}
-};
-
-const handleIndentedStructureView = async () => {
-	const rootPhysicalId = currentPhysicalId.value;
-	if (!rootPhysicalId) {
-		ElMessage.warning('当前没有加载零件');
-		return;
-	}
-
-	selectedChildrenRows.value = [];
-	expandingRowIds.value = new Set();
-	if (queryModeStore.isDbMode) {
-		await loadPartDetail(rootPhysicalId);
-		return;
-	}
-	await loadExpandData(rootPhysicalId);
-	ElMessage.success('已切换到缩进的产品结构视图');
-};
-
-const handleFlatStructureView = async () => {
-	const rootPhysicalId = currentPhysicalId.value;
-	if (!rootPhysicalId) {
-		ElMessage.warning('当前没有加载零件');
-		return;
-	}
-
-	childrenLoading.value = true;
-	try {
-		structureViewMode.value = 'flat';
-		selectedChildrenRows.value = [];
-		expandingRowIds.value = new Set();
-		const response = await expandApi.getFlatExpandData(rootPhysicalId);
-		let treeData = expandApi.parseFlatExpandData(response, rootPhysicalId);
-		if (structureUsageView.value === 'reference') {
-			treeData = expandApi.parseReferenceExpandData(response, rootPhysicalId);
-		}
-		childrenData.value = filterManufacturableRows(treeData);
-		ElMessage.success('已切换到扁平产品结构视图');
-	} catch (error) {
-		console.error('[PartDetailView] 切换扁平产品结构视图失败:', error);
-		ElMessage.error('切换扁平产品结构视图失败');
-	} finally {
-		childrenLoading.value = false;
-	}
-};
-
-/**
- * 处理展开选中行
- * 独立方法，不混合原有 reloadAndExpandRow 逻辑
- */
-const handleExpandSelected = async () => {
-	const rootPhysicalId = currentPhysicalId.value;
-	if (!rootPhysicalId) {
-		ElMessage.warning('当前没有加载零件');
-		return;
-	}
-
-	expandMenuLoading.value = true;
-	try {
-		// 判断是否有勾选的行
-		const hasSelectedRows = selectedChildrenRows.value.length > 0;
-		const selectedRows = hasSelectedRows ? selectedChildrenRows.value : null;
-
-		console.log('[PartDetailView] 展开选中行 - 根节点:', rootPhysicalId, '选中行数:', selectedRows?.length || 0);
-
-		// 构建请求参数
-		const params = expandApi.buildExpandRequestParams(rootPhysicalId, selectedRows, 1);
-
-		// 调用 API
-		const response = await expandApi.expandWithParams(params);
-
-		// 更新表格数据
-		await updateTableDataAfterExpand(response, selectedRows);
-
-		ElMessage.success('展开成功');
-	} catch (error) {
-		console.error('[PartDetailView] 展开选中行失败:', error);
-		ElMessage.error('展开失败');
-	} finally {
-		expandMenuLoading.value = false;
-	}
-};
-
-const buildFindUql = (keyword: string) => {
-	const escapedKeyword = keyword.replace(/"/g, '\\"');
-	return [
-		`ds6w_58_label:*${escapedKeyword}*`,
-		`ds6wg_58_enterpriseextension_46_v_95_partnumber:*${escapedKeyword}*`,
-		`ds6wg_58_revision:*${escapedKeyword}*`,
-		`ds6w_58_islastrevision:*${escapedKeyword}*`,
-		`ds6w_58_status:*${escapedKeyword}*`,
-		`ds6w_58_responsible:*${escapedKeyword}*`,
-		`ds6w_58_type:*${escapedKeyword}*`,
-		`ds6w_58_identifier:*${escapedKeyword}*`
-	].join(' OR ');
-};
-
-const buildFindInStructureParams = (rootPhysicalId: string, keyword: string) => {
-	const uql = buildFindUql(keyword);
-	return {
-		batch: {
-			expands: [
-				{
-					filter: {
-						and: {
-							filters: [
-								{
-									prefix_filter: {
-										prefix_path: [{ physical_id_path: [rootPhysicalId] }]
-									}
-								},
-								{
-									sequence_filter: {
-										sequence: [{ uql }]
-									}
-								}
-							]
-						}
-					},
-					root: { physical_id: rootPhysicalId },
-					graph: {
-						descending_condition_relation: {
-							uql: 'NOT (flattenedtaxonomies:"reltypes/XCADBaseDependency") AND ((flattenedtaxonomies:"reltypes/VPMInstance") OR (flattenedtaxonomies:"reltypes/VPMRepInstance"))'
-						},
-						descending_condition_object: {
-							uql: 'ds6w_58_globaltype:"ds6w:Document" OR ds6w_58_globaltype:"ds6w:Part"'
-						}
-					},
-					aggregation_processors: [{ truncate: { sequence_filter: { sequence: [{ uql }] } } }],
-					label: `FindInCtxFTS-xEngineer-${baseInfoStore.currentUser || 'USER'}-${Date.now()}`,
-					parameters: { limit_max_path: 301 }
-				}
-			]
-		},
-		outputs: {
-			select_object: [
-				'ds6w:label',
-				'ds6w:modified',
-				'ds6w:created',
-				'ds6w:description',
-				'ds6wg:revision',
-				'ds6w:cadMaster',
-				'ds6w:responsible',
-				'owner',
-				'ds6w:status',
-				'ds6w:type',
-				'ds6wg:EnterpriseExtension.V_PartNumber',
-				'type',
-				'physicalid',
-				'ds6w:policy',
-				'ds6w:reservedBy',
-				'ds6w:globalType',
-				'ds6w:manufacturable',
-				'pathsr',
-				'ds6w:isLastRevision',
-				'ds6w:reserved',
-				'ds6w:identifier'
-			],
-			select_relation: ['ds6w:label', 'ds6w:type', 'physicalid', 'ro.plminstance.V_treeorder', 'ds6w:reservedBy'],
-			hits: { predefined_computation: ['icons', 'urlstream|thumbnail_2d|2dthb|allrefs'] },
-			format: 'entity_relation_occurrence'
-		}
-	};
-};
-
 const positionFindPanelByButton = () => {
 	const rect = findButtonRef.value?.getBoundingClientRect();
 	if (!rect) return;
@@ -6810,156 +6136,8 @@ const startFindPanelDrag = (event: MouseEvent) => {
 	document.addEventListener('mouseup', handleMouseUp);
 };
 
-const getPathTargetPhysicalIds = (response: { results?: Array<unknown> }) =>
-	(response.results || [])
-		.filter((item): item is { Path: string[] } => !!item && typeof item === 'object' && Array.isArray((item as { Path?: unknown }).Path))
-		.map(item => item.Path[item.Path.length - 1])
-		.filter((id): id is string => !!id);
-
-const expandSearchTreeNodes = (nodes: TreeNode[]) => {
-	nodes.forEach(node => {
-		if (node.children?.length) {
-			node.isExpanded = true;
-			expandSearchTreeNodes(node.children);
-		}
-	});
-};
-
-const mergeSearchTreeNodes = (currentNodes: TreeNode[], searchNodes: TreeNode[]) => {
-	searchNodes.forEach(searchNode => {
-		const existingNode = currentNodes.find(node => node.id === searchNode.id || node.relationId === searchNode.relationId);
-		if (!existingNode) {
-			currentNodes.push(searchNode);
-			return;
-		}
-		existingNode.hasChildren = existingNode.hasChildren || searchNode.hasChildren;
-		if (searchNode.children?.length) {
-			existingNode.isExpanded = true;
-			mergeSearchTreeNodes(existingNode.children || (existingNode.children = []), searchNode.children);
-		}
-	});
-};
-
-const rowContainsFindKeyword = (row: TreeNode, keyword: string) => {
-	const normalizedKeyword = keyword.toLowerCase();
-	return [row.label, row.instanceLabel].some(value =>
-		String(value || '')
-			.toLowerCase()
-			.includes(normalizedKeyword)
-	);
-};
-
-const scrollToFindResult = async (index: number) => {
-	await nextTick();
-	const rowId = findMatchedRowIds.value[index];
-	const rowIndex = flattenChildrenData.value.findIndex(row => row.id === rowId);
-	if (rowIndex < 0) return;
-	tableRef.value?.scrollToRow?.(rowIndex, 'center');
-};
-
-const setFindResults = async (keyword: string, targetPhysicalIds: string[]) => {
-	findActiveKeyword.value = keyword;
-	await nextTick();
-	findMatchedRowIds.value = flattenChildrenData.value
-		.filter(row => targetPhysicalIds.includes(row.resourceid) || rowContainsFindKeyword(row, keyword))
-		.map(row => row.id);
-	findCurrentIndex.value = findMatchedRowIds.value.length ? 0 : -1;
-	if (findCurrentIndex.value >= 0) {
-		await scrollToFindResult(findCurrentIndex.value);
-	}
-};
-
-const handleFindInStructure = async () => {
-	const keyword = findKeyword.value.trim();
-	const rootPhysicalId = currentPhysicalId.value;
-	if (!keyword) {
-		ElMessage.warning('请输入查找内容');
-		return;
-	}
-	if (!rootPhysicalId) {
-		ElMessage.error('未获取到根节点物理ID');
-		return;
-	}
-
-	findLoading.value = true;
-	try {
-		const response = await expandApi.expandWithParams(buildFindInStructureParams(rootPhysicalId, keyword));
-		const targetPhysicalIds = getPathTargetPhysicalIds(response);
-		if (!response.results?.length || !targetPhysicalIds.length) {
-			findActiveKeyword.value = '';
-			findMatchedRowIds.value = [];
-			findCurrentIndex.value = -1;
-			ElMessage.warning('未找到任何选定对象的匹配项');
-			return;
-		}
-		const searchTreeNodes = expandApi.parseExpandDataRecursive(response, rootPhysicalId, [rootPhysicalId]);
-		expandSearchTreeNodes(searchTreeNodes);
-		mergeSearchTreeNodes(childrenData.value, searchTreeNodes);
-		await setFindResults(keyword, targetPhysicalIds);
-	} catch (error) {
-		console.error('[PartDetailView] 查找失败:', error);
-		ElMessage.error('查找失败');
-	} finally {
-		findLoading.value = false;
-	}
-};
-
-const goToPreviousFindResult = async () => {
-	if (!findMatchedRowIds.value.length) return;
-	findCurrentIndex.value = findCurrentIndex.value <= 0 ? findMatchedRowIds.value.length - 1 : findCurrentIndex.value - 1;
-	await scrollToFindResult(findCurrentIndex.value);
-};
-
-const goToNextFindResult = async () => {
-	if (!findMatchedRowIds.value.length) return;
-	findCurrentIndex.value = findCurrentIndex.value >= findMatchedRowIds.value.length - 1 ? 0 : findCurrentIndex.value + 1;
-	await scrollToFindResult(findCurrentIndex.value);
-};
-
-const selectAllFindResults = () => {
-	if (!findMatchedRowIds.value.length) return;
-	const matchedIds = new Set(findMatchedRowIds.value);
-	selectedChildrenRows.value = flattenChildrenData.value.filter(row => matchedIds.has(row.id));
-};
-
 const closeFindPopover = () => {
 	findPopoverVisible.value = false;
-};
-
-/**
- * 处理全部展开
- * 独立方法，不混合原有 reloadAndExpandRow 逻辑
- * 如果有选中的行，则只展开选中的行；否则展开根节点
- */
-const handleExpandAll = async () => {
-	const rootPhysicalId = currentPhysicalId.value;
-	if (!rootPhysicalId) {
-		ElMessage.warning('当前没有加载零件');
-		return;
-	}
-
-	expandMenuLoading.value = true;
-	try {
-		// 检查是否有选中的行
-		const hasSelectedRows = selectedChildrenRows.value.length > 0;
-		const selectedRows = hasSelectedRows ? selectedChildrenRows.value : null;
-
-		console.log('[PartDetailView] 全部展开 - 根节点:', rootPhysicalId, '选中行数:', selectedRows?.length || 0);
-
-		// 使用较大的层级数实现全部展开效果
-		const params = expandApi.buildExpandRequestParams(rootPhysicalId, selectedRows, 10);
-		const response = await expandApi.expandWithParams(params);
-
-		// 更新表格数据（全部展开）
-		await updateTableDataAfterExpandAll(response, selectedRows);
-
-		ElMessage.success('全部展开成功');
-	} catch (error) {
-		console.error('[PartDetailView] 全部展开失败:', error);
-		ElMessage.error('全部展开失败');
-	} finally {
-		expandMenuLoading.value = false;
-	}
 };
 
 /**
@@ -7000,43 +6178,6 @@ const handleConfirmExpandN = async () => {
 	} finally {
 		expandMenuLoading.value = false;
 	}
-};
-
-/**
- * 处理全部折叠
- * 独立方法，不混合原有逻辑
- */
-const handleCollapseAll = async () => {
-	const selectedRows = [...selectedChildrenRows.value];
-	console.log('[PartDetailView] 全部折叠, 选中行数:', selectedRows.length);
-
-	// 递归折叠节点
-	const collapseNodes = (nodes: TreeNode[]) => {
-		nodes.forEach(node => {
-			node.isExpanded = false;
-			if (node.children?.length) {
-				collapseNodes(node.children);
-			}
-		});
-	};
-
-	if (selectedRows.length > 0) {
-		// 有勾选行时，只折叠勾选行的子结构
-		selectedRows.forEach(row => {
-			row.isExpanded = false;
-			if (row.children?.length) {
-				collapseNodes(row.children);
-			}
-		});
-	} else {
-		// 未勾选时，折叠所有节点
-		collapseNodes(childrenData.value);
-	}
-
-	// 清空展开状态集合
-	expandingRowIds.value = new Set();
-
-	ElMessage.success('折叠成功');
 };
 
 /**
@@ -7623,7 +6764,7 @@ const openLifecycleDeleteCmd = async (targetNodes: any[], onDeleted: () => void 
 	}
 };
 
-const callLifecycleReviseEntry = (ReviseCmd: any, physicalId: string) => {
+const callLifecycleReviseEntry = (ReviseCmd: any, physicalId: string, commandId = 'revise_command') => {
 	const ReviseCmdCtor = ReviseCmd?.default || ReviseCmd;
 	if (typeof ReviseCmdCtor !== 'function') {
 		throw new Error('DS/LifecycleCmd/ReviseCmd 不是可实例化命令类');
@@ -7635,7 +6776,14 @@ const callLifecycleReviseEntry = (ReviseCmd: any, physicalId: string) => {
 	const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
 	const typeDisplayName = pickOpenWithField(partInfo.value, 'typeDisplayName', 'displayType', 'globalType') || '物理产品';
 	const current = pickOpenWithField(partInfo.value, 'ds6w:status', 'status') || '工作中';
-	const currentInternal = current === '工作中' ? 'IN_WORK' : current === '已发布' ? 'RELEASED' : current;
+	const currentInternal =
+		current === '工作中'
+			? 'IN_WORK'
+			: current === '已发布'
+				? 'RELEASED'
+				: String(current).includes('.')
+					? String(current).split('.').pop() || current
+					: current;
 	const policy = pickOpenWithField(partInfo.value, 'ds6w:policy', 'policy') || 'VPLM_SMB_Definition_MajorRev';
 	const cadMaster = pickOpenWithField(partInfo.value, 'ds6w:cadMaster', 'cadMaster') || '3DEXPERIENCE';
 	const imageUrl =
@@ -7737,9 +6885,13 @@ const callLifecycleReviseEntry = (ReviseCmd: any, physicalId: string) => {
 	};
 
 	const reviseCmd = new ReviseCmdCtor({
-		ID: 'revise_command',
+		ID: commandId,
 		context: mockContext
 	});
+
+	reviseCmd._useMerge = true;
+	reviseCmd._useMergeNRF = true;
+	console.log('[TW_EngineeringRelease] 强制启用 CompareCmd 路径: _useMerge=true, _useMergeNRF=true');
 
 	if (typeof reviseCmd.execute !== 'function') {
 		throw new Error('DS/LifecycleCmd/ReviseCmd 实例未暴露 execute 方法');
@@ -7805,7 +6957,8 @@ const patchNewBranchObject = (target: any, source: any) => {
 
 	if (!isValidText(target.name)) target.name = source.name || source.displayName || source.title;
 	if (!isValidText(target.displayName)) target.displayName = source.displayName || source.name || source.title;
-	if (!isValidText(target.typeDisplayName) || target.typeDisplayName === target.type) target.typeDisplayName = source.typeDisplayName || source.displayType;
+	if (!isValidText(target.typeDisplayName) || target.typeDisplayName === target.type)
+		target.typeDisplayName = source.typeDisplayName || source.displayType;
 	if (!isValidText(target.current)) target.current = source.current;
 	if (!isValidText(target.current_internal) || String(target.current_internal).includes('.')) target.current_internal = source.current_internal;
 	if (!isValidText(target.cadMaster)) target.cadMaster = source.cadMaster;
@@ -7820,7 +6973,8 @@ const patchNewBranchObject = (target: any, source: any) => {
 };
 
 const applyNewBranchWidgetPatches = (NewBranchWidget: any, WAFData: any) => {
-	const getSourceById = (objectId: string) => currentNewBranchTargetNodes.find(node => node?.objectId === objectId || node?.physicalid === objectId || node?.physicalId === objectId);
+	const getSourceById = (objectId: string) =>
+		currentNewBranchTargetNodes.find(node => node?.objectId === objectId || node?.physicalid === objectId || node?.physicalId === objectId);
 
 	if (WAFData && typeof WAFData.authenticatedRequest === 'function' && !WAFData.__twPatchNewBranchRequest) {
 		const originalAuthenticatedRequest = WAFData.authenticatedRequest;
@@ -7871,7 +7025,9 @@ const applyNewBranchWidgetPatches = (NewBranchWidget: any, WAFData: any) => {
 			if (Array.isArray(objects) && Array.isArray(sourceNodes)) {
 				objects.forEach((object: any) => {
 					const objectId = object?.objectId || object?.physicalid || object?.physicalId;
-					const source = objectId ? sourceNodes.find((node: any) => node?.objectId === objectId || node?.physicalid === objectId || node?.physicalId === objectId) : null;
+					const source = objectId
+						? sourceNodes.find((node: any) => node?.objectId === objectId || node?.physicalid === objectId || node?.physicalId === objectId)
+						: null;
 					patchNewBranchObject(object, source);
 				});
 			}
@@ -7892,7 +7048,14 @@ const callLifecycleNewBranchEntry = (NewBranchCmd: any, physicalId: string) => {
 	const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
 	const typeDisplayName = pickOpenWithField(partInfo.value, 'typeDisplayName', 'displayType', 'globalType') || '物理产品';
 	const current = pickOpenWithField(partInfo.value, 'ds6w:status', 'status') || '工作中';
-	const currentInternal = current === '工作中' ? 'IN_WORK' : current === '已发布' ? 'RELEASED' : current;
+	const currentInternal =
+		current === '工作中'
+			? 'IN_WORK'
+			: current === '已发布'
+				? 'RELEASED'
+				: String(current).includes('.')
+					? String(current).split('.').pop() || current
+					: current;
 	const policy = pickOpenWithField(partInfo.value, 'ds6w:policy', 'policy') || 'VPLM_SMB_Definition_MajorRev';
 	const cadMaster = pickOpenWithField(partInfo.value, 'ds6w:cadMaster', 'cadMaster') || '3DEXPERIENCE';
 	const imageUrl =
@@ -7988,6 +7151,204 @@ const callLifecycleNewBranchEntry = (NewBranchCmd: any, physicalId: string) => {
 	newBranchCmd.execute();
 };
 
+const openLifecycleDuplicateCmd = async (physicalId: string) => {
+	lifecycleCmdLoading.value = true;
+	try {
+		const topWindow = (window.top || window.parent || window) as any;
+		if (!topWindow.widget) {
+			const { widget } = await import('@widget-lab/3ddashboard-utils');
+			topWindow.widget = widget;
+			(widget as any).body = document.body;
+		} else if (!topWindow.widget.body) {
+			topWindow.widget.body = document.body;
+		}
+		const requireFn = topWindow.require || topWindow.requirejs || (window as any).require || (window as any).requirejs;
+		const [DuplicateCmd, WAFData] = await Promise.all([
+			new Promise<any>((resolve, reject) => {
+				requireFn(
+					['DS/LifecycleCmd/DuplicateCmd'],
+					(module: any) => resolve(module),
+					(error: unknown) => reject(error)
+				);
+			}),
+			new Promise<any>((resolve, reject) => {
+				requireFn(
+					['DS/WAFData/WAFData'],
+					(module: any) => resolve(module),
+					(error: unknown) => reject(error)
+				);
+			})
+		]);
+
+		applyDuplicateRequestPatch(WAFData);
+		callLifecycleDuplicateEntry(DuplicateCmd, physicalId);
+		setTimeout(() => {
+			lifecycleCmdLoading.value = false;
+		}, 1000);
+	} catch (error) {
+		console.error('[TW_EngineeringRelease] 打开 Lifecycle 复制失败:', error);
+		ElMessage.error('打开复制失败');
+		lifecycleCmdLoading.value = false;
+	}
+};
+
+const patchDuplicateObject = (target: any, source: any) => {
+	if (!target || !source) return target;
+	const isValidText = (value: unknown) => {
+		if (value === undefined || value === null || value === '') return false;
+		const text = String(value);
+		return text !== 'undefined' && text !== 'null' && !text.includes('undefined ');
+	};
+	if (!isValidText(target.name)) target.name = source.name || source.displayName || source.title;
+	if (!isValidText(target.displayName)) target.displayName = source.displayName || source.name || source.title;
+	if (!isValidText(target.typeDisplayName) || target.typeDisplayName === target.type)
+		target.typeDisplayName = source.typeDisplayName || source.displayType;
+	if (!isValidText(target.current)) target.current = source.current;
+	if (!isValidText(target.current_internal) || String(target.current_internal).includes('.')) target.current_internal = source.current_internal;
+	if (!target.revision) target.revision = source.revision;
+	if (!target.tenant) target.tenant = source.tenant || 'OnPremise';
+	if (!target.imageUrl) target.imageUrl = source.imageUrl;
+	if (!isValidText(target.cadMaster)) target.cadMaster = source.cadMaster;
+	if (target.locked === undefined || target.locked === null) target.locked = source.locked ?? false;
+	if (target.lockedBy === undefined || target.lockedBy === null) target.lockedBy = source.lockedBy ?? '';
+	if (!target.policy) target.policy = source.policy;
+	if (!target.serviceId) target.serviceId = source.serviceId || '3DSpace';
+	return target;
+};
+
+const applyDuplicateRequestPatch = (WAFData: any) => {
+	if (!WAFData || typeof WAFData.authenticatedRequest !== 'function' || WAFData.__twPatchDuplicateRequest) return;
+	const originalAuthenticatedRequest = WAFData.authenticatedRequest;
+	WAFData.authenticatedRequest = function (url: string, options: any) {
+		const isDuplicateOptionsRequest = url && url.includes('/resources/lifecycle/duplicate/options');
+		if (isDuplicateOptionsRequest && options?.data) {
+			try {
+				const requestData = typeof options.data === 'string' ? JSON.parse(options.data) : options.data;
+				if (Array.isArray(requestData?.data)) {
+					const sourceById = new Map<string, any>();
+					currentDuplicateTargetNodes.forEach(node => {
+						const objectId = node?.objectId || node?.physicalid || node?.physicalId;
+						if (objectId) sourceById.set(objectId, node);
+					});
+					requestData.data = requestData.data.map((item: any) => {
+						const objectId = item?.physicalid || item?.objectId;
+						return patchDuplicateObject({ ...item }, objectId ? sourceById.get(objectId) : null);
+					});
+					options.data = JSON.stringify(requestData);
+					console.log('[TW_EngineeringRelease] 修正后的 duplicate/options 请求:', requestData);
+				}
+			} catch (error) {
+				console.error('[TW_EngineeringRelease] 修正 duplicate/options 请求失败:', error);
+			}
+		}
+		return originalAuthenticatedRequest.call(this, url, options);
+	};
+	WAFData.__twPatchDuplicateRequest = true;
+};
+
+const callLifecycleDuplicateEntry = (DuplicateCmd: any, physicalId: string) => {
+	const DuplicateCmdCtor = DuplicateCmd?.default || DuplicateCmd;
+	if (typeof DuplicateCmdCtor !== 'function') {
+		throw new Error('DS/LifecycleCmd/DuplicateCmd 不是可实例化命令类');
+	}
+	const objectType = pickOpenWithField(partInfo.value, 'ds6w:type', 'type', 'objectType', 'displayType') || 'VPMReference';
+	const objectName = pickOpenWithField(partInfo.value, 'ds6w:label', 'label', 'displayName', 'name', 'title') || physicalId;
+	const revision = pickOpenWithField(partInfo.value, 'ds6wg:revision', 'revision') || '';
+	const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
+	const typeDisplayName = pickOpenWithField(partInfo.value, 'typeDisplayName', 'displayType', 'globalType') || '物理产品';
+	const current = pickOpenWithField(partInfo.value, 'ds6w:status', 'status') || '工作中';
+	const currentInternal =
+		current === '工作中'
+			? 'IN_WORK'
+			: current === '已发布'
+				? 'RELEASED'
+				: String(current).includes('.')
+					? String(current).split('.').pop() || current
+					: current;
+	const policy = pickOpenWithField(partInfo.value, 'ds6w:policy', 'policy') || 'VPLM_SMB_Definition_MajorRev';
+	const cadMaster = pickOpenWithField(partInfo.value, 'ds6w:cadMaster', 'cadMaster') || '3DEXPERIENCE';
+	const imageUrl =
+		pickOpenWithField(partInfo.value, 'type_icon_url', 'icon', 'thumbnail_2d') || '/snresources/images/icons/small/I_VPMNavProduct.png';
+	const targetNode = {
+		'getID': () => physicalId,
+		'id': physicalId,
+		'objectId': physicalId,
+		'physicalid': physicalId,
+		physicalId,
+		'type': objectType,
+		objectType,
+		'displayType': typeDisplayName,
+		'displayName': displayName,
+		'label': displayName,
+		'title': displayName,
+		'name': objectName,
+		'revision': revision,
+		'typeDisplayName': typeDisplayName,
+		'baseType': 'PLMEntity',
+		'current': current,
+		'current_internal': currentInternal,
+		'imageUrl': imageUrl,
+		'tenant': 'OnPremise',
+		'envId': 'OnPremise',
+		'serviceId': '3DSpace',
+		'contextId': baseInfoStore.securityContext || '',
+		'objectTaxonomies': X3D_OBJECT_TAXONOMIES,
+		'_options': {
+			relationid: physicalId
+		},
+		'attributes': {
+			'ds6w:label': displayName,
+			'ds6w:name': objectName,
+			'ds6w:type': objectType,
+			'PLMEntity.V_Name': objectName
+		},
+		'object': {
+			'ds6w:label': displayName,
+			'ds6w:name': objectName,
+			'ds6w:type': objectType,
+			'PLMEntity.V_Name': objectName,
+			'attribute[PLMEntity.V_Name]': objectName,
+			'displayName': displayName,
+			'name': objectName,
+			'label': displayName,
+			'title': displayName,
+			'revision': revision,
+			'current': current,
+			'current_internal': currentInternal,
+			'cadMaster': cadMaster,
+			'typeDisplayName': typeDisplayName
+		},
+		'options': {
+			'ds6w:status': current,
+			'icons': [imageUrl],
+			'ds6w:type': typeDisplayName
+		},
+		'policy': policy,
+		'cadMaster': cadMaster,
+		'locked': false,
+		'lockedBy': null,
+		'type.kindof[PLMReference]': 'TRUE',
+		'popup': true
+	};
+	currentDuplicateTargetNodes = [targetNode];
+	const mockContext = {
+		getSelectedNodes: () => [targetNode],
+		getEditMode: () => false,
+		getPADTreeDocument: () => ({ getXSO: () => ({ onPostAdd: () => {}, onPostRemove: () => {}, onEmpty: () => {}, get: () => [targetNode] }) }),
+		getCurrentFolder: () => '{}',
+		addEvent: () => {},
+		selectedNodes: [targetNode]
+	};
+	const duplicateCmd = new DuplicateCmdCtor({
+		ID: 'duplicate_command',
+		context: mockContext
+	});
+	if (typeof duplicateCmd.execute !== 'function') {
+		throw new Error('DS/LifecycleCmd/DuplicateCmd 实例未暴露 execute 方法');
+	}
+	duplicateCmd.execute();
+};
+
 const openLifecycleReviseCmd = async (physicalId: string) => {
 	lifecycleCmdLoading.value = true;
 	try {
@@ -8067,9 +7428,7 @@ const openLifecycleReviseCmd = async (physicalId: string) => {
 							});
 							options.data = JSON.stringify(requestData);
 							console.log(
-								'[TW_EngineeringRelease] 修正后的 ' +
-									(url.includes('/prepare_revise_checkavailability') ? 'prepare_revise_checkavailability' : 'attributeList') +
-									' 请求:',
+								`[TW_EngineeringRelease] 修正后的 ${url.includes('/prepare_revise_checkavailability') ? 'prepare_revise_checkavailability' : 'attributeList'} 请求:`,
 								requestData
 							);
 						}
@@ -8119,9 +7478,7 @@ const openLifecycleReviseCmd = async (physicalId: string) => {
 								if (!result.options['ds6w:type']) result.options['ds6w:type'] = source.typeDisplayName || source.displayType;
 							});
 							console.log(
-								'[TW_EngineeringRelease] 修正后的 ' +
-									(url.includes('/prepare_revise_checkavailability') ? 'prepare_revise_checkavailability' : 'attributeList') +
-									' 响应:',
+								`[TW_EngineeringRelease] 修正后的 ${url.includes('/prepare_revise_checkavailability') ? 'prepare_revise_checkavailability' : 'attributeList'} 响应:`,
 								response.results
 							);
 						}
@@ -8261,416 +7618,24 @@ const openLifecycleReviseCmd = async (physicalId: string) => {
 	}
 };
 
-const handleHeaderActionCommand = async (command: string) => {
-	console.log('[TW_EngineeringRelease] header action command:', command);
-	if (command === 'delete') {
-		const physicalId = getParentPhysicalId();
-		console.log('[TW_EngineeringRelease] delete 点击，当前物理ID:', physicalId);
-		if (!physicalId) {
-			console.warn('[TW_EngineeringRelease] delete 点击失败：未找到当前对象物理ID');
-			ElMessage.warning('未找到当前对象物理ID');
-			return;
-		}
-		await executeDeleteTargets([buildLifecycleTargetNodeFromPartInfo(physicalId)], async () => {
-			ElMessage.success('删除成功');
-			await router.push('/');
-		});
-		return;
-	}
-	if (command === 'compare') {
-		handleRootOpenWith('compare');
-		return;
-	}
-	if (command === 'relationship') {
-		handleRootOpenWith('relationship');
-		return;
-	}
-	if (command === 'lock') {
-		const physicalId = getParentPhysicalId();
-		if (!physicalId) {
-			ElMessage.warning('未找到当前对象物理ID');
-			return;
-		}
-		try {
-			await partDetailApi.reserveOrUnreserve({
-				operation: 'reserve',
-				urls: [`model/bus/${physicalId}`],
-				isMultiSel: false
-			});
-			ElMessage.success('锁定成功');
-			await loadPartDetail(physicalId);
-		} catch (error) {
-			console.error('[PartDetailView] 锁定失败:', error);
-			ElMessage.error('锁定失败');
-		}
-		return;
-	}
-	if (command === 'unlock') {
-		const physicalId = getParentPhysicalId();
-		if (!physicalId) {
-			ElMessage.warning('未找到当前对象物理ID');
-			return;
-		}
-		try {
-			await partDetailApi.reserveOrUnreserve({
-				operation: 'unreserve',
-				urls: [`model/bus/${physicalId}`],
-				isMultiSel: false
-			});
-			ElMessage.success('解锁成功');
-			await loadPartDetail(physicalId);
-		} catch (error) {
-			console.error('[PartDetailView] 解锁失败:', error);
-			ElMessage.error('解锁失败');
-		}
-		return;
-	}
-	if (command === 'revision') {
-		const physicalId = getParentPhysicalId();
-		console.log('[TW_EngineeringRelease] revision 点击，当前物理ID:', physicalId);
-		if (!physicalId) {
-			console.warn('[TW_EngineeringRelease] revision 点击失败：未找到当前对象物理ID');
-			ElMessage.warning('未找到当前对象物理ID');
-			return;
-		}
-		await openLifecycleHistoryCmd(physicalId);
-		return;
-	}
-	if (command === 'newRevision') {
-		console.log('[TW_EngineeringRelease] newRevision 检查选中行数量:', selectedChildrenRows.value.length);
-		console.log('[TW_EngineeringRelease] newRevision selectedChildrenRows:', JSON.stringify(selectedChildrenRows.value.slice(0, 2), null, 2));
-		if (selectedChildrenRows.value.length > 0) {
-			await handleSelectedRowNewRevision();
-			return;
-		}
-		const physicalId = getParentPhysicalId();
-		console.log('[TW_EngineeringRelease] newRevision 点击，当前物理ID:', physicalId);
-		if (!physicalId) {
-			console.warn('[TW_EngineeringRelease] newRevision 点击失败：未找到当前对象物理ID');
-			ElMessage.warning('未找到当前对象物理ID');
-			return;
-		}
-		await openLifecycleReviseCmd(physicalId);
-		return;
-	}
-	if (command === 'newBranch') {
-		const physicalId = getParentPhysicalId();
-		console.log('[TW_EngineeringRelease] newBranch 点击，当前物理ID:', physicalId);
-		if (!physicalId) {
-			console.warn('[TW_EngineeringRelease] newBranch 点击失败：未找到当前对象物理ID');
-			ElMessage.warning('未找到当前对象物理ID');
-			return;
-		}
-		await openLifecycleNewBranchCmd(physicalId);
-		return;
-	}
-	if (command === 'updateRevisionAll') {
-		await handleUpdateEntireStructureRevision();
-		return;
-	}
-	if (command === 'updateRevision') {
-		updateRevisionDialogVisible.value = true;
-		return;
-	}
-	console.log('[PartDetailView] header action command:', command);
-};
-
-const getCatflNlsMessage = (key: string) => {
-	const language = localStorage.getItem('language') || navigator.language || '';
-	const messages = language.toLowerCase().startsWith('en') ? catflNlsEn : catflNlsZh;
-	return (messages as Record<string, string>)[key] || key;
-};
-
-const getReplaceFailureMessage = (response: { status?: string; results?: Array<{ status?: string; oldName?: string; messages?: string[] }> }) => {
-	const failedResults = (response.results || []).filter(result => String(result.status).toLowerCase() === 'failure');
-	if (String(response.status).toLowerCase() !== 'failure' && !failedResults.length) return '';
-	return failedResults
-		.map(result => {
-			const errorCode = result.messages?.find(message => /^ERR_/.test(message));
-			const message = errorCode ? getCatflNlsMessage(errorCode).replace(/<br>/g, '\n') : result.messages?.join('\n') || '替换失败';
-			return `${result.oldName || ''}: ${message}`.trim();
-		})
-		.join('\n');
-};
-
-const showReplaceFailureMessage = (message: string) => {
-	ElMessage({
-		type: 'error',
-		dangerouslyUseHTMLString: true,
-		duration: 12000,
-		showClose: true,
-		message: message
-			.split('\n')
-			.filter(Boolean)
-			.map(line => `<div>${line}</div>`)
-			.join('')
-	});
-};
-
-const OPEN_WITH_APP_ID: Record<string, string> = {
-	'3D Markup': 'ENOR3D_AP',
-	'3D Navigate': 'ENXDISC_AP',
-	'3DPlay': 'X3DPLAW_AP',
-	'Collaborative Lifecycle': 'ENOLCMI_AP',
-	'compare': 'ENOCOMP_AP',
-	'relationship': 'ENORIPE_AP'
-};
-
-const X3D_OBJECT_TAXONOMIES = [
-	'PLMEntity',
-	'PLMReference',
-	'PLMCoreReference',
-	'LPAbstractReference',
-	'PHYSICALAbstractReference',
-	'VPMReference',
-	'3DPart',
-	'XCADExtension',
-	'CN_PartInfo'
-];
-
-const pickOpenWithField = (row: any, ...keys: string[]): string => {
-	for (const key of keys) {
-		const value = row?.[key];
-		if (value !== undefined && value !== null && value !== '') return String(value);
-	}
-	return '';
-};
-
-const buildOpenWithPayload = (row: any) => {
-	const objectId = pickOpenWithField(row, 'resourceid', 'physicalid', 'physicalId', 'id', 'objectId', 'ds6w:identifier');
-	const objectType = pickOpenWithField(row, 'ds6w:type', 'type', 'objectType', 'displayType') || 'VPMReference';
-	const displayName = pickOpenWithField(row, 'ds6w:label', 'label', 'displayName', 'name', 'title') || objectId;
-
-	return {
-		protocol: '3DXContent',
-		version: '2.0',
-		source: 'X3DSEAR_AP',
-		widgetId: '',
-		data: {
-			items: [
-				{
-					objectId,
-					objectType,
-					envId: 'OnPremise',
-					serviceId: '3DSpace',
-					displayName,
-					displayType: objectType,
-					contextId: baseInfoStore.securityContext || '',
-					objectTaxonomies: X3D_OBJECT_TAXONOMIES
-				}
-			]
-		}
-	};
-};
-
-const openWithHashJump = (appName: string, row: any) => {
-	const appId = OPEN_WITH_APP_ID[appName];
-	if (!appId) {
-		ElMessage.warning(`未知的打开方式：${appName}`);
-		return;
-	}
-	const objectId = pickOpenWithField(row, 'resourceid', 'physicalid', 'physicalId', 'id', 'objectId', 'ds6w:identifier');
-	if (!objectId) {
-		ElMessage.error('无法获取对象 physicalid');
-		return;
-	}
-
-	const encoded = encodeURIComponent(JSON.stringify(buildOpenWithPayload(row)));
-	const hashSuffix = `/app:${appId}/content:X3DContentId=${encoded}`;
-	try {
-		const topWindow: any = window.top || window.parent || window;
-		const currentHash = topWindow.location.hash || '';
-		const baseHash = currentHash.replace(/\/app:[^/]+(?:\/content:[^]*)?$/, '');
-		topWindow.location.hash = (baseHash || '#/tabId:New%20Tab') + hashSuffix;
-	} catch {
-		(window.top || window).location.href = `${window.location.origin}/3ddashboard/#/tabId:New%20Tab${hashSuffix}`;
-	}
-};
-
-const openWithHashJumpForCompare = (row1: any, row2: any) => {
-	const appId = OPEN_WITH_APP_ID['compare'];
-	if (!appId) {
-		ElMessage.warning('未知的打开方式：compare');
-		return;
-	}
-	const objectId1 = pickOpenWithField(row1, 'resourceid', 'physicalid', 'physicalId', 'id', 'objectId', 'ds6w:identifier');
-	const objectId2 = pickOpenWithField(row2, 'resourceid', 'physicalid', 'physicalId', 'id', 'objectId', 'ds6w:identifier');
-	if (!objectId1 || !objectId2) {
-		ElMessage.error('无法获取对象 physicalid');
-		return;
-	}
-
-	const payload1 = buildOpenWithPayload(row1);
-	const payload2 = buildOpenWithPayload(row2);
-	const combinedPayload = {
-		...payload1,
-		data: {
-			items: [...payload1.data.items, ...payload2.data.items]
-		}
-	};
-
-	const encoded = encodeURIComponent(JSON.stringify(combinedPayload));
-	const hashSuffix = `/app:${appId}/content:X3DContentId=${encoded}`;
-	try {
-		const topWindow: any = window.top || window.parent || window;
-		const currentHash = topWindow.location.hash || '';
-		const baseHash = currentHash.replace(/\/app:[^/]+(?:\/content:[^]*)?$/, '');
-		topWindow.location.hash = (baseHash || '#/tabId:New%20Tab') + hashSuffix;
-	} catch {
-		(window.top || window).location.href = `${window.location.origin}/3ddashboard/#/tabId:New%20Tab${hashSuffix}`;
-	}
-};
-
-const openNativeCompass = (row: any) => {
-	const objectId = pickOpenWithField(row, 'resourceid', 'physicalid', 'physicalId', 'id', 'objectId', 'ds6w:identifier');
-	if (!objectId) {
-		ElMessage.error('无法获取对象 physicalid');
-		return;
-	}
-
-	try {
-		const topWindow: any = window.top || window.parent || window;
-		const ctx = topWindow.requirejs?.s?.contexts?._ || topWindow.require?.s?.contexts?._;
-		const X3DContent = ctx?.defined?.['DS/i3DXCompass/X3DContent'];
-		const CompassManager = ctx?.defined?.['DS/Dashboard/CompassManager'];
-		if (X3DContent?.setX3DContent) X3DContent.setX3DContent(buildOpenWithPayload(row));
-		if (CompassManager?.open) CompassManager.open();
-		else topWindow.document.querySelector('.compass-small')?.click();
-	} catch (error) {
-		console.warn('[PartDetailView] 打开更多应用程序失败:', error);
-		ElMessage.warning('打开更多应用程序失败，请在 3DDashboard 中重试');
-	}
-};
-
-const handleOpenWith = (appName: string, row: any) => {
-	if (appName === 'more') openNativeCompass(row);
-	else openWithHashJump(appName, row);
-	document.body.click();
-};
-
-const buildRootOpenWithRow = () => ({
-	...partInfo.value,
-	resourceid: currentPhysicalId.value || (partInfo.value as any)?.physicalid || partInfo.value?.['ds6w:identifier'],
-	physicalid: currentPhysicalId.value || (partInfo.value as any)?.physicalid || partInfo.value?.['ds6w:identifier']
-});
-
-const handleRootOpenWith = (appName: string) => {
-	if (!partInfo.value || !currentPhysicalId.value) {
-		ElMessage.error('未获取到当前零件信息');
-		return;
-	}
-	handleOpenWith(appName, buildRootOpenWithRow());
-};
-
-const handleSelectedOpenWith = (appName: string) => {
-	const selectedRow = selectedChildrenRows.value[0];
-	if (!selectedRow) {
-		ElMessage.warning('请先选择一个对象');
-		return;
-	}
-	handleOpenWith(appName, selectedRow);
-};
-
-const handleSelectedCompare = () => {
-	const count = selectedChildrenRows.value.length;
-	if (count === 0) {
-		ElMessage.warning('请先选择对象');
-		return;
-	}
-	if (count === 1) {
-		handleSelectedOpenWith('compare');
-		return;
-	}
-	if (count === 2) {
-		const row1 = selectedChildrenRows.value[0];
-		const row2 = selectedChildrenRows.value[1];
-		openWithHashJumpForCompare(row1, row2);
-		return;
-	}
-	ElMessage.warning('比较功能仅支持选择1或2个对象');
-};
-
-const handleUpdateRevisionConfirm = async (operations: UpdateRevisionOperation[]) => {
-	try {
-		updateRevisionSubmitting.value = true;
-		const reportMessages: string[] = [];
-		const newRevisionOps = operations.filter(op => op.action === 'newRevision');
-		const replaceNewRevisionOps = operations.filter(op => op.action === 'replaceNewRevision');
-		const replaceOps = operations.filter(op => op.action === 'replace');
-
-		// 1. 批量新建修订版（newRevision + replaceNewRevision 合并一个请求）
-		const allAddOps = [...newRevisionOps, ...replaceNewRevisionOps];
-		let addResults: Array<{ copyId: string; id?: string; revision?: string; code?: string; status?: string; [key: string]: unknown }> = [];
-		if (allAddOps.length) {
-			const addIds = allAddOps.map(op => op.physicalId);
-			const addResp = await partDetailApi.addVersions(addIds);
-			console.log('[PartDetailView] 批量新建修订版响应:', addResp);
-			addResults = addResp.addRequests || [];
-			for (const op of allAddOps) {
-				const addResult = addResults.find(r => r.copyId === op.physicalId);
-				const newRevision = addResult?.revision || addResult?.code || op.newName.split(' ').pop() || '';
-				const label = op.oldName.split(' ')[0] || '';
-				reportMessages.push(`已成功从 ${op.oldName} 创建新修订版 ${label} ${newRevision}。`);
-			}
-		}
-
-		// 2. 批量替换（replaceNewRevision 用 addResult.id + 普通 replace 合并一个请求）
-		const allReplaceParams: Array<{ hasParent: string; instance: string; isInstanceOf: string; oldName: string; newName: string }> = [];
-		for (const op of replaceNewRevisionOps) {
-			const addResult = addResults.find(r => r.copyId === op.physicalId);
-			console.log('[PartDetailView] 替换为新修订版匹配:', op.physicalId, addResult);
-			if (addResult?.id) {
-				allReplaceParams.push({
-					hasParent: op.hasParent,
-					instance: op.instance,
-					isInstanceOf: addResult.id,
-					oldName: op.oldName,
-					newName: op.newName
-				});
-			}
-		}
-		for (const op of replaceOps) {
-			allReplaceParams.push({
-				hasParent: op.hasParent,
-				instance: op.instance,
-				isInstanceOf: op.isInstanceOf,
-				oldName: op.oldName,
-				newName: op.newName
-			});
-		}
-		if (allReplaceParams.length) {
-			const replaceResp = await partDetailApi.replaceByLatestRevision(allReplaceParams);
-			console.log('[PartDetailView] 批量替换修订版响应:', replaceResp);
-			const failureMessage = getReplaceFailureMessage(replaceResp);
-			if (failureMessage) {
-				showReplaceFailureMessage(failureMessage);
-				const detailError = new Error(failureMessage) as Error & { detailShown?: boolean };
-				detailError.detailShown = true;
-				throw detailError;
-			}
-			for (const op of allReplaceParams) {
-				reportMessages.push(`成功将 ${op.oldName} 替换为 ${op.newName}。`);
-			}
-		}
-
-		replaceReportTitle.value = '更新修订版报告';
-		replaceLatestReportMessages.value = reportMessages;
-		updateRevisionDialogVisible.value = false;
-		replaceLatestReportVisible.value = true;
-		selectedChildrenRows.value = [];
-		queryModeStore.switchToDbMode();
-		if (currentPhysicalId.value) {
-			await loadPartDetail(currentPhysicalId.value);
-		}
-	} catch (error) {
-		console.error('[PartDetailView] 更新修订版失败:', error);
-		if (!(error as Error & { detailShown?: boolean })?.detailShown) {
-			ElMessage.error('更新修订版失败');
-		}
-	} finally {
-		updateRevisionSubmitting.value = false;
-	}
-};
+const { handleHeaderActionCommand } = useHeaderActions(
+	selectedChildrenRows,
+	updateRevisionDialogVisible,
+	getParentPhysicalId,
+	executeDeleteTargets,
+	buildLifecycleTargetNodeFromPartInfo,
+	handleRootOpenWith,
+	partDetailApi,
+	loadPartDetail,
+	openLifecycleHistoryCmd,
+	handleSelectedRowNewRevision,
+	openLifecycleReviseCmd,
+	openLifecycleNewBranchCmd,
+	openLifecycleReviseFromCmd,
+	openLifecycleDuplicateCmd,
+	handleUpdateEntireStructureRevision,
+	router
+);
 
 // 切换查询模式
 const handleModeSwitch = () => {
@@ -9099,2275 +8064,5 @@ onUnmounted(() => {
 });
 </script>
 
-<style lang="scss" scoped>
-.part-detail-container {
-	height: 100vh;
-	display: flex;
-	flex-direction: column;
-	background-color: #f5f7fa;
-
-	// 右上角控制区：模式切换 + 折叠箭头
-	.top-right-controls {
-		position: absolute;
-		top: 2px;
-		right: 8px;
-		z-index: 10;
-		display: flex;
-		align-items: center;
-		gap: 6px;
-
-		.panel-toggle {
-			width: 24px;
-			height: 24px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			cursor: pointer;
-		}
-
-		.mode-switch-container {
-			display: flex;
-			align-items: center;
-			gap: 2px;
-
-			.header-action-dropdown-btn,
-			.mode-icon-btn {
-				font-size: 14px;
-				color: #777;
-				background-color: transparent;
-				border-color: transparent;
-				padding: 4px;
-
-				&:hover {
-					background-color: #f0f0f0;
-				}
-			}
-
-			.header-action-dropdown-btn {
-				width: 18px;
-				height: 24px;
-				padding: 4px 2px;
-			}
-		}
-
-		.detail-placeholder-btn {
-			display: flex;
-			align-items: center;
-
-			.info-icon-btn {
-				font-size: 14px;
-				color: #777;
-				background-color: transparent;
-				border-color: transparent;
-				padding: 4px;
-
-				&:hover {
-					color: #409eff;
-					background-color: #ecf5ff;
-					border-color: #d9ecff;
-				}
-			}
-		}
-	}
-
-	.triangle-up {
-		width: 0;
-		height: 0;
-		border-left: 9px solid transparent;
-		border-right: 9px solid transparent;
-		border-bottom: 14px solid #6b7280;
-	}
-
-	.triangle-down {
-		width: 0;
-		height: 0;
-		border-left: 9px solid transparent;
-		border-right: 9px solid transparent;
-		border-top: 14px solid #6b7280;
-	}
-
-	.part-info-panel {
-		flex: 0 0 auto;
-		display: flex;
-		position: relative;
-		padding: 0 16px 6px;
-		background-color: #fff;
-		margin: 0 16px 0;
-		border-radius: 8px;
-		box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-		transition: all 0.3s;
-
-		&.drag-over {
-			background-color: #ecf5ff;
-			border: 2px dashed #409eff;
-		}
-
-		// 信息区域容器（占70%）
-		.info-container {
-			display: flex;
-			gap: 20px;
-			flex: 1 1 auto;
-			min-width: 0;
-			padding-right: 96px;
-			flex-wrap: nowrap;
-			align-content: flex-start;
-			align-items: flex-start;
-			padding-top: 0;
-
-			.part-column {
-				display: flex;
-				flex-direction: column;
-				min-width: 0;
-			}
-
-			.first-column {
-				flex: 0 0 150px;
-				flex-shrink: 0;
-				align-items: center;
-				flex-direction: row;
-				gap: 8px;
-
-				.back-icon,
-				.previous-part-icon {
-					font-size: 22px;
-					color: #c0c4cc;
-					cursor: pointer;
-					flex-shrink: 0;
-
-					&:hover {
-						color: #409eff;
-					}
-				}
-
-				.thumbnail-container {
-					width: 96px;
-					height: 76px;
-					background-color: #f5f7fa;
-					border-radius: 8px;
-					overflow: hidden;
-					display: flex;
-					align-items: center;
-					justify-content: center;
-
-					img {
-						width: 100%;
-						height: 100%;
-						object-fit: contain;
-					}
-				}
-			}
-
-			.second-column {
-				flex: 1 1 220px;
-				gap: 4px;
-				min-width: 0;
-
-				.title-row {
-					display: flex;
-					align-items: center;
-					gap: 8px;
-					margin-bottom: 6px;
-
-					.title-text {
-						font-size: 16px;
-						font-weight: bold;
-						color: #303133;
-						overflow: hidden;
-						text-overflow: ellipsis;
-						white-space: nowrap;
-					}
-
-					.revision-text {
-						font-size: 14px;
-						color: #409eff;
-						font-weight: 500;
-					}
-				}
-
-				.info-row {
-					display: flex;
-					align-items: center;
-					gap: 8px;
-					height: 22px;
-
-					.info-label {
-						color: #909399;
-						font-size: 13px;
-						min-width: 90px;
-						flex-shrink: 0;
-					}
-
-					.info-value {
-						color: #303133;
-						font-size: 13px;
-						font-weight: 500;
-						min-width: 0;
-						overflow: hidden;
-						text-overflow: ellipsis;
-						white-space: nowrap;
-					}
-
-					.dropdown-icon {
-						color: #909399;
-						font-size: 12px;
-						cursor: pointer;
-					}
-				}
-			}
-
-			.third-column {
-				flex: 1 1 170px;
-				gap: 4px;
-				padding-top: 24px;
-				min-width: 0;
-
-				.info-row {
-					display: flex;
-					align-items: center;
-					gap: 8px;
-					height: 22px;
-
-					.info-label {
-						color: #909399;
-						font-size: 13px;
-						min-width: 60px;
-						flex-shrink: 0;
-					}
-
-					.info-value {
-						color: #303133;
-						font-size: 13px;
-						font-weight: 500;
-						min-width: 0;
-						overflow: hidden;
-						text-overflow: ellipsis;
-						white-space: nowrap;
-					}
-				}
-			}
-
-			.fourth-column {
-				flex: 1 1 180px;
-				min-width: 0;
-				padding-left: 16px;
-				border-left: 1px solid #e4e7ed;
-
-				.description-label {
-					color: #909399;
-					font-size: 13px;
-					overflow: hidden;
-					text-overflow: ellipsis;
-					white-space: nowrap;
-				}
-			}
-		}
-
-		// 预留区域（占30%）
-		.reserved-area {
-			flex: 0 0 0;
-			width: 0;
-			display: flex;
-			justify-content: flex-end;
-			align-items: flex-start;
-
-			.collapse-controls {
-				display: flex;
-				gap: 8px;
-			}
-		}
-
-		.summary-bar {
-			display: flex;
-			align-items: center;
-			gap: 10px;
-			width: 100%;
-			min-width: 0;
-			padding-right: 108px;
-			box-sizing: border-box;
-			font-size: 14px;
-			color: #303133;
-		}
-
-		.summary-home-icon,
-		.summary-previous-icon {
-			flex: 0 0 auto;
-			color: #b8bec6;
-			font-size: 18px;
-			cursor: pointer;
-
-			&:hover {
-				color: #409eff;
-			}
-		}
-
-		.summary-thumbnail {
-			flex: 0 0 auto;
-			width: 38px;
-			height: 28.5px;
-			object-fit: contain;
-		}
-
-		.summary-main {
-			display: inline-flex;
-			flex: 0 1 auto;
-			align-items: center;
-			gap: 4px;
-			min-width: 90px;
-			max-width: 220px;
-			overflow: hidden;
-		}
-
-		.summary-title {
-			overflow: hidden;
-			color: #303133;
-			font-weight: 600;
-			text-overflow: ellipsis;
-			white-space: nowrap;
-		}
-
-		.summary-field {
-			display: inline-flex;
-			flex: 0 1 auto;
-			align-items: center;
-			gap: 2px;
-			min-width: 0;
-			white-space: nowrap;
-		}
-
-		.summary-label {
-			flex: 0 0 auto;
-			color: #606266;
-		}
-
-		.summary-value {
-			max-width: 120px;
-			overflow: hidden;
-			color: #303133;
-			text-overflow: ellipsis;
-			white-space: nowrap;
-		}
-
-		.summary-dropdown-icon {
-			color: #909399;
-			font-size: 13px;
-		}
-
-		@media (max-width: 1200px) {
-			flex-basis: auto;
-			min-height: 116px;
-
-			.info-container {
-				flex-wrap: nowrap;
-				gap: 12px;
-				padding-right: 88px;
-			}
-
-			.info-container .first-column {
-				flex-basis: 116px;
-
-				.thumbnail-container {
-					width: 84px;
-					height: 72px;
-				}
-			}
-
-			.info-container .second-column {
-				flex: 1 1 auto;
-				min-width: 0;
-			}
-
-			.info-container .third-column,
-			.info-container .fourth-column,
-			.reserved-area {
-				display: none;
-			}
-		}
-
-		@media (max-width: 640px) {
-			padding: 10px 12px;
-
-			.info-container {
-				padding-right: 76px;
-			}
-
-			.info-container .first-column {
-				flex-basis: 96px;
-				gap: 6px;
-
-				.thumbnail-container {
-					width: 68px;
-					height: 60px;
-				}
-			}
-
-			.info-container .second-column .info-label {
-				min-width: 76px;
-			}
-		}
-
-		.summary-revision {
-			color: #409eff;
-		}
-
-		&.collapsed {
-			flex: 0 0 auto;
-			min-height: 48px;
-			padding: 8px 16px;
-		}
-	}
-
-	.children-section {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		min-height: 0;
-		margin: 0 16px 16px;
-		padding: 16px;
-		background-color: #fff;
-		border-radius: 8px;
-		box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-		overflow: hidden;
-
-		&.drag-over {
-			background-color: #ecf5ff;
-			border: 2px dashed #409eff;
-		}
-
-		.section-header {
-			flex: 0 0 auto;
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			margin-bottom: 16px;
-
-			.header-left {
-				display: flex;
-				align-items: center;
-				gap: 8px;
-
-				.section-title {
-					font-size: 14px;
-					font-weight: 600;
-					color: #303133;
-				}
-
-				.data-count {
-					font-size: 13px;
-					color: #909399;
-				}
-			}
-
-			.toolbar {
-				display: flex;
-				align-items: center;
-				gap: 8px;
-
-				.selected-actions-wrap {
-					display: inline-flex;
-					align-items: center;
-					gap: 10px;
-					width: 61px;
-					visibility: hidden;
-					pointer-events: none;
-				}
-
-				.selected-actions-wrap.is-visible {
-					visibility: visible;
-					pointer-events: auto;
-				}
-
-				.selected-actions-trigger {
-					position: relative;
-					display: inline-flex;
-					align-items: center;
-					justify-content: center;
-					width: 50px;
-					height: 28px;
-					color: #5f6b7a;
-					cursor: pointer;
-				}
-
-				.selected-actions-trigger:hover {
-					color: #2f6fab;
-				}
-
-				.selected-actions-arrow {
-					margin-left: 2px;
-					color: #1684d8;
-					font-size: 15px;
-				}
-
-				.selected-actions-count {
-					position: absolute;
-					right: 8px;
-					bottom: -2px;
-					min-width: 12px;
-					color: #2f6fab;
-					font-size: 12px;
-					line-height: 12px;
-					text-align: center;
-				}
-
-				.toolbar-divider {
-					width: 1px;
-					height: 24px;
-					background-color: #dcdfe6;
-				}
-
-				.toolbar-create-trigger {
-					display: inline-flex;
-					align-items: center;
-					justify-content: center;
-					width: 24px;
-					height: 24px;
-					color: #6b7785;
-					font-size: 23px;
-					font-weight: 700;
-					line-height: 24px;
-					cursor: pointer;
-					outline: none;
-				}
-
-				.toolbar-create-trigger:hover {
-					color: #3d4752;
-				}
-
-				.toolbar-create-trigger.is-disabled {
-					color: #c0c4cc;
-					cursor: not-allowed;
-					pointer-events: none;
-				}
-
-				.toolbar-copy-tooltip-wrapper {
-					display: inline-flex;
-				}
-
-				.toolbar-copy-action {
-					display: inline-flex;
-					align-items: center;
-					justify-content: center;
-					width: 26px;
-					height: 24px;
-					padding: 0;
-					border: 1px solid #dcdfe6;
-					border-radius: 6px;
-					background: #f5f7fa;
-					color: #a8abb2;
-					font-size: 15px;
-					line-height: 1;
-					cursor: not-allowed;
-					transition:
-						background-color 0.15s ease,
-						border-color 0.15s ease,
-						color 0.15s ease,
-						box-shadow 0.15s ease;
-				}
-
-				.toolbar-copy-action.is-enabled {
-					background: #ecf5ff;
-					border-color: #409eff;
-					color: #409eff;
-					cursor: pointer;
-				}
-
-				.toolbar-copy-action.is-enabled:hover {
-					background: #409eff;
-					color: #fff;
-					box-shadow: 0 2px 6px rgb(64 158 255 / 28%);
-				}
-
-				.find-toolbar-action {
-					color: #5f6b7a;
-					cursor: pointer;
-				}
-
-				.find-toolbar-action:hover {
-					background: #ecf5ff;
-					border-color: #409eff;
-					color: #409eff;
-				}
-			}
-		}
-
-		.children-table {
-			flex: 1;
-			min-height: 0;
-
-			:deep(.el-table__inner-wrapper) {
-				height: 100%;
-			}
-
-			// 禁用展开动画，防止table抖动
-			:deep(.el-table__body-wrapper) {
-				transition: none !important;
-			}
-
-			:deep(.el-table__expand-icon) {
-				transition: none !important;
-			}
-
-			:deep(.el-table__row) {
-				transition: none !important;
-			}
-
-			:deep(.selected-child-row > td.el-table__cell) {
-				background-color: #d9ecff !important;
-			}
-
-			:deep(.selected-child-row.current-row > td.el-table__cell),
-			:deep(.selected-child-row:hover > td.el-table__cell) {
-				background-color: #d9ecff !important;
-			}
-
-			:deep(.el-table__body td.el-table__cell:hover) {
-				background-color: #e9edf3 !important;
-				box-shadow: inset 0 0 0 1px #c0c4cc;
-			}
-
-			:deep(.hovered-child-header-cell) {
-				background-color: #e9edf3 !important;
-				box-shadow: inset 0 0 0 1px #c0c4cc;
-			}
-
-			&.children-table-v2 {
-				:deep(.el-table-v2__row) {
-					transition: none !important;
-				}
-
-				:deep(.el-table-v2__row.dragging-child-row) {
-					opacity: 0.6;
-				}
-
-				:deep(.el-table-v2__row.even-child-row .el-table-v2__row-cell) {
-					background-color: #f6f7f9;
-				}
-
-				:deep(.el-table-v2__row-cell) {
-					font-weight: 400 !important;
-				}
-
-				:deep(.el-table-v2__row.selected-child-row .el-table-v2__row-cell) {
-					background-color: #d9ecff !important;
-				}
-
-				:deep(.el-table-v2__row.drag-over-child-row .el-table-v2__row-cell) {
-					background-color: #ecf5ff !important;
-					box-shadow: inset 0 0 0 1px #409eff;
-				}
-
-				:deep(.el-table-v2__row.find-active-child-row .el-table-v2__row-cell) {
-					box-shadow: inset 0 0 0 1px #e6a23c;
-				}
-
-				:deep(.find-highlight-text) {
-					background-color: #ffd86b;
-					color: #303133;
-					padding: 0 1px;
-				}
-
-				:deep(.el-table-v2__row:hover .el-table-v2__row-cell) {
-					background-color: #e9edf3 !important;
-				}
-
-				:deep(.el-table-v2__row-cell:hover) {
-					background-color: #e9edf3 !important;
-					box-shadow: inset 0 0 0 1px #c0c4cc;
-				}
-
-				:deep(.el-table-v2__header-cell:hover) {
-					background-color: #e9edf3 !important;
-					box-shadow: inset 0 0 0 1px #c0c4cc;
-				}
-
-				:deep(.el-table-v2__header-cell) {
-					background-color: #f2f3f5 !important;
-					color: #303133;
-					font-weight: 600;
-				}
-
-				:deep(.resizable-header-cell) {
-					position: relative;
-					display: flex;
-					align-items: center;
-					width: 100%;
-					height: 100%;
-					padding-right: 8px;
-				}
-
-				:deep(.resizable-header-title) {
-					overflow: hidden;
-					text-overflow: ellipsis;
-					white-space: nowrap;
-				}
-
-				:deep(.selection-header-cell) {
-					justify-content: center;
-					padding-right: 0;
-					background-color: #f2f3f5;
-				}
-
-				:deep(.selection-column-header),
-				:deep(.selection-column-cell) {
-					padding: 0 !important;
-					background-color: #f2f3f5 !important;
-				}
-
-				:deep(.selection-column-header > *),
-				:deep(.selection-column-cell > *) {
-					width: 100%;
-					height: 100%;
-				}
-
-				:deep(.el-table-v2__header-cell:first-child),
-				:deep(.el-table-v2__row-cell:first-child) {
-					padding: 0 !important;
-					display: flex;
-					align-items: center;
-					justify-content: center;
-					background-color: #f2f3f5 !important;
-				}
-
-				:deep(.selection-cell) {
-					display: flex;
-					align-items: center;
-					justify-content: center;
-					position: relative;
-					width: 100%;
-					height: 100%;
-					background-color: #f2f3f5;
-				}
-
-				:deep(.el-table-v2__row:hover .selection-cell) {
-					background-color: #e5e7eb !important;
-				}
-
-				:deep(.resizable-header-cell.is-hovered-column) {
-					background-color: #e5e7eb !important;
-				}
-
-				:deep(.is-hovered-column) {
-					background-color: #f3f4f6;
-				}
-
-				:deep(.selection-row-index) {
-					display: inline-flex;
-					align-items: center;
-					justify-content: center;
-					color: #606266;
-					font-size: 13px;
-					line-height: 1;
-				}
-
-				:deep(.selection-header-cell .el-checkbox),
-				:deep(.selection-cell .el-checkbox) {
-					height: 100%;
-					margin-right: 0;
-					display: none;
-					align-items: center;
-				}
-
-				:deep(.el-table-v2__row:hover .selection-cell .selection-row-index),
-				:deep(.selection-cell.is-selected .selection-row-index) {
-					display: none;
-				}
-
-				:deep(.selection-header-cell .el-checkbox),
-				:deep(.el-table-v2__row:hover .selection-cell .el-checkbox),
-				:deep(.selection-cell.is-selected .el-checkbox) {
-					display: inline-flex;
-				}
-
-				:deep(.column-resize-handle) {
-					position: absolute;
-					top: 0;
-					right: -6px;
-					z-index: 2;
-					width: 12px;
-					height: 100%;
-					cursor: col-resize;
-				}
-			}
-		}
-
-		.name-cell {
-			display: flex;
-			align-items: center;
-			height: 30px;
-			line-height: 30px;
-			white-space: nowrap;
-
-			.row-icon {
-				width: 16px;
-				height: 16px;
-				object-fit: contain;
-				flex-shrink: 0;
-				margin-left: 0.5em;
-				vertical-align: middle;
-			}
-
-			.name-text {
-				display: inline-flex;
-				align-items: center;
-				height: 30px;
-				margin-left: 1em;
-			}
-		}
-
-		.status-tag {
-			cursor: pointer;
-		}
-
-		// 自定义展开图标
-		.custom-tree-icon {
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
-			width: 16px;
-			height: 16px;
-			cursor: pointer;
-			border: 1px solid #909399;
-			border-radius: 2px;
-			background-color: #fff;
-			flex-shrink: 0;
-			box-sizing: border-box;
-			vertical-align: middle;
-			color: #303133;
-			font-size: 14px;
-			font-weight: 600;
-			line-height: 14px;
-
-			&:hover {
-				background-color: #f5f7fa;
-				border-color: #409eff;
-				color: #409eff;
-			}
-
-			&.is-loading {
-				color: #909399;
-				cursor: default;
-			}
-
-			.expand-loading-icon {
-				animation: rotating 2s linear infinite;
-				font-size: 12px;
-			}
-		}
-
-		// 占位符（没有子节点时）
-		.tree-icon-placeholder {
-			display: inline-block;
-			width: 16px;
-			height: 16px;
-			flex-shrink: 0;
-		}
-	}
-
-	.enterprise-code-link {
-		color: #409eff;
-		cursor: pointer;
-		font-size: 13px;
-
-		&:hover {
-			color: #66b1ff;
-			text-decoration: underline;
-		}
-	}
-}
-
-:deep(.enterprise-code-dialog) {
-	.el-dialog__body {
-		padding-top: 8px;
-	}
-}
-
-:deep(.maturity-dialog) {
-	.el-dialog__header {
-		padding: 12px 16px;
-		margin-right: 0;
-		border-bottom: 1px solid #dcdfe6;
-	}
-
-	.el-dialog__title {
-		font-size: 18px;
-		font-weight: 700;
-		color: #303133;
-	}
-
-	.el-dialog__body {
-		padding: 0;
-	}
-
-	.el-dialog__footer {
-		padding: 16px;
-		background-color: #f5f5f5;
-		border-top: 1px solid #dcdfe6;
-	}
-}
-
-:deep(.duplicate-dialog) {
-	.el-dialog__header {
-		padding: 14px 16px 8px;
-		margin-right: 0;
-		border-bottom: 1px solid #dcdfe6;
-	}
-
-	.el-dialog__title {
-		font-size: 18px;
-		font-weight: 700;
-		color: #303133;
-	}
-
-	.el-dialog__body {
-		min-height: 160px;
-		padding: 12px 16px;
-	}
-
-	.el-dialog__footer {
-		padding: 16px;
-		background-color: #f2f3f5;
-		border-top: 1px solid #dcdfe6;
-	}
-}
-
-.duplicate-target-list {
-	margin: -12px -8px 88px;
-	border: 1px solid #dcdfe6;
-}
-
-.duplicate-target-header,
-.duplicate-target-row {
-	display: grid;
-	grid-template-columns: 1fr 112px 80px 108px;
-	align-items: center;
-	min-height: 32px;
-}
-
-.duplicate-target-header {
-	color: #303133;
-	background-color: #f4f4f5;
-	border-bottom: 1px solid #dcdfe6;
-}
-
-.duplicate-target-row:nth-child(odd) {
-	background-color: #f5f7fa;
-}
-
-.tree-reorder-floating {
-	position: fixed;
-	z-index: 3200;
-	display: flex;
-	flex-direction: column;
-	min-width: 640px;
-	min-height: 360px;
-	background: #f6f7f9;
-	border: 1px solid #d7dce2;
-	box-shadow: 0 2px 10px rgb(0 0 0 / 22%);
-	box-sizing: border-box;
-}
-
-.tree-reorder-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	height: 44px;
-	padding: 0 12px;
-	background: #fff;
-	border-bottom: 1px solid #e4e7ed;
-	color: #303133;
-	font-weight: 600;
-	cursor: move;
-	user-select: none;
-}
-
-.tree-reorder-header-actions {
-	display: flex;
-	align-items: center;
-	gap: 14px;
-}
-
-.tree-reorder-header-icon {
-	color: #7b838c;
-	cursor: pointer;
-	font-size: 18px;
-
-	&:hover {
-		color: #409eff;
-	}
-}
-
-.tree-reorder-body {
-	display: flex;
-	flex: 1;
-	min-height: 0;
-	padding: 12px 18px;
-	gap: 28px;
-	background: #fff;
-}
-
-.tree-reorder-table-wrap {
-	position: relative;
-	flex: 1;
-	min-width: 0;
-	overflow: auto;
-	border: 1px solid #eef0f3;
-	background: #fff;
-}
-
-.tree-reorder-table {
-	width: 100%;
-	border-collapse: collapse;
-	font-size: 13px;
-
-	th {
-		height: 24px;
-		padding: 0 6px;
-		background: #f2f3f5;
-		color: #5f6b7a;
-		font-weight: 400;
-		text-align: left;
-		border-bottom: 1px solid #e8ebef;
-	}
-
-	td {
-		height: 24px;
-		padding: 0 6px;
-		border-bottom: 1px solid #f1f2f4;
-		color: #202124;
-		white-space: nowrap;
-	}
-
-	tr {
-		cursor: pointer;
-
-		&.is-selected td,
-		&:hover td {
-			background: #eaf4ff;
-		}
-	}
-}
-
-.tree-reorder-empty {
-	padding: 32px 0;
-	color: #909399;
-	text-align: center;
-}
-
-.tree-reorder-side-actions {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 18px;
-	padding-top: 40px;
-}
-
-.tree-reorder-move-btn.el-button {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 42px;
-	height: 28px;
-	margin-left: 0;
-	padding: 0;
-
-	.el-icon {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 14px;
-		height: 14px;
-		margin: 0;
-		line-height: 1;
-	}
-}
-
-.tree-reorder-footer {
-	display: flex;
-	justify-content: flex-end;
-	gap: 10px;
-	padding: 10px 12px;
-	background: #f6f7f9;
-	border-top: 1px solid #e4e7ed;
-}
-
-.tree-reorder-resize-handle {
-	position: absolute;
-	right: 0;
-	bottom: 0;
-	width: 14px;
-	height: 14px;
-	cursor: se-resize;
-
-	&::after {
-		position: absolute;
-		right: 2px;
-		bottom: 2px;
-		width: 8px;
-		height: 8px;
-		border-right: 1px solid #b8bec6;
-		border-bottom: 1px solid #b8bec6;
-		content: '';
-	}
-}
-
-.duplicate-target-cell {
-	display: flex;
-	align-items: center;
-	height: 100%;
-	padding: 0 10px;
-	border-right: 1px solid #dcdfe6;
-	overflow: hidden;
-	white-space: nowrap;
-	text-overflow: ellipsis;
-}
-
-.duplicate-target-cell:last-child {
-	border-right: none;
-}
-
-.duplicate-target-title {
-	gap: 8px;
-}
-
-.duplicate-target-icon,
-.duplicate-target-default-icon {
-	flex: none;
-	width: 16px;
-	height: 16px;
-}
-
-.duplicate-target-default-icon {
-	border-radius: 3px;
-	background: linear-gradient(135deg, #d7ecff 0%, #8bbbe8 100%);
-	border: 1px solid #7da9d5;
-}
-
-.duplicate-form {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-
-.duplicate-form-row {
-	display: flex;
-	align-items: center;
-	gap: 14px;
-}
-
-.duplicate-form-label {
-	width: 218px;
-	color: #606266;
-	font-weight: 600;
-}
-
-.duplicate-prefix-input {
-	width: 170px;
-}
-
-.duplicate-security-select {
-	width: 440px;
-}
-
-:deep(.deform-dialog) {
-	position: relative;
-	overflow: auto;
-	min-width: 480px;
-	min-height: 300px;
-	margin: 0;
-
-	&::after {
-		content: '';
-		position: absolute;
-		bottom: 2px;
-		right: 2px;
-		width: 12px;
-		height: 12px;
-		background:
-			linear-gradient(135deg, transparent 45%, #909399 45%, #909399 55%, transparent 55%),
-			linear-gradient(135deg, transparent 35%, #909399 35%, #909399 45%, transparent 45%),
-			linear-gradient(135deg, transparent 25%, #909399 25%, #909399 35%, transparent 35%);
-		pointer-events: none;
-		z-index: 10;
-	}
-
-	.el-dialog__header {
-		padding: 14px 16px 8px;
-		margin-right: 0;
-		border-bottom: 1px solid #dcdfe6;
-		cursor: move;
-	}
-
-	.el-dialog__title {
-		font-size: 18px;
-		font-weight: 700;
-		color: #303133;
-	}
-
-	.el-dialog__body {
-		padding: 12px 16px;
-		overflow: auto;
-	}
-
-	.el-dialog__footer {
-		padding: 16px;
-		background-color: #f2f3f5;
-		border-top: 1px solid #dcdfe6;
-	}
-}
-
-.deform-dialog-resize-handle {
-	position: absolute;
-	right: 2px;
-	bottom: 2px;
-	width: 16px;
-	height: 16px;
-	cursor: nwse-resize;
-	z-index: 11;
-}
-
-:global(.deform-dialog-resizing) {
-	cursor: nwse-resize;
-	user-select: none;
-}
-
-.deform-form-row {
-	display: flex;
-	align-items: center;
-	gap: 14px;
-	margin-top: 12px;
-}
-
-.deform-form-label {
-	width: 80px;
-	color: #606266;
-	font-weight: 600;
-}
-
-.deform-prefix-input {
-	width: 170px;
-}
-
-.maturity-content {
-	min-height: 176px;
-	padding: 18px 22px 28px;
-	overflow-x: auto;
-	overflow-y: hidden;
-	background-color: #f5f5f5;
-}
-
-.maturity-graph {
-	position: relative;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: fit-content;
-	min-width: max-content;
-	min-height: 118px;
-	margin-bottom: 16px;
-	margin-left: auto;
-	margin-right: auto;
-}
-
-.state-wrap {
-	position: relative;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.state-box {
-	width: 102px;
-	height: 44px;
-	padding: 0 12px;
-	color: #fff;
-	font-size: 14px;
-	font-weight: 700;
-	border: 1px solid transparent;
-	border-radius: 4px;
-	cursor: default;
-	opacity: 1;
-}
-
-.state-box.active {
-	color: #fff;
-	border: 2px solid #111;
-	opacity: 1;
-}
-
-.state-box.clickable {
-	cursor: pointer;
-}
-
-.state-connector {
-	width: 34px;
-	height: 2px;
-	background-color: #999;
-	position: relative;
-}
-
-.state-connector::after {
-	content: '';
-	position: absolute;
-	right: -1px;
-	top: -5px;
-	border-top: 6px solid transparent;
-	border-bottom: 6px solid transparent;
-	border-left: 8px solid #999;
-}
-
-.transition-action {
-	position: absolute;
-	top: -34px;
-	left: 100%;
-	transform: translateX(-50%);
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	color: #008bb8;
-	font-size: 13px;
-	background: transparent;
-	border: 0;
-	cursor: pointer;
-	white-space: nowrap;
-}
-
-.action-arrow {
-	width: 0;
-	height: 0;
-	border-top: 8px solid transparent;
-	border-bottom: 8px solid transparent;
-	border-left: 14px solid #008b2f;
-}
-
-.reverse-route-action {
-	position: absolute;
-	top: 94px;
-	left: var(--reverse-route-left);
-	width: var(--reverse-route-width);
-	height: 32px;
-	color: #008bb8;
-	font-size: 13px;
-	background: transparent;
-	border: 0;
-	cursor: pointer;
-	z-index: 2;
-}
-
-.reverse-route-line {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 16px;
-	border-right: 2px solid #777;
-	border-bottom: 2px solid #777;
-	border-left: 2px solid #777;
-	pointer-events: none;
-}
-
-.reverse-route-line::after {
-	content: '';
-	position: absolute;
-	right: -2px;
-	top: -8px;
-	width: 2px;
-	height: 8px;
-	background-color: #777;
-}
-
-.reverse-route-up-arrow {
-	position: absolute;
-	left: -5px;
-	top: -8px;
-	width: 0;
-	height: 0;
-	border-right: 6px solid transparent;
-	border-bottom: 12px solid #777;
-	border-left: 6px solid transparent;
-}
-
-.reverse-route-arrow {
-	position: absolute;
-	left: calc(50% + 54px);
-	top: 18px;
-	width: 0;
-	height: 0;
-	border-top: 8px solid transparent;
-	border-right: 14px solid #008bb8;
-	border-bottom: 8px solid transparent;
-}
-
-.reverse-route-label {
-	position: absolute;
-	left: 50%;
-	top: 17px;
-	transform: translateX(-50%);
-	white-space: nowrap;
-}
-
-/* 非 scoped 全局样式 - 隐藏默认展开图标 */
-:deep(.el-table__expand-icon) {
-	display: none !important;
-}
-:deep(.el-table__indent) {
-	display: none !important;
-}
-:deep(.el-table__placeholder) {
-	display: none !important;
-}
-
-:deep(.reservation-cell) {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 100%;
-	height: 100%;
-	cursor: pointer;
-}
-
-:deep(.reservation-dialog .el-dialog__header) {
-	padding: 14px 16px 10px;
-	margin-right: 0;
-	border-bottom: 1px solid #dcdfe6;
-}
-
-:deep(.reservation-dialog .el-dialog__title) {
-	font-size: 18px;
-	font-weight: 600;
-	color: #333;
-}
-
-:deep(.reservation-dialog .el-dialog__body) {
-	padding: 18px 12px 8px;
-}
-
-:deep(.reservation-dialog .el-dialog__footer) {
-	padding: 14px;
-	background: #f5f5f5;
-	border-top: 1px solid #dcdfe6;
-}
-
-.reservation-options {
-	display: flex;
-	flex-direction: column;
-	gap: 14px;
-}
-
-.reservation-option-content {
-	display: inline-flex;
-	flex-direction: column;
-	gap: 6px;
-	margin-left: 4px;
-	vertical-align: top;
-}
-
-.reservation-option-title {
-	display: flex;
-	align-items: center;
-	gap: 5px;
-	color: #333;
-	font-size: 14px;
-}
-
-.reservation-info-icon {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 14px;
-	height: 14px;
-	border-radius: 50%;
-	background: #606266;
-	color: #fff;
-	font-size: 10px;
-	font-weight: 700;
-	line-height: 14px;
-}
-
-.reservation-option-subtitle {
-	color: #606266;
-	font-size: 13px;
-	line-height: 18px;
-}
-
-.reservation-dialog-footer {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-}
-</style>
-
-<!-- 全局样式：children-table-v2虚拟表格样式修正 -->
-<style>
-#partDetailContainer .children-table-v2 .el-table-v2__row,
-#partDetailContainer .children-table-v2 .el-table-v2__row-cell {
-	height: 30px !important;
-}
-#partDetailContainer .children-table-v2 .el-table-v2__row {
-	cursor: default;
-}
-#partDetailContainer .children-table-v2 .el-table-v2__row.dragging-child-row {
-	opacity: 0.6;
-	cursor: default;
-}
-#partDetailContainer .children-table-v2 .el-table-v2__row.even-child-row .el-table-v2__row-cell {
-	background-color: #f6f7f9;
-}
-.child-row-drag-image {
-	position: fixed;
-	top: -1000px;
-	left: -1000px;
-	z-index: 9999;
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	max-width: 260px;
-	height: 28px;
-	padding: 0 10px 0 6px;
-	border: 1px solid #c0c4cc;
-	border-radius: 4px;
-	background: #fff;
-	box-shadow: 0 2px 8px rgb(0 0 0 / 16%);
-	color: #303133;
-	font-size: 12px;
-	line-height: 28px;
-	pointer-events: none;
-}
-.child-row-drag-add {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 16px;
-	height: 16px;
-	border: 1px solid #67c23a;
-	border-radius: 2px;
-	box-sizing: border-box;
-	color: #67c23a;
-	font-size: 14px;
-	font-weight: 600;
-	line-height: 14px;
-}
-.child-row-drag-title {
-	overflow: hidden;
-	max-width: 210px;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-.children-create-dropdown.el-popper {
-	min-width: 132px !important;
-	padding: 0 !important;
-	border: 1px solid #d7dce2 !important;
-	border-radius: 0 !important;
-	box-shadow: 0 1px 3px rgb(0 0 0 / 18%) !important;
-}
-.children-create-dropdown .el-popper__arrow {
-	display: none !important;
-}
-.children-create-dropdown .create-menu-panel {
-	width: 132px;
-	padding: 0;
-	background: #fff;
-	color: #1f2d3d;
-	font-size: 12px;
-	line-height: 1;
-}
-.children-create-dropdown .create-menu-section-title {
-	height: 20px;
-	padding: 5px 8px 2px;
-	box-sizing: border-box;
-	color: #222;
-	font-size: 12px;
-	font-weight: 700;
-	line-height: 13px;
-}
-.children-create-dropdown .el-dropdown-menu {
-	padding: 0 !important;
-	border: 0 !important;
-	box-shadow: none !important;
-}
-.children-create-dropdown .el-dropdown-menu__item {
-	display: flex !important;
-	align-items: center !important;
-	gap: 8px !important;
-	height: 23px !important;
-	padding: 0 7px 0 16px !important;
-	color: #1f2d3d !important;
-	font-size: 12px !important;
-	line-height: 23px !important;
-	white-space: nowrap !important;
-}
-.children-create-dropdown .el-dropdown-menu__item:not(.is-disabled):focus,
-.children-create-dropdown .el-dropdown-menu__item:not(.is-disabled):hover {
-	background-color: #ececec !important;
-	color: #1f2d3d !important;
-}
-
-.part-action-dropdown-popper.el-popper {
-	min-width: 228px !important;
-	padding: 0 !important;
-	border: 1px solid #d7dce2 !important;
-	border-radius: 0 !important;
-	box-shadow: 0 2px 8px rgb(0 0 0 / 18%) !important;
-	overflow: visible !important;
-	z-index: 3000 !important;
-}
-.part-action-dropdown-popper .el-popper__arrow {
-	display: none !important;
-}
-.part-action-dropdown-popper .el-dropdown-menu {
-	padding: 0 !important;
-	border: 0 !important;
-	box-shadow: none !important;
-	overflow: visible !important;
-}
-.part-action-dropdown-popper .el-scrollbar,
-.part-action-dropdown-popper .el-scrollbar__wrap,
-.part-action-dropdown-popper .el-scrollbar__view {
-	overflow: visible !important;
-}
-.part-action-dropdown-popper .el-dropdown-menu__item {
-	display: flex !important;
-	align-items: center !important;
-	min-width: 200px !important;
-	height: 23px !important;
-	padding: 0 7px !important;
-	box-sizing: border-box !important;
-	font-size: 12px !important;
-	line-height: 23px !important;
-	color: #1f2d3d !important;
-}
-.part-action-dropdown-popper .el-dropdown-menu__item--divided {
-	margin-top: 0 !important;
-	border-top: 1px solid #e4e7ed !important;
-}
-.part-action-dropdown-popper .el-dropdown-menu__item--divided::before {
-	display: none !important;
-}
-.part-action-dropdown-popper .el-dropdown-menu__item:not(.is-disabled):focus {
-	background-color: #ecf5ff !important;
-	color: #409eff !important;
-}
-.part-action-dropdown-popper .el-dropdown-menu__item.is-disabled,
-.part-action-dropdown-popper .el-dropdown-menu__item.part-action-disabled-item {
-	color: #b8bec6 !important;
-	cursor: not-allowed !important;
-}
-.part-action-dropdown-popper .el-dropdown-menu__item.is-disabled:hover,
-.part-action-dropdown-popper .el-dropdown-menu__item.is-disabled:focus,
-.part-action-dropdown-popper .el-dropdown-menu__item.part-action-disabled-item:hover,
-.part-action-dropdown-popper .el-dropdown-menu__item.part-action-disabled-item:focus {
-	background-color: transparent !important;
-	color: #b8bec6 !important;
-}
-.part-action-dropdown-popper .part-action-disabled-item .part-action-menu-icon,
-.part-action-dropdown-popper .part-action-disabled-item .part-action-menu-label,
-.part-action-dropdown-popper .part-action-disabled-item .part-action-menu-arrow {
-	color: #b8bec6 !important;
-}
-.part-action-open-with-submenu {
-	position: relative;
-}
-.part-action-open-with-trigger {
-	display: flex;
-	align-items: center;
-	min-width: 200px;
-	height: 23px;
-	padding: 0 7px;
-	box-sizing: border-box;
-	color: #1f2d3d;
-	cursor: pointer;
-	font-size: 12px;
-	line-height: 23px;
-}
-.part-action-open-with-trigger:hover,
-.part-action-open-with-item:hover {
-	background-color: #ecf5ff;
-	color: #409eff;
-}
-.part-action-open-with-panel {
-	position: absolute;
-	top: 0;
-	right: 100%;
-	display: none;
-	min-width: 150px;
-	padding: 4px 0;
-	background: #fff;
-	border: 1px solid #d7dce2;
-	box-shadow: 0 2px 8px rgb(0 0 0 / 18%);
-	z-index: 30;
-}
-.part-action-open-with-submenu:hover .part-action-open-with-panel {
-	display: block;
-}
-.part-action-open-with-item {
-	display: flex;
-	align-items: center;
-	height: 23px;
-	padding: 0 7px;
-	box-sizing: border-box;
-	color: #1f2d3d;
-	cursor: pointer;
-	font-size: 12px;
-	line-height: 23px;
-	white-space: nowrap;
-}
-.part-action-open-with-item-divided {
-	margin-top: 2px;
-	border-top: 1px solid #e4e7ed;
-	padding-top: 4px;
-}
-
-.structure-view-dropdown .el-dropdown-menu__item.is-selected {
-	background-color: #ecf5ff;
-	color: #409eff;
-	font-weight: 600;
-}
-.structure-view-check {
-	display: inline-block;
-	width: 18px;
-	color: transparent;
-}
-.structure-view-dropdown .el-dropdown-menu__item.is-selected .structure-view-check {
-	color: #409eff;
-}
-
-.children-find-floating {
-	position: fixed;
-	z-index: 3000;
-	width: 360px !important;
-	border: 1px solid #cfd3da !important;
-	border-radius: 0 !important;
-	background: #f1f2f4 !important;
-	box-shadow: 0 2px 6px rgb(0 0 0 / 22%) !important;
-}
-
-.children-find-panel {
-	padding: 0 8px 10px;
-	background: #f1f2f4;
-	color: #2f3540;
-	font-size: 13px;
-}
-
-.children-find-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	height: 28px;
-	font-size: 14px;
-	font-weight: 700;
-	line-height: 28px;
-	cursor: move;
-	user-select: none;
-}
-
-.children-find-title {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.children-find-close {
-	flex: 0 0 auto;
-	color: #7b8088;
-	font-size: 16px;
-	cursor: pointer;
-}
-
-.children-find-close:hover {
-	color: #409eff;
-}
-
-.children-find-row {
-	display: flex;
-	align-items: center;
-	gap: 5px;
-}
-
-.children-find-row .el-input {
-	flex: 1;
-}
-
-.children-find-row .el-input__wrapper {
-	height: 28px;
-	border-radius: 4px;
-	box-shadow: 0 0 0 1px #409eff inset;
-}
-
-.children-find-row .el-button {
-	width: 29px;
-	height: 28px;
-	padding: 0;
-	border-radius: 4px;
-	background: #eef0f3;
-	color: #9097a3;
-}
-
-.children-find-row .el-button.is-find-ready {
-	border-color: #409eff;
-	background: #ecf5ff;
-	color: #409eff;
-	cursor: pointer;
-}
-
-.children-find-row .el-button.is-find-ready:hover {
-	background: #409eff;
-	color: #fff;
-}
-
-.children-find-options {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	margin-top: 11px;
-	color: #4b5563;
-	font-size: 14px;
-	font-weight: 700;
-	line-height: 18px;
-}
-
-.part-action-menu-icon {
-	display: inline-flex;
-	flex: 0 0 22px;
-	align-items: center;
-	justify-content: center;
-	width: 22px;
-	color: #6b7c8d;
-	font-size: 13px;
-}
-.part-action-menu-label {
-	flex: 1 1 auto;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	font-size: 12px;
-}
-.part-action-menu-arrow {
-	flex: 0 0 auto;
-	margin-left: 7px;
-	color: #606266;
-	font-size: 12px;
-}
-.children-create-dropdown .create-menu-icon {
-	position: relative;
-	display: inline-block;
-	flex: 0 0 auto;
-	width: 22px;
-	height: 22px;
-	color: #687887;
-}
-.children-create-dropdown .create-menu-icon::before,
-.children-create-dropdown .create-menu-icon::after {
-	content: '';
-	position: absolute;
-	box-sizing: border-box;
-}
-.children-create-dropdown .create-menu-icon::before {
-	left: 2px;
-	top: 3px;
-	width: 8px;
-	height: 7px;
-	border: 1px solid currentColor;
-	background: #fff;
-}
-.children-create-dropdown .create-menu-icon::after {
-	right: 0;
-	bottom: 1px;
-	width: 5px;
-	height: 5px;
-	border-radius: 50%;
-	background: currentColor;
-	box-shadow:
-		-2px -2px 0 #fff,
-		-2px -2px 0 1px currentColor;
-}
-.children-create-dropdown .product-new-icon::before,
-.children-create-dropdown .part-new-icon::before {
-	border-radius: 1px;
-}
-.children-create-dropdown .product-existing-icon::before,
-.children-create-dropdown .material-existing-icon::before,
-.children-create-dropdown .existing-document-icon::before,
-.children-create-dropdown .drawing-existing-icon::before {
-	border-radius: 1px;
-	box-shadow:
-		2px 2px 0 -1px #fff,
-		2px 2px 0 0 currentColor;
-}
-.children-create-dropdown .insert-duplicate-icon::before {
-	border-radius: 50%;
-}
-.children-create-dropdown .insert-duplicate-icon::after {
-	border-radius: 0;
-}
-.children-create-dropdown .shape-new-icon::before {
-	width: 9px;
-	height: 9px;
-	border-radius: 50%;
-	border-top-color: transparent;
-}
-.children-create-dropdown .shape-new-icon::after {
-	left: 1px;
-	top: 7px;
-	width: 11px;
-	height: 1px;
-	border-radius: 0;
-	background: currentColor;
-	box-shadow: none;
-	transform: rotate(-12deg);
-}
-.children-create-dropdown .material-quantity-icon::before {
-	width: 9px;
-	height: 9px;
-	border-radius: 50%;
-}
-.children-create-dropdown .upload-document-icon::before,
-.children-create-dropdown .existing-document-icon::before {
-	left: 3px;
-	top: 1px;
-	width: 8px;
-	height: 10px;
-}
-.children-create-dropdown .upload-document-icon::after {
-	left: 5px;
-	top: 3px;
-	width: 5px;
-	height: 5px;
-	border-right: 1px solid currentColor;
-	border-bottom: 1px solid currentColor;
-	border-radius: 0;
-	background: transparent;
-	box-shadow: none;
-	transform: rotate(-135deg);
-}
-.children-create-dropdown .drawing-new-icon::before,
-.children-create-dropdown .drawing-existing-icon::before {
-	left: 1px;
-	top: 2px;
-	width: 11px;
-	height: 8px;
-}
-.children-create-dropdown .drawing-new-icon::after,
-.children-create-dropdown .drawing-existing-icon::after {
-	left: 3px;
-	top: 5px;
-	width: 7px;
-	height: 1px;
-	border-radius: 0;
-	background: currentColor;
-	box-shadow: 0 3px 0 currentColor;
-}
-#partDetailContainer .children-table-v2 .el-table-v2__row-cell,
-#partDetailContainer .children-table-v2 .el-table-v2__header-cell {
-	padding: 0 6px !important;
-	line-height: 30px !important;
-	font-size: 12px !important;
-	font-weight: 400 !important;
-	border-right: 1px solid #e4e7ed;
-}
-#partDetailContainer .children-table-v2 .el-table-v2__header-cell:last-child,
-#partDetailContainer .children-table-v2 .el-table-v2__row-cell:last-child {
-	border-right: none;
-}
-#partDetailContainer .children-table-v2 .enterprise-code-link {
-	color: #409eff !important;
-	cursor: pointer;
-	font-weight: 400 !important;
-}
-#partDetailContainer .children-table-v2 .enterprise-code-link:hover {
-	color: #66b1ff !important;
-	text-decoration: underline;
-}
-#partDetailContainer .children-table-v2 .el-table-v2__row.selected-child-row .el-table-v2__row-cell {
-	background-color: #d9ecff !important;
-}
-#partDetailContainer .children-table-v2 .el-table-v2__row.drag-over-child-row .el-table-v2__row-cell {
-	background-color: #ecf5ff !important;
-	box-shadow: inset 0 0 0 1px #409eff;
-}
-#partDetailContainer .children-table-v2 .el-table-v2__row:hover .el-table-v2__row-cell {
-	background-color: #e9edf3 !important;
-}
-#partDetailContainer .children-table-v2 .el-table-v2__row-cell:hover,
-#partDetailContainer .children-table-v2 .el-table-v2__header-cell:hover {
-	background-color: #e9edf3 !important;
-	box-shadow: inset 0 0 0 1px #c0c4cc;
-}
-#partDetailContainer .children-table-v2 .resizable-header-cell {
-	position: relative;
-	display: flex;
-	align-items: center;
-	width: 100%;
-	height: 100%;
-	padding-right: 8px;
-}
-#partDetailContainer .children-table-v2 .resizable-header-title {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-#partDetailContainer .children-table-v2 .selection-header-cell {
-	justify-content: center;
-}
-#partDetailContainer .children-table-v2 .column-resize-handle {
-	position: absolute;
-	top: 0;
-	right: -6px;
-	z-index: 2;
-	width: 12px;
-	height: 100%;
-	cursor: col-resize;
-}
-body.is-resizing-column {
-	cursor: col-resize !important;
-	user-select: none;
-}
-#partDetailContainer .children-table-v2 .name-cell {
-	display: flex;
-	align-items: center;
-	min-height: 30px;
-	height: 30px;
-	line-height: 30px;
-	font-size: 12px;
-	white-space: nowrap;
-}
-#partDetailContainer .children-table-v2 .name-cell .row-icon {
-	width: 20px;
-	height: 20px;
-	flex-shrink: 0;
-	margin-left: 0.5em;
-	vertical-align: middle;
-}
-#partDetailContainer .children-table-v2 .name-cell .name-text {
-	display: inline-flex;
-	align-items: center;
-	height: 30px;
-	margin-left: 1em;
-}
-#partDetailContainer .children-table-v2 .name-cell .custom-tree-icon,
-#partDetailContainer .children-table-v2 .name-cell .tree-icon-placeholder {
-	width: 16px;
-	height: 16px;
-	flex-shrink: 0;
-}
-#partDetailContainer .children-table-v2 .name-cell .custom-tree-icon {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	border: 1px solid #909399;
-	border-radius: 2px;
-	color: #303133;
-	font-size: 14px;
-	font-weight: 600;
-	line-height: 14px;
-	box-sizing: border-box;
-}
-#partDetailContainer .children-table-v2 .name-cell .custom-tree-icon.is-loading {
-	color: #909399;
-	cursor: default;
-}
-#partDetailContainer .children-table-v2 .name-cell .custom-tree-icon .expand-loading-icon {
-	animation: rotating 2s linear infinite;
-	font-size: 12px;
-}
-@keyframes rotating {
-	from {
-		transform: rotate(0deg);
-	}
-	to {
-		transform: rotate(360deg);
-	}
-}
-
-.selected-actions-dropdown {
-	overflow: visible !important;
-
-	.el-scrollbar,
-	.el-scrollbar__wrap,
-	.el-scrollbar__view,
-	.el-dropdown-menu {
-		overflow: visible !important;
-	}
-
-	.el-dropdown-menu__item {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		min-width: 200px;
-		height: 23px;
-		line-height: 23px;
-		padding: 0 7px !important;
-	}
-
-	.selected-action-icon {
-		width: 22px;
-		color: #5f6b7a;
-		text-align: center;
-		font-size: 13px;
-	}
-
-	.selected-action-submenu {
-		position: relative;
-	}
-
-	.selected-action-submenu-trigger {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		min-width: 200px;
-		height: 23px;
-		padding: 0 7px;
-		color: #606266;
-		cursor: pointer;
-		box-sizing: border-box;
-		font-size: 12px;
-	}
-
-	.selected-action-submenu-trigger .el-icon {
-		margin-left: 7px;
-		font-size: 12px;
-	}
-
-	.selected-action-submenu-panel {
-		position: absolute;
-		top: 0;
-		left: 100%;
-		display: none;
-		min-width: 150px;
-		padding: 4px 0;
-		background: #fff;
-		border: 1px solid #dcdfe6;
-		box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
-		z-index: 20;
-	}
-
-	.selected-action-submenu:hover .selected-action-submenu-panel {
-		display: block;
-	}
-
-	.selected-action-submenu-trigger:hover,
-	.selected-action-submenu-item:hover {
-		background-color: #ecf5ff;
-		color: #409eff;
-	}
-
-	.selected-action-submenu-item {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		height: 23px;
-		padding: 0 7px;
-		color: #606266;
-		cursor: pointer;
-		white-space: nowrap;
-		box-sizing: border-box;
-		font-size: 12px;
-	}
-
-	.selected-action-open-with-item-divided {
-		margin-top: 2px;
-		border-top: 1px solid #dcdfe6;
-		padding-top: 4px;
-	}
-}
-
-.instance-quantity-dialog {
-	.instance-quantity-tabs {
-		display: flex;
-		justify-content: center;
-		gap: 36px;
-		border-bottom: 1px solid #dcdfe6;
-		margin: -8px -20px 10px;
-	}
-
-	.instance-quantity-tab {
-		padding: 8px 12px;
-		color: #606266;
-		border-bottom: 2px solid transparent;
-	}
-
-	.instance-quantity-tab.is-active {
-		color: #303133;
-		border-bottom-color: #409eff;
-	}
-
-	.instance-quantity-toolbar {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		margin-bottom: 8px;
-	}
-
-	.instance-quantity-added-tip {
-		margin-left: auto;
-		color: #606266;
-	}
-
-	.instance-quantity-table-wrap {
-		overflow: auto;
-		resize: both;
-		min-width: 760px;
-		min-height: 240px;
-		max-height: 520px;
-		border: 1px solid #ebeef5;
-	}
-}
-
-/* 展开菜单按钮样式 */
-.expand-menu-btn.is-active {
-	color: #409eff !important;
-	border-color: #409eff !important;
-}
-
-.expand-menu-btn.is-disabled {
-	color: #c0c4cc !important;
-	border-color: #dcdfe6 !important;
-	background-color: #f5f7fa !important;
-	cursor: not-allowed !important;
-}
-
-/* 展开菜单下拉框样式 */
-.expand-menu-dropdown {
-	.el-dropdown-menu__item {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 0 16px;
-		font-size: 13px;
-
-		.el-icon {
-			font-size: 14px;
-		}
-
-		.expand-menu-icon {
-			width: 16px;
-			height: 16px;
-			color: #606266;
-			flex-shrink: 0;
-		}
-	}
-}
-
-/* 展开 N 层对话框样式 */
-.expand-n-content {
-	padding: 10px 0;
-}
-
-/* 导出进度对话框样式 */
-.export-progress-content {
-	padding: 20px 10px;
-	.export-status-text {
-		margin-top: 16px;
-		text-align: center;
-		color: #606266;
-		font-size: 14px;
-	}
-}
-
-/* 删除确认对话框样式 */
-.delete-confirm-content {
-	.delete-confirm-checkboxes {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-		margin-top: 15px;
-	}
-}
-</style>
+<style lang="scss" scoped src="./PartDetailViewScoped.scss"></style>
+<style src="./PartDetailViewGlobal.css"></style>

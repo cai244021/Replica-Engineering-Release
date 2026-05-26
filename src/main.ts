@@ -1,4 +1,4 @@
-import { widget, disableDefaultCSS, requirejs, onVisibilityChange } from '@widget-lab/3ddashboard-utils';
+﻿import { widget, disableDefaultCSS, requirejs, onVisibilityChange } from '@widget-lab/3ddashboard-utils';
 import './assets/styles/main.scss';
 
 import { createApp } from 'vue';
@@ -26,8 +26,7 @@ const start = () => {
 	}
 	const pinia = createPinia();
 
-	// 使用持久化插件
-	pinia.use(piniaPluginPersistedstate);
+	// 浣跨敤鎸佷箙鍖栨彃浠?	pinia.use(piniaPluginPersistedstate);
 	app.use(pinia);
 	app.use(ElementPlus);
 	app.use(router);
@@ -72,34 +71,34 @@ if (!isDev) {
 			value: 'OnPremise'
 		},
 		{
-			label: '凭据',
+			label: 'Credential',
 
 			name: 'xPref_CREDENTIAL',
 			options: [
 				{
-					label: 'Common Space ● 供稿人',
+					label: 'Common Space - Experimenter',
 					respType: 'REGULAR',
 					value: 'VPLMExperimenter.Company Name.Common Space'
 				},
 				{
-					label: 'Common Space ● 领导',
+					label: 'Common Space - Project Leader',
 					respType: 'REGULAR',
 					value: 'VPLMProjectLeader.Company Name.Common Space'
 				},
 				{
-					label: 'Common Space ● 作者',
+					label: 'Common Space - Creator',
 					respType: 'REGULAR',
 					value: 'VPLMCreator.Company Name.Common Space'
 				},
 				{
-					label: 'Common Space ● 所有者',
+					label: 'Common Space - Project Administrator',
 					respType: 'ADMIN',
 					value: 'VPLMProjectAdministrator.Company Name.Common Space'
 				},
 				{
-					label: 'Default ● 管理员',
+					label: 'Default - Admin',
 					respType: 'ADMIN',
-					value: '"VPLMAdmin.Company Name.Default'
+					value: 'VPLMAdmin.Company Name.Default'
 				}
 			],
 			type: 'list',
@@ -111,14 +110,15 @@ if (!isDev) {
 /*
  * @Author: FanWenLong
  * @Date: 2025-11-19 15:31:48
- * @Description: 设置自动刷新时间: -1:为不自动刷新 ;其他数字:自动刷新时间间隔为分钟;不设置:默认20分钟自动刷新
+ * @Description: 璁剧疆鑷姩鍒锋柊鏃堕棿: -1:涓轰笉鑷姩鍒锋柊 ;鍏朵粬鏁板瓧:鑷姩鍒锋柊鏃堕棿闂撮殧涓哄垎閽?涓嶈缃?榛樿20鍒嗛挓鑷姩鍒锋柊
  */
 
-widget &&
+if (widget) {
 	// @ts-ignore
 	widget.setMetas({
 		autoRefresh: -1
 	});
+}
 widget.addEvent('onRefresh', () => {
 	window.location.reload();
 	// TODO an application data refresh
