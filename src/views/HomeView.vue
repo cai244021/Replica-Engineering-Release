@@ -576,6 +576,9 @@
 				<el-button @click="enterpriseDialogVisible = false">取消</el-button>
 			</template>
 		</el-dialog>
+		<ImportFromSpreadsheetDialog
+			v-model="importSpreadsheetDialogVisible"
+			@import-success="handleSpreadsheetImportSuccess" />
 	</div>
 </template>
 
@@ -596,8 +599,7 @@ import {
 	ArrowRight,
 	EditPen,
 	Compass,
-	VideoPlay,
-	Upload
+	VideoPlay
 } from '@element-plus/icons-vue';
 import { ElCheckbox, ElMessage, ElMessageBox } from 'element-plus';
 import searchApi from '@/api/searchApi';
@@ -608,6 +610,8 @@ import { useBaseInfoStore, useDialogStore } from '@/store';
 import dsSearchInput from '@/plugins/ds-search-input';
 import { isDev } from '@/utils/env';
 import { useLifecycleCommands } from '@/composables/lifecycleCommands';
+import { useQueryModeStore } from '@/store/modules/queryMode';
+import ImportFromSpreadsheetDialog from './ImportFromSpreadsheetDialog.vue';
 
 const dialogStore = useDialogStore();
 
@@ -616,6 +620,7 @@ const router = useRouter();
 
 // Store
 const baseInfoStore = useBaseInfoStore();
+const queryModeStore = useQueryModeStore();
 
 // 卡片下拉菜单定位选项：使用 fixed 定位避免页面扩大，动态计算最佳展开位置
 const cardDropdownPopperOptions = {
@@ -794,6 +799,7 @@ interface EnterpriseCodeRow {
 }
 
 const enterpriseDialogVisible = ref(false);
+const importSpreadsheetDialogVisible = ref(false);
 const enterpriseCodeRows = ref<EnterpriseCodeRow[]>([]);
 const selectedEnterpriseRows = ref<EnterpriseCodeRow[]>([]);
 
@@ -1196,8 +1202,17 @@ const handleCreatePart = () => {
 };
 
 const handleImportFromSpreadsheet = () => {
-	// TODO: 实现导入功能
-	console.log('从电子表格创建');
+	importSpreadsheetDialogVisible.value = true;
+};
+
+const handleSpreadsheetImportSuccess = (rootPhysicalId: string) => {
+	queryModeStore.switchToDbMode();
+	router.push({
+		name: 'partDetail',
+		params: {
+			physicalId: rootPhysicalId
+		}
+	});
 };
 
 // 获取状态类型

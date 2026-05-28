@@ -4151,7 +4151,16 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 		dataKey: 'revision',
 		title: '修订版',
 		width: columnWidths.value.revision,
-		headerCellRenderer: () => createResizableHeader('revision', '修订版')
+		headerCellRenderer: () => createResizableHeader('revision', '修订版'),
+		cellRenderer: ({ rowData }) =>
+			h(
+				'span',
+				{
+					...createChildrenCellProps('revision', 'enterprise-code-link'),
+					onClick: () => handleRevisionLinkClick(rowData)
+				},
+				rowData.revision || '-'
+			)
 	},
 	...referenceQuantityColumn.value,
 	{
@@ -4542,6 +4551,15 @@ const handleSelectedRowRevision = async () => {
 		const physicalId = selectedRow.resourceid || selectedRow.id;
 		openLifecycleHistoryCmd(physicalId);
 	});
+};
+
+const handleRevisionLinkClick = (row: any) => {
+	const physicalId = row?.resourceid || row?.physicalId || row?.physicalid || row?.id;
+	if (!physicalId) {
+		ElMessage.warning('未获取到物理ID');
+		return;
+	}
+	openLifecycleHistoryCmd(physicalId);
 };
 
 const handleSelectedRowNewRevision = async () => {
