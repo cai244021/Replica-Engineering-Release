@@ -8,6 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+Interface
+docs
 .DS_Store
 dist
 dist-ssr
@@ -55,3 +57,6 @@ Interface/success.har
 .agents/skills/skill-creator/scripts/run_loop.py
 .agents/skills/skill-creator/scripts/utils.py
 /OOTBSources
+.windsurf/workflows/analyze-har.md
+Interface/修订版源error.har
+Interface/HAR分析报告.md
