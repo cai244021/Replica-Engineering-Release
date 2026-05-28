@@ -1368,7 +1368,8 @@
 						:row-class="getChildrenV2RowClass"
 						:row-props="getChildrenV2RowProps"
 						fixed
-						@click="handleChildrenTableClick" />
+						@click="handleChildrenTableClick"
+						@row-dblclick="handleChildrenTableDblClick" />
 				</template>
 			</el-auto-resizer>
 		</div>
@@ -1967,7 +1968,7 @@ import {
 	ArrowRight,
 	Expand
 } from '@element-plus/icons-vue';
-import { ElCheckbox, ElIcon, ElImage, ElMessage, ElMessageBox, ElTag } from 'element-plus';
+import { ElCheckbox, ElIcon, ElImage, ElInput, ElMessage, ElMessageBox, ElTag } from 'element-plus';
 import type { Column } from 'element-plus';
 import partDetailApi from '@/api/partDetailApi';
 import expandApi, { type ExpandResponse, type TreeNode } from '@/api/expandApi';
@@ -2043,6 +2044,23 @@ const defaultThumbnail = [
 // 数据
 const partInfo = ref<PartInfo | null>(null);
 const childrenData = ref<TreeNode[]>([]);
+
+// 单元格编辑状态管理
+const editingCell = ref<{ rowId: string; columnKey: string } | null>(null);
+const editingValue = ref('');
+const editingInputRef = ref<any>(null);
+
+// 监听编辑状态变化，自动选中输入框内容
+watch(editingCell, (newVal, oldVal) => {
+	if (newVal && newVal !== oldVal) {
+		nextTick(() => {
+			if (editingInputRef.value) {
+				editingInputRef.value.focus();
+				editingInputRef.value.select();
+			}
+		});
+	}
+});
 
 // 全局存储当前 Revise 操作的 targetNodes，供 _attributeListRequest 补丁使用
 let currentReviseTargetNodes: any[] = [];
@@ -3102,8 +3120,8 @@ const loadDuplicateSecurityContext = async () => {
 			type: 'VPMReference',
 			xrequestedwith: 'xmlhttprequest'
 		});
-		const options: DuplicateSecurityContextOption[] =
-			createContextRes.credentials?.map((credential: { ctxname: string; prjtitle?: string; ctxtitle?: string }) => ({
+		const options: DuplicateSecurityContextOption[]
+			= createContextRes.credentials?.map((credential: { ctxname: string; prjtitle?: string; ctxtitle?: string }) => ({
 				value: credential.ctxname,
 				label: credential.prjtitle || credential.ctxtitle || credential.ctxname
 			})) || [];
@@ -3909,8 +3927,8 @@ const treeReorderSelectedIndexes = computed(() =>
 const canMoveTreeReorderUp = computed(() => !!treeReorderSelectedIndexes.value.length && treeReorderSelectedIndexes.value[0] > 0);
 const canMoveTreeReorderDown = computed(
 	() =>
-		!!treeReorderSelectedIndexes.value.length &&
-		treeReorderSelectedIndexes.value[treeReorderSelectedIndexes.value.length - 1] < treeReorderRows.value.length - 1
+		!!treeReorderSelectedIndexes.value.length
+		&& treeReorderSelectedIndexes.value[treeReorderSelectedIndexes.value.length - 1] < treeReorderRows.value.length - 1
 );
 const treeReorderDialogStyle = computed(() => ({
 	left: `${treeReorderDialogMaximized.value ? 8 : treeReorderDialogPosition.value.left}px`,
@@ -3945,6 +3963,37 @@ const handleChildrenTableClick = (event: MouseEvent) => {
 	if (shouldKeepSelection) return;
 
 	selectedChildrenRows.value = [];
+};
+
+const handleChildrenTableDblClick = (event: any) => {
+	const target = event.target as HTMLElement | null;
+	if (!target) return;
+
+	// 找到最近的单元格
+	const cell = target.closest('.el-table-v2__row-cell');
+	if (!cell) return;
+
+	// 获取列索引
+	const cellIndex = Array.from(cell.parentElement?.children || []).indexOf(cell);
+	if (cellIndex === -1) return;
+
+	// 获取行数据
+	const rowData = event.row;
+	if (!rowData) return;
+
+	// 获取列定义
+	const columns = childrenTableColumns.value;
+	if (!columns || cellIndex >= columns.length) return;
+
+	const column = columns[cellIndex];
+	if (!column) return;
+
+	// 判断是否是可编辑列
+	if (column.key === 'label' && rowData.label) {
+		startCellEdit(rowData, 'label', rowData.label);
+	} else if (column.key === 'instanceLabel' && rowData.instanceLabel) {
+		startCellEdit(rowData, 'instanceLabel', rowData.instanceLabel);
+	}
 };
 
 const startColumnResize = (event: MouseEvent, key: string) => {
@@ -4018,6 +4067,156 @@ const referenceQuantityColumn = computed<Column<TreeNode>[]>(() => {
 		}
 	];
 });
+
+// 单元格编辑相关函数
+const startCellEdit = async (row: TreeNode, columnKey: string, value: string) => {
+	console.log('[PartDetailView] startCellEdit called:', { rowId: row.id, columnKey, value });
+	if (!value) {
+		ElMessage.warning('当前列值为空，无法编辑');
+		return;
+	}
+
+	let readParams: { busIDs?: string[]; relIDs?: string[] };
+	let attributePath: string;
+	let columnName: string;
+
+	if (columnKey === 'label') {
+		// 标题（对象属性）
+		const physicalId = row.resourceid || row.id;
+		if (!physicalId) {
+			ElMessage.warning('未获取到物理ID');
+			return;
+		}
+		readParams = { busIDs: [physicalId] };
+		attributePath = 'PLMEntity.V_Name';
+		columnName = '标题';
+	} else if (columnKey === 'instanceLabel') {
+		// 标题(实例)（关系属性）
+		const relationId = row.relationId || row.id;
+		if (!relationId) {
+			ElMessage.warning('未获取到关系ID');
+			return;
+		}
+		readParams = { relIDs: [relationId] };
+		attributePath = 'PLMInstance.PLM_ExternalID';
+		columnName = '标题(实例)';
+	} else {
+		return;
+	}
+
+	try {
+		const response = await partDetailApi.readAttributePermission(readParams);
+		const result = response.results?.[0];
+		if (!result) {
+			ElMessage.warning('无法获取属性权限信息');
+			return;
+		}
+
+		const attribute = result.data.find((item: any) => item.path === attributePath);
+		if (!attribute) {
+			ElMessage.warning('未找到属性信息');
+			return;
+		}
+
+		if (attribute.readOnly) {
+			ElMessage.warning(`${columnName}不可编辑`);
+			return;
+		}
+
+		// 可编辑，进入编辑模式
+		editingCell.value = { rowId: row.id, columnKey };
+		editingValue.value = value;
+	} catch (error) {
+		console.error('[PartDetailView] 检查编辑权限失败:', error);
+		ElMessage.error('检查编辑权限失败');
+	}
+};
+
+const cancelCellEdit = () => {
+	editingCell.value = null;
+	editingValue.value = '';
+};
+
+const handleCellEditBlur = async (row: TreeNode, columnKey: string) => {
+	const newValue = editingValue.value.trim();
+	const oldValue = columnKey === 'label' ? row.label : row.instanceLabel;
+
+	if (newValue === oldValue) {
+		cancelCellEdit();
+		return;
+	}
+
+	if (!newValue) {
+		ElMessage.warning('值不能为空');
+		cancelCellEdit();
+		return;
+	}
+
+	let updateParams: { path: string; attributePath: string; value: string };
+
+	if (columnKey === 'label') {
+		// 标题（对象属性）
+		const physicalId = row.resourceid || row.id;
+		if (!physicalId) {
+			ElMessage.warning('未获取到物理ID');
+			cancelCellEdit();
+			return;
+		}
+		updateParams = {
+			path: `model/bus/${physicalId}`,
+			attributePath: 'PLMEntity.V_Name',
+			value: newValue
+		};
+	} else if (columnKey === 'instanceLabel') {
+		// 标题(实例)（关系属性）
+		const relationId = row.relationId || row.id;
+		if (!relationId) {
+			ElMessage.warning('未获取到关系ID');
+			cancelCellEdit();
+			return;
+		}
+		updateParams = {
+			path: `model/rel/${relationId}`,
+			attributePath: 'PLMInstance.PLM_ExternalID',
+			value: newValue
+		};
+	} else {
+		cancelCellEdit();
+		return;
+	}
+
+	try {
+		const response = await partDetailApi.updateAttribute(updateParams);
+		const result = response.results?.[0];
+		if (!result) {
+			ElMessage.error('更新失败');
+			cancelCellEdit();
+			return;
+		}
+
+		if (result.body.errors && result.body.errors.length > 0) {
+			const error = result.body.errors[0];
+			ElMessage.error(error.message || '更新失败');
+			cancelCellEdit();
+			return;
+		}
+
+		// 更新成功，直接保留更新后的值，不刷新表格
+		ElMessage.success('更新成功');
+		cancelCellEdit();
+
+		// 直接更新当前行的数据
+		if (columnKey === 'label') {
+			row.label = newValue;
+		} else if (columnKey === 'instanceLabel') {
+			row.instanceLabel = newValue;
+		}
+	} catch (error) {
+		console.error('[PartDetailView] 更新属性失败:', error);
+		ElMessage.error('更新失败');
+		cancelCellEdit();
+	}
+};
 
 const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 	{
@@ -4096,11 +4295,72 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 		headerCellRenderer: () => createResizableHeader('label', '标题'),
 		cellRenderer: ({ rowData }) => {
 			const canExpand = !isFlatStructureView.value && (rowData.hasChildren || rowData.isExpanded);
+			const isEditing = editingCell.value?.rowId === rowData.id && editingCell.value?.columnKey === 'label';
+			if (isEditing) {
+				return h(
+					'div',
+					{
+						class: 'name-cell',
+						style: {
+							paddingLeft: `${(isFlatStructureView.value ? 0 : rowData.level || 0) * 20}px`,
+							display: 'flex',
+							alignItems: 'center',
+							gap: '4px'
+						}
+					},
+					[
+						h(
+							'span',
+							{
+								class: [canExpand ? 'custom-tree-icon' : 'tree-icon-placeholder', isRowExpanding(rowData) ? 'is-loading' : ''],
+								onClick: (event: MouseEvent) => {
+									event.stopPropagation();
+									if (!isRowExpanding(rowData) && canExpand) toggleRowExpand(rowData);
+								}
+							},
+							canExpand
+								? isRowExpanding(rowData)
+									? [h(ElIcon, { class: 'expand-loading-icon' }, () => [h(Loading)])]
+									: rowData.isExpanded
+										? '-'
+										: '+'
+								: ''
+						),
+						h(ElImage, {
+							src: rowData.icon || rowData.type_icon_url || defaultThumbnail,
+							class: 'row-icon',
+							fit: 'contain'
+						}),
+						h(ElInput, {
+							'ref': editingInputRef,
+							'modelValue': editingValue.value,
+							'onUpdate:modelValue': (val: string) => (editingValue.value = val),
+							'size': 'small',
+							'onBlur': () => handleCellEditBlur(rowData, 'label'),
+							'onKeyup': (event: KeyboardEvent) => {
+								if (event.key === 'Enter') handleCellEditBlur(rowData, 'label');
+								if (event.key === 'Escape') cancelCellEdit();
+							},
+							'onClick': (event: MouseEvent) => event.stopPropagation()
+						})
+					]
+				);
+			}
 			return h(
 				'div',
 				{
 					...createChildrenCellProps('label', 'name-cell'),
-					style: { paddingLeft: `${(isFlatStructureView.value ? 0 : rowData.level || 0) * 20}px` }
+					style: {
+						paddingLeft: `${(isFlatStructureView.value ? 0 : rowData.level || 0) * 20}px`,
+						width: '100%',
+						height: '100%',
+						display: 'flex',
+						alignItems: 'center'
+					},
+					onDblclick: (event: MouseEvent) => {
+						event.stopPropagation();
+						startCellEdit(rowData, 'label', rowData.label);
+					}
 				},
 				[
 					h(
@@ -4110,6 +4370,10 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 							onClick: (event: MouseEvent) => {
 								event.stopPropagation();
 								if (!isRowExpanding(rowData) && canExpand) toggleRowExpand(rowData);
+							},
+							onDblclick: (event: MouseEvent) => {
+								event.stopPropagation();
+								startCellEdit(rowData, 'label', rowData.label);
 							}
 						},
 						canExpand
@@ -4123,9 +4387,23 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 					h(ElImage, {
 						src: rowData.icon || rowData.type_icon_url || defaultThumbnail,
 						class: 'row-icon',
-						fit: 'contain'
+						fit: 'contain',
+						onDblclick: (event: MouseEvent) => {
+							event.stopPropagation();
+							startCellEdit(rowData, 'label', rowData.label);
+						}
 					}),
-					h('span', { class: 'name-text' }, renderHighlightedText(rowData.label))
+					h(
+						'span',
+						{
+							class: 'name-text',
+							onDblclick: (event: MouseEvent) => {
+								event.stopPropagation();
+								startCellEdit(rowData, 'label', rowData.label);
+							}
+						},
+						renderHighlightedText(rowData.label)
+					)
 				]
 			);
 		}
@@ -4169,7 +4447,39 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 		title: '标题(实例)',
 		width: columnWidths.value.instanceLabel,
 		headerCellRenderer: () => createResizableHeader('instanceLabel', '标题(实例)'),
-		cellRenderer: ({ rowData }) => h('span', createChildrenCellProps('instanceLabel'), renderHighlightedText(rowData.instanceLabel))
+		cellRenderer: ({ rowData }) => {
+			const isEditing = editingCell.value?.rowId === rowData.id && editingCell.value?.columnKey === 'instanceLabel';
+			if (isEditing) {
+				return h(ElInput, {
+					'ref': editingInputRef,
+					'modelValue': editingValue.value,
+					'onUpdate:modelValue': (val: string) => (editingValue.value = val),
+					'size': 'small',
+					'onBlur': () => handleCellEditBlur(rowData, 'instanceLabel'),
+					'onKeyup': (event: KeyboardEvent) => {
+						if (event.key === 'Enter') handleCellEditBlur(rowData, 'instanceLabel');
+						if (event.key === 'Escape') cancelCellEdit();
+					}
+				});
+			}
+			return h(
+				'div',
+				{
+					...createChildrenCellProps('instanceLabel'),
+					style: {
+						width: '100%',
+						height: '100%',
+						display: 'flex',
+						alignItems: 'center'
+					},
+					onDblclick: (event: MouseEvent) => {
+						event.stopPropagation();
+						startCellEdit(rowData, 'instanceLabel', rowData.instanceLabel);
+					}
+				},
+				renderHighlightedText(rowData.instanceLabel)
+			);
+		}
 	},
 	{
 		key: 'isLastRevision',
@@ -4635,8 +4945,8 @@ const handleSelectedRowNewRevision = async () => {
 		const targetNodes = selectedRows.map(row => {
 			const physicalId = row.resourceid || row.id;
 			const objectType = pickValidField('objectType', 'type') || 'VPMReference';
-			const objectName =
-				pickValidField('ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
+			const objectName
+				= pickValidField('ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
 			const revision = pickValidField('revision', 'ds6wg:revision');
 			const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
 			const typeDisplayName = normalizeTypeDisplayName(pickValidField('typeDisplayName', 'displayType', 'globalType', 'ds6w:type'));
@@ -4800,10 +5110,10 @@ const handleSelectedRowNewRevision = async () => {
 						if (isReviseRequest && originalOnComplete) {
 							options.onComplete = function (response: any) {
 								if (
-									(url.includes('/attributeList') || url.includes('/prepare_revise_checkavailability')) &&
-									response?.results &&
-									Array.isArray(response.results) &&
-									Array.isArray(currentReviseTargetNodes)
+									(url.includes('/attributeList') || url.includes('/prepare_revise_checkavailability'))
+									&& response?.results
+									&& Array.isArray(response.results)
+									&& Array.isArray(currentReviseTargetNodes)
 								) {
 									const sourceById = new Map<string, any>();
 									currentReviseTargetNodes.forEach(node => {
@@ -4852,9 +5162,9 @@ const handleSelectedRowNewRevision = async () => {
 				const ReviseWidgetCtor = ReviseWidget?.default || ReviseWidget;
 				const reviseWidgetPrototype = ReviseWidgetCtor?.prototype;
 				if (
-					reviseWidgetPrototype &&
-					typeof reviseWidgetPrototype._attributeListRequest === 'function' &&
-					!reviseWidgetPrototype.__twMergeSelectionInfoForRevise
+					reviseWidgetPrototype
+					&& typeof reviseWidgetPrototype._attributeListRequest === 'function'
+					&& !reviseWidgetPrototype.__twMergeSelectionInfoForRevise
 				) {
 					const originalAttributeListRequest = reviseWidgetPrototype._attributeListRequest;
 					reviseWidgetPrototype._attributeListRequest = function (objects: any[], securityContext: any, callback: (results: any[]) => void) {
@@ -4987,8 +5297,8 @@ const handleSelectedRowNewBranch = async () => {
 		const targetNodes = selectedRows.map(row => {
 			const physicalId = row.resourceid || row.id;
 			const objectType = pickValidField('objectType', 'type') || 'VPMReference';
-			const objectName =
-				pickValidField('ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
+			const objectName
+				= pickValidField('ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
 			const revision = pickValidField('revision', 'ds6wg:revision');
 			const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
 			const typeDisplayName = normalizeTypeDisplayName(pickValidField('typeDisplayName', 'displayType', 'globalType', 'ds6w:type'));
@@ -5261,8 +5571,8 @@ const handleSelectedRowCopy = async () => {
 
 		const widgetData = selectedRows.map(row => {
 			const physicalId = row.resourceid || row.id;
-			const objectName =
-				pickValidField(row, 'ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
+			const objectName
+				= pickValidField(row, 'ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
 			const revision = pickValidField(row, 'revision', 'ds6wg:revision');
 			const displayName = objectName;
 			const typeDisplayName = normalizeTypeDisplayName(pickValidField(row, 'typeDisplayName', 'displayType', 'globalType', 'ds6w:type'));
@@ -5957,8 +6267,8 @@ const loadExpandData = async (physicalId: string) => {
 	}
 };
 
-const { handleStructureViewCommand, handleManufacturableToggle, handleManufacturableView, handleIndentedStructureView, handleFlatStructureView } =
-	useStructureView(
+const { handleStructureViewCommand, handleManufacturableToggle, handleManufacturableView, handleIndentedStructureView, handleFlatStructureView }
+	= useStructureView(
 		currentPhysicalId,
 		structureViewMode,
 		structureUsageView,
@@ -6638,9 +6948,9 @@ const buildLifecycleTargetNodeFromPartInfo = (physicalId: string) =>
 	});
 
 const getDeleteTargetLabel = (target: any) =>
-	pickOpenWithField(target, 'label', 'displayName', 'title', 'name', 'objectName', 'identifier') ||
-	pickOpenWithField(target, 'physicalid', 'physicalId', 'objectId', 'id') ||
-	'-';
+	pickOpenWithField(target, 'label', 'displayName', 'title', 'name', 'objectName', 'identifier')
+	|| pickOpenWithField(target, 'physicalid', 'physicalId', 'objectId', 'id')
+	|| '-';
 
 const showDeleteReportDialog = (report: DeleteReportItem[]) => {
 	ElMessageBox.alert(
@@ -6729,16 +7039,16 @@ const confirmDeleteTargets = async (targetNodes: any[]) => {
 					),
 					includeStructure.value
 						? h(
-								ElCheckbox,
-								{
-									'modelValue': unrecoverableChecked.value,
-									'onUpdate:modelValue': (value: unknown) => {
-										unrecoverableChecked.value = value === true;
-										setTimeout(() => updateConfirmButtonDisabled(), 0);
-									}
-								},
-								() => '我知道无法恢复删除的对象。'
-							)
+							ElCheckbox,
+							{
+								'modelValue': unrecoverableChecked.value,
+								'onUpdate:modelValue': (value: unknown) => {
+									unrecoverableChecked.value = value === true;
+									setTimeout(() => updateConfirmButtonDisabled(), 0);
+								}
+							},
+							() => '我知道无法恢复删除的对象。'
+						)
 						: null
 				])
 			])

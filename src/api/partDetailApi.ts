@@ -1682,6 +1682,163 @@ class PartDetailAPI {
 			throw error;
 		}
 	}
+
+	async readAttributePermission(params: { busIDs?: string[]; relIDs?: string[] }): Promise<AttributeReadResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.securityContext) {
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const url = '/resources/v1/collabServices/attributes/op/read?tenant=OnPremise';
+		const body = {
+			lIds: [],
+			relIDs: params.relIDs || [],
+			busIDs: params.busIDs || [],
+			plmparameters: 'false',
+			attributes: 'true',
+			navigateToMain: 'false',
+			readonly: 'true',
+			debug_properties: ''
+		};
+
+		console.log('[PartDetailAPI] 读取属性权限 URL:', url);
+		console.log('[PartDetailAPI] 读取属性权限参数:', JSON.stringify(body, null, 2));
+
+		try {
+			const response = await http.post(url, body, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 读取属性权限响应:', response);
+			return response as AttributeReadResponse;
+		} catch (error) {
+			console.error('[PartDetailAPI] 读取属性权限失败:', error);
+			throw error;
+		}
+	}
+
+	async updateAttribute(params: { path: string; attributePath: string; value: string }): Promise<AttributeUpdateResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.securityContext) {
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const url = '/resources/v1/collabServices/attributes/op/update?tenant=OnPremise';
+		const body = {
+			requests: [
+				{
+					path: params.path,
+					method: 'PATCH',
+					body: [
+						{
+							op: 'replace',
+							path: params.attributePath,
+							value: params.value
+						}
+					],
+					queryParams: {
+						select: ['physicalid', 'modified', `attribute[${params.attributePath}]`]
+					}
+				}
+			]
+		};
+
+		console.log('[PartDetailAPI] 更新属性 URL:', url);
+		console.log('[PartDetailAPI] 更新属性参数:', JSON.stringify(body, null, 2));
+
+		try {
+			const response = await http.put(url, body, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 更新属性响应:', response);
+			return response as AttributeUpdateResponse;
+		} catch (error) {
+			console.error('[PartDetailAPI] 更新属性失败:', error);
+			throw error;
+		}
+	}
+}
+
+export interface AttributeDataItem {
+	path: string;
+	visible: boolean;
+	nls: string;
+	selectable: string;
+	name: string;
+	readOnly: boolean;
+	type: string;
+	value?: string[];
+	maxlength?: number;
+	multiline?: boolean;
+	mandatory?: boolean;
+	UIPosition?: number;
+	keepformat?: boolean;
+}
+
+export interface AttributeReadResult {
+	type_icon_url?: string;
+	computed?: {
+		label?: {
+			path: string;
+			selectable: string;
+			name: string;
+			value?: string[];
+		};
+	};
+	data: AttributeDataItem[];
+	physicalID: string;
+	basicData?: Array<{
+		nls: string;
+		selectable: string;
+		name: string;
+		readOnly: boolean;
+		type: string;
+		value?: string[];
+		UIPosition?: number;
+	}>;
+	metatype?: string;
+	type?: string;
+	type_icon_large_url?: string;
+	PLMParametersAvailable?: boolean;
+	preview_url?: string;
+	success?: boolean;
+	modifyAccess?: boolean;
+	groupData?: any[];
+}
+
+export interface AttributeReadResponse {
+	options?: {
+		showSections?: boolean;
+		maxMultiSelectionLimit?: number;
+		autoExpand?: boolean;
+	};
+	metrics?: any;
+	results: AttributeReadResult[];
+}
+
+export interface AttributeUpdateResult {
+	status: number;
+	body: {
+		physicalid?: string;
+		modified?: {
+			selectable: string;
+			name: string;
+			value?: string[];
+		};
+		url?: string;
+		errors?: Array<{
+			message: string;
+			code: string;
+			type: string;
+		}>;
+	};
+}
+
+export interface AttributeUpdateResponse {
+	results: AttributeUpdateResult[];
 }
 
 export default new PartDetailAPI();
