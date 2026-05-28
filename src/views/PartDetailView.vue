@@ -606,6 +606,12 @@
 										<span>{{ lifecycleCmdLoading ? '加载中...' : '新建分支' }}</span>
 									</el-dropdown-item>
 									<el-dropdown-item
+										command="copy"
+										:disabled="lifecycleCmdLoading || selectedChildrenRows.length === 0">
+										<span class="selected-action-icon">⧉</span>
+										<span>{{ lifecycleCmdLoading ? '加载中...' : '复制' }}</span>
+									</el-dropdown-item>
+									<el-dropdown-item
 										command="compare"
 										:disabled="selectedChildrenRows.length === 0 || selectedChildrenRows.length > 2">
 										<span class="selected-action-icon">↔</span>
@@ -2153,6 +2159,7 @@ type SelectedActionCommand =
 	| 'revision'
 	| 'newRevision'
 	| 'newBranch'
+	| 'copy'
 	| 'compare'
 	| 'relationship'
 	| 'replaceLatest'
@@ -3061,8 +3068,8 @@ const loadDuplicateSecurityContext = async () => {
 			type: 'VPMReference',
 			xrequestedwith: 'xmlhttprequest'
 		});
-		const options: DuplicateSecurityContextOption[] =
-			createContextRes.credentials?.map((credential: { ctxname: string; prjtitle?: string; ctxtitle?: string }) => ({
+		const options: DuplicateSecurityContextOption[]
+			= createContextRes.credentials?.map((credential: { ctxname: string; prjtitle?: string; ctxtitle?: string }) => ({
 				value: credential.ctxname,
 				label: credential.prjtitle || credential.ctxtitle || credential.ctxname
 			})) || [];
@@ -3868,8 +3875,8 @@ const treeReorderSelectedIndexes = computed(() =>
 const canMoveTreeReorderUp = computed(() => !!treeReorderSelectedIndexes.value.length && treeReorderSelectedIndexes.value[0] > 0);
 const canMoveTreeReorderDown = computed(
 	() =>
-		!!treeReorderSelectedIndexes.value.length &&
-		treeReorderSelectedIndexes.value[treeReorderSelectedIndexes.value.length - 1] < treeReorderRows.value.length - 1
+		!!treeReorderSelectedIndexes.value.length
+		&& treeReorderSelectedIndexes.value[treeReorderSelectedIndexes.value.length - 1] < treeReorderRows.value.length - 1
 );
 const treeReorderDialogStyle = computed(() => ({
 	left: `${treeReorderDialogMaximized.value ? 8 : treeReorderDialogPosition.value.left}px`,
@@ -4592,8 +4599,8 @@ const handleSelectedRowNewRevision = async () => {
 			};
 			const physicalId = row.resourceid || row.id;
 			const objectType = pickValidField('objectType', 'type') || 'VPMReference';
-			const objectName =
-				pickValidField('ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
+			const objectName
+				= pickValidField('ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
 			const revision = pickValidField('revision', 'ds6wg:revision');
 			const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
 			const typeDisplayName = normalizeTypeDisplayName(pickValidField('typeDisplayName', 'displayType', 'globalType', 'ds6w:type'));
@@ -4757,10 +4764,10 @@ const handleSelectedRowNewRevision = async () => {
 						if (isReviseRequest && originalOnComplete) {
 							options.onComplete = function (response: any) {
 								if (
-									(url.includes('/attributeList') || url.includes('/prepare_revise_checkavailability')) &&
-									response?.results &&
-									Array.isArray(response.results) &&
-									Array.isArray(currentReviseTargetNodes)
+									(url.includes('/attributeList') || url.includes('/prepare_revise_checkavailability'))
+									&& response?.results
+									&& Array.isArray(response.results)
+									&& Array.isArray(currentReviseTargetNodes)
 								) {
 									const sourceById = new Map<string, any>();
 									currentReviseTargetNodes.forEach(node => {
@@ -4809,9 +4816,9 @@ const handleSelectedRowNewRevision = async () => {
 				const ReviseWidgetCtor = ReviseWidget?.default || ReviseWidget;
 				const reviseWidgetPrototype = ReviseWidgetCtor?.prototype;
 				if (
-					reviseWidgetPrototype &&
-					typeof reviseWidgetPrototype._attributeListRequest === 'function' &&
-					!reviseWidgetPrototype.__twMergeSelectionInfoForRevise
+					reviseWidgetPrototype
+					&& typeof reviseWidgetPrototype._attributeListRequest === 'function'
+					&& !reviseWidgetPrototype.__twMergeSelectionInfoForRevise
 				) {
 					const originalAttributeListRequest = reviseWidgetPrototype._attributeListRequest;
 					reviseWidgetPrototype._attributeListRequest = function (objects: any[], securityContext: any, callback: (results: any[]) => void) {
@@ -4960,8 +4967,8 @@ const handleSelectedRowNewBranch = async () => {
 			};
 			const physicalId = row.resourceid || row.id;
 			const objectType = pickValidField('objectType', 'type') || 'VPMReference';
-			const objectName =
-				pickValidField('ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
+			const objectName
+				= pickValidField('ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
 			const revision = pickValidField('revision', 'ds6wg:revision');
 			const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
 			const typeDisplayName = normalizeTypeDisplayName(pickValidField('typeDisplayName', 'displayType', 'globalType', 'ds6w:type'));
@@ -5195,6 +5202,191 @@ const handleSelectedRowsDelete = async () => {
 	);
 };
 
+const handleSelectedRowCopy = async () => {
+	const selectedRows = selectedChildrenRows.value;
+	if (!selectedRows || selectedRows.length === 0) {
+		ElMessage.warning('请先选中要复制的行');
+		return;
+	}
+
+	console.log('[TW_EngineeringRelease] handleSelectedRowCopy selectedChildrenRows:', JSON.stringify(selectedRows.slice(0, 2), null, 2));
+	lifecycleCmdLoading.value = true;
+	try {
+		const topWindow = (window.top || window.parent || window) as any;
+		if (!topWindow.widget) {
+			const { widget } = await import('@widget-lab/3ddashboard-utils');
+			topWindow.widget = widget;
+			(widget as any).body = document.body;
+		} else if (!topWindow.widget.body) {
+			topWindow.widget.body = document.body;
+		}
+
+		const requireFn = topWindow.require || topWindow.requirejs || (window as any).require || (window as any).requirejs;
+		const [DuplicateCmd, WAFData] = await Promise.all([
+			new Promise<any>((resolve, reject) => {
+				requireFn(
+					['DS/LifecycleCmd/DuplicateCmd'],
+					(module: any) => resolve(module),
+					(error: unknown) => reject(error)
+				);
+			}),
+			new Promise<any>((resolve, reject) => {
+				requireFn(
+					['DS/WAFData/WAFData'],
+					(module: any) => resolve(module),
+					(error: unknown) => reject(error)
+				);
+			})
+		]);
+
+		const pickValidField = (row: any, ...keys: string[]) => {
+			for (const key of keys) {
+				const value = pickOpenWithField(row, key);
+				if (value && value !== 'undefined' && value !== 'null' && !value.includes('undefined ')) return value;
+			}
+			return '';
+		};
+		const normalizeTypeDisplayName = (value: string) => {
+			if (!value || value === 'VPMReference' || value === 'ds6w:Part') return '物理产品';
+			return value;
+		};
+		const normalizeCurrentInternal = (value: string) => {
+			if (value === '工作中') return 'IN_WORK';
+			if (value === '已发布') return 'RELEASED';
+			return value || 'IN_WORK';
+		};
+
+		const widgetData = selectedRows.map(row => {
+			const physicalId = row.resourceid || row.id;
+			const objectName
+				= pickValidField(row, 'ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
+			const revision = pickValidField(row, 'revision', 'ds6wg:revision');
+			const displayName = objectName;
+			const typeDisplayName = normalizeTypeDisplayName(pickValidField(row, 'typeDisplayName', 'displayType', 'globalType', 'ds6w:type'));
+			const current = pickValidField(row, 'status', 'current', 'ds6w:status', 'state') || '工作中';
+			const currentInternal = normalizeCurrentInternal(pickValidField(row, 'current_internal', 'statusRaw'));
+			const state = currentInternal;
+			const stateNls = current;
+			const objectType = pickValidField(row, 'objectType', 'type') || 'VPMReference';
+			const policy = pickValidField(row, 'policy', 'ds6w:policy') || 'VPLM_SMB_Definition_MajorRev';
+			const cadMaster = pickValidField(row, 'cadMaster') || '3DEXPERIENCE';
+			const imageUrl = pickValidField(row, 'type_icon_url', 'icon', 'imageUrl') || '/snresources/images/icons/small/I_VPMNavProduct.png';
+
+			return {
+				'getID': () => physicalId,
+				'id': physicalId,
+				'objectId': physicalId,
+				'physicalId': physicalId,
+				'physicalid': physicalId,
+				'name': objectName,
+				'label': objectName,
+				'title': objectName,
+				'displayName': displayName,
+				'revision': revision,
+				'displayType': typeDisplayName,
+				'typeDisplayName': typeDisplayName,
+				'current': current,
+				'currentDisplayName': current,
+				'current_internal': currentInternal,
+				'state': state,
+				'stateNls': stateNls,
+				'maturityNls': stateNls,
+				'maturityTitle': current,
+				'ds6w:status': current,
+				'ds6w:status-original': `${policy}.${state}`,
+				'type': objectType,
+				'objectType': objectType,
+				'policy': policy,
+				'cadMaster': cadMaster,
+				'imageUrl': imageUrl,
+				'tenant': 'OnPremise',
+				'serviceId': '3DSpace',
+				'contextId': baseInfoStore.securityContext || '',
+				'locked': false,
+				'lockedBy': null,
+				'attributes': {
+					'ds6w:label': objectName,
+					'ds6w:name': objectName,
+					'ds6w:type': objectType,
+					'ds6w:status': current,
+					'ds6w:status-original': `${policy}.${state}`,
+					'ds6w:policy': policy,
+					'PLMEntity.V_Name': objectName
+				},
+				'options': {
+					'ds6w:status': current,
+					'ds6w:status-original': `${policy}.${state}`,
+					'current': current,
+					'currentDisplayName': current,
+					'state': state,
+					'stateNls': stateNls,
+					'ds6w:type': typeDisplayName,
+					'icons': [imageUrl],
+					'grid': {
+						'current': current,
+						'currentDisplayName': current,
+						'current_internal': state,
+						'ds6w:status': current,
+						'ds6w:status-original': `${policy}.${state}`,
+						'maturityTitle': current
+					}
+				},
+				'object': {
+					'displayName': displayName,
+					'name': objectName,
+					'label': objectName,
+					'title': objectName,
+					'revision': revision,
+					'current': current,
+					'currentDisplayName': current,
+					'current_internal': currentInternal,
+					'state': state,
+					'stateNls': stateNls,
+					'maturityNls': stateNls,
+					'maturityTitle': current,
+					'ds6w:status': current,
+					'ds6w:status-original': `${policy}.${state}`,
+					'typeDisplayName': typeDisplayName,
+					'cadMaster': cadMaster
+				}
+			};
+		});
+
+		currentDuplicateTargetNodes = widgetData;
+		applyDuplicateRequestPatch(WAFData);
+
+		const DuplicateCmdCtor = DuplicateCmd?.default || DuplicateCmd;
+		if (typeof DuplicateCmdCtor !== 'function') {
+			throw new Error('DS/LifecycleCmd/DuplicateCmd 不是可实例化命令类');
+		}
+
+		const mockContext = {
+			getSelectedNodes: () => widgetData,
+			getEditMode: () => false,
+			getPADTreeDocument: () => ({ getXSO: () => ({ onPostAdd: () => {}, onPostRemove: () => {}, onEmpty: () => {}, get: () => widgetData }) }),
+			getCurrentFolder: () => '{}',
+			addEvent: () => {},
+			selectedNodes: widgetData
+		};
+		const duplicateCmd = new DuplicateCmdCtor({
+			ID: 'duplicate_command',
+			context: mockContext
+		});
+		if (typeof duplicateCmd.execute !== 'function') {
+			throw new Error('DS/LifecycleCmd/DuplicateCmd 实例未暴露 execute 方法');
+		}
+		duplicateCmd.execute(widgetData);
+
+		setTimeout(() => {
+			lifecycleCmdLoading.value = false;
+		}, 1000);
+	} catch (error) {
+		console.error('[TW_EngineeringRelease] 打开选中行复制失败:', error);
+		ElMessage.error('打开复制失败');
+		lifecycleCmdLoading.value = false;
+	}
+};
+
 const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 	switch (command) {
 		case 'openSelectedPart':
@@ -5223,6 +5415,9 @@ const handleSelectedActionCommand = (command: SelectedActionCommand) => {
 			break;
 		case 'newBranch':
 			handleSelectedRowNewBranch();
+			break;
+		case 'copy':
+			handleSelectedRowCopy();
 			break;
 		case 'compare':
 			handleSelectedCompare();
@@ -5759,8 +5954,8 @@ const loadExpandData = async (physicalId: string) => {
 	}
 };
 
-const { handleStructureViewCommand, handleManufacturableToggle, handleManufacturableView, handleIndentedStructureView, handleFlatStructureView } =
-	useStructureView(
+const { handleStructureViewCommand, handleManufacturableToggle, handleManufacturableView, handleIndentedStructureView, handleFlatStructureView }
+	= useStructureView(
 		currentPhysicalId,
 		structureViewMode,
 		structureUsageView,
@@ -6521,9 +6716,9 @@ const buildLifecycleTargetNodeFromPartInfo = (physicalId: string) =>
 	});
 
 const getDeleteTargetLabel = (target: any) =>
-	pickOpenWithField(target, 'label', 'displayName', 'title', 'name', 'objectName', 'identifier') ||
-	pickOpenWithField(target, 'physicalid', 'physicalId', 'objectId', 'id') ||
-	'-';
+	pickOpenWithField(target, 'label', 'displayName', 'title', 'name', 'objectName', 'identifier')
+	|| pickOpenWithField(target, 'physicalid', 'physicalId', 'objectId', 'id')
+	|| '-';
 
 const showDeleteReportDialog = (report: DeleteReportItem[]) => {
 	ElMessageBox.alert(
@@ -6612,16 +6807,16 @@ const confirmDeleteTargets = async (targetNodes: any[]) => {
 					),
 					includeStructure.value
 						? h(
-								ElCheckbox,
-								{
-									'modelValue': unrecoverableChecked.value,
-									'onUpdate:modelValue': (value: unknown) => {
-										unrecoverableChecked.value = value === true;
-										setTimeout(() => updateConfirmButtonDisabled(), 0);
-									}
-								},
-								() => '我知道无法恢复删除的对象。'
-							)
+							ElCheckbox,
+							{
+								'modelValue': unrecoverableChecked.value,
+								'onUpdate:modelValue': (value: unknown) => {
+									unrecoverableChecked.value = value === true;
+									setTimeout(() => updateConfirmButtonDisabled(), 0);
+								}
+							},
+							() => '我知道无法恢复删除的对象。'
+						)
 						: null
 				])
 			])
@@ -6776,8 +6971,8 @@ const callLifecycleReviseEntry = (ReviseCmd: any, physicalId: string, commandId 
 	const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
 	const typeDisplayName = pickOpenWithField(partInfo.value, 'typeDisplayName', 'displayType', 'globalType') || '物理产品';
 	const current = pickOpenWithField(partInfo.value, 'ds6w:status', 'status') || '工作中';
-	const currentInternal =
-		current === '工作中'
+	const currentInternal
+		= current === '工作中'
 			? 'IN_WORK'
 			: current === '已发布'
 				? 'RELEASED'
@@ -6786,8 +6981,8 @@ const callLifecycleReviseEntry = (ReviseCmd: any, physicalId: string, commandId 
 					: current;
 	const policy = pickOpenWithField(partInfo.value, 'ds6w:policy', 'policy') || 'VPLM_SMB_Definition_MajorRev';
 	const cadMaster = pickOpenWithField(partInfo.value, 'ds6w:cadMaster', 'cadMaster') || '3DEXPERIENCE';
-	const imageUrl =
-		pickOpenWithField(partInfo.value, 'type_icon_url', 'icon', 'thumbnail_2d') || '/snresources/images/icons/small/I_VPMNavProduct.png';
+	const imageUrl
+		= pickOpenWithField(partInfo.value, 'type_icon_url', 'icon', 'thumbnail_2d') || '/snresources/images/icons/small/I_VPMNavProduct.png';
 
 	console.log('[TW_EngineeringRelease] callLifecycleReviseEntry targetNode 字段:', {
 		physicalId,
@@ -7048,8 +7243,8 @@ const callLifecycleNewBranchEntry = (NewBranchCmd: any, physicalId: string) => {
 	const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
 	const typeDisplayName = pickOpenWithField(partInfo.value, 'typeDisplayName', 'displayType', 'globalType') || '物理产品';
 	const current = pickOpenWithField(partInfo.value, 'ds6w:status', 'status') || '工作中';
-	const currentInternal =
-		current === '工作中'
+	const currentInternal
+		= current === '工作中'
 			? 'IN_WORK'
 			: current === '已发布'
 				? 'RELEASED'
@@ -7058,8 +7253,8 @@ const callLifecycleNewBranchEntry = (NewBranchCmd: any, physicalId: string) => {
 					: current;
 	const policy = pickOpenWithField(partInfo.value, 'ds6w:policy', 'policy') || 'VPLM_SMB_Definition_MajorRev';
 	const cadMaster = pickOpenWithField(partInfo.value, 'ds6w:cadMaster', 'cadMaster') || '3DEXPERIENCE';
-	const imageUrl =
-		pickOpenWithField(partInfo.value, 'type_icon_url', 'icon', 'thumbnail_2d') || '/snresources/images/icons/small/I_VPMNavProduct.png';
+	const imageUrl
+		= pickOpenWithField(partInfo.value, 'type_icon_url', 'icon', 'thumbnail_2d') || '/snresources/images/icons/small/I_VPMNavProduct.png';
 
 	const targetNode = {
 		'getID': () => physicalId,
@@ -7199,12 +7394,30 @@ const patchDuplicateObject = (target: any, source: any) => {
 		const text = String(value);
 		return text !== 'undefined' && text !== 'null' && !text.includes('undefined ');
 	};
-	if (!isValidText(target.name)) target.name = source.name || source.displayName || source.title;
-	if (!isValidText(target.displayName)) target.displayName = source.displayName || source.name || source.title;
+	const normalizeCurrentInternal = (value: unknown) => {
+		if (value === '工作中') return 'IN_WORK';
+		if (value === '已发布') return 'RELEASED';
+		return isValidText(value) ? value : 'IN_WORK';
+	};
+	if (isValidText(source.name)) target.name = source.name;
+	if (isValidText(source.displayName)) target.displayName = source.displayName;
+	if (isValidText(target.revision) && isValidText(target.displayName)) {
+		const revisionSuffix = ` ${target.revision}`;
+		while (String(target.displayName).endsWith(`${revisionSuffix}${revisionSuffix}`)) {
+			target.displayName = String(target.displayName).slice(0, -revisionSuffix.length);
+		}
+	}
 	if (!isValidText(target.typeDisplayName) || target.typeDisplayName === target.type)
 		target.typeDisplayName = source.typeDisplayName || source.displayType;
 	if (!isValidText(target.current)) target.current = source.current;
-	if (!isValidText(target.current_internal) || String(target.current_internal).includes('.')) target.current_internal = source.current_internal;
+	target.current_internal = normalizeCurrentInternal(target.current_internal || source.current_internal);
+	target.state = target.state || source.state || target.current_internal;
+	target.stateNls = target.stateNls || source.stateNls || source.maturityNls || target.current;
+	target.maturityNls = target.maturityNls || source.maturityNls || source.stateNls || target.current;
+	target.currentDisplayName = target.currentDisplayName || source.currentDisplayName || target.current;
+	target.maturityTitle = target.maturityTitle || source.maturityTitle || target.current;
+	target['ds6w:status'] = target['ds6w:status'] || target.current;
+	target['ds6w:status-original'] = target['ds6w:status-original'] || source['ds6w:status-original'];
 	if (!target.revision) target.revision = source.revision;
 	if (!target.tenant) target.tenant = source.tenant || 'OnPremise';
 	if (!target.imageUrl) target.imageUrl = source.imageUrl;
@@ -7254,11 +7467,11 @@ const callLifecycleDuplicateEntry = (DuplicateCmd: any, physicalId: string) => {
 	const objectType = pickOpenWithField(partInfo.value, 'ds6w:type', 'type', 'objectType', 'displayType') || 'VPMReference';
 	const objectName = pickOpenWithField(partInfo.value, 'ds6w:label', 'label', 'displayName', 'name', 'title') || physicalId;
 	const revision = pickOpenWithField(partInfo.value, 'ds6wg:revision', 'revision') || '';
-	const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
+	const displayName = objectName;
 	const typeDisplayName = pickOpenWithField(partInfo.value, 'typeDisplayName', 'displayType', 'globalType') || '物理产品';
 	const current = pickOpenWithField(partInfo.value, 'ds6w:status', 'status') || '工作中';
-	const currentInternal =
-		current === '工作中'
+	const currentInternal
+		= current === '工作中'
 			? 'IN_WORK'
 			: current === '已发布'
 				? 'RELEASED'
@@ -7267,8 +7480,10 @@ const callLifecycleDuplicateEntry = (DuplicateCmd: any, physicalId: string) => {
 					: current;
 	const policy = pickOpenWithField(partInfo.value, 'ds6w:policy', 'policy') || 'VPLM_SMB_Definition_MajorRev';
 	const cadMaster = pickOpenWithField(partInfo.value, 'ds6w:cadMaster', 'cadMaster') || '3DEXPERIENCE';
-	const imageUrl =
-		pickOpenWithField(partInfo.value, 'type_icon_url', 'icon', 'thumbnail_2d') || '/snresources/images/icons/small/I_VPMNavProduct.png';
+	const imageUrl
+		= pickOpenWithField(partInfo.value, 'type_icon_url', 'icon', 'thumbnail_2d') || '/snresources/images/icons/small/I_VPMNavProduct.png';
+	const state = currentInternal;
+	const stateNls = current;
 	const targetNode = {
 		'getID': () => physicalId,
 		'id': physicalId,
@@ -7286,7 +7501,14 @@ const callLifecycleDuplicateEntry = (DuplicateCmd: any, physicalId: string) => {
 		'typeDisplayName': typeDisplayName,
 		'baseType': 'PLMEntity',
 		'current': current,
+		'currentDisplayName': current,
 		'current_internal': currentInternal,
+		'state': state,
+		'stateNls': stateNls,
+		'maturityNls': stateNls,
+		'maturityTitle': current,
+		'ds6w:status': current,
+		'ds6w:status-original': `${policy}.${state}`,
 		'imageUrl': imageUrl,
 		'tenant': 'OnPremise',
 		'envId': 'OnPremise',
@@ -7300,6 +7522,9 @@ const callLifecycleDuplicateEntry = (DuplicateCmd: any, physicalId: string) => {
 			'ds6w:label': displayName,
 			'ds6w:name': objectName,
 			'ds6w:type': objectType,
+			'ds6w:status': current,
+			'ds6w:status-original': `${policy}.${state}`,
+			'ds6w:policy': policy,
 			'PLMEntity.V_Name': objectName
 		},
 		'object': {
@@ -7314,14 +7539,34 @@ const callLifecycleDuplicateEntry = (DuplicateCmd: any, physicalId: string) => {
 			'title': displayName,
 			'revision': revision,
 			'current': current,
+			'currentDisplayName': current,
 			'current_internal': currentInternal,
+			'state': state,
+			'stateNls': stateNls,
+			'maturityNls': stateNls,
+			'maturityTitle': current,
+			'ds6w:status': current,
+			'ds6w:status-original': `${policy}.${state}`,
 			'cadMaster': cadMaster,
 			'typeDisplayName': typeDisplayName
 		},
 		'options': {
 			'ds6w:status': current,
+			'ds6w:status-original': `${policy}.${state}`,
+			'current': current,
+			'currentDisplayName': current,
+			'state': state,
+			'stateNls': stateNls,
 			'icons': [imageUrl],
-			'ds6w:type': typeDisplayName
+			'ds6w:type': typeDisplayName,
+			'grid': {
+				'current': current,
+				'currentDisplayName': current,
+				'current_internal': state,
+				'ds6w:status': current,
+				'ds6w:status-original': `${policy}.${state}`,
+				'maturityTitle': current
+			}
 		},
 		'policy': policy,
 		'cadMaster': cadMaster,
@@ -7346,7 +7591,7 @@ const callLifecycleDuplicateEntry = (DuplicateCmd: any, physicalId: string) => {
 	if (typeof duplicateCmd.execute !== 'function') {
 		throw new Error('DS/LifecycleCmd/DuplicateCmd 实例未暴露 execute 方法');
 	}
-	duplicateCmd.execute();
+	duplicateCmd.execute(targetNode);
 };
 
 const openLifecycleReviseCmd = async (physicalId: string) => {
@@ -7442,10 +7687,10 @@ const openLifecycleReviseCmd = async (physicalId: string) => {
 				if (isReviseRequest && originalOnComplete) {
 					options.onComplete = function (response: any) {
 						if (
-							(url.includes('/attributeList') || url.includes('/prepare_revise_checkavailability')) &&
-							response?.results &&
-							Array.isArray(response.results) &&
-							Array.isArray(currentReviseTargetNodes)
+							(url.includes('/attributeList') || url.includes('/prepare_revise_checkavailability'))
+							&& response?.results
+							&& Array.isArray(response.results)
+							&& Array.isArray(currentReviseTargetNodes)
 						) {
 							const sourceById = new Map<string, any>();
 							currentReviseTargetNodes.forEach(node => {
@@ -7537,9 +7782,9 @@ const openLifecycleReviseCmd = async (physicalId: string) => {
 		}
 
 		if (
-			reviseWidgetPrototype &&
-			typeof reviseWidgetPrototype._attributeListRequest === 'function' &&
-			!reviseWidgetPrototype.__twMergeSelectionInfoForRevise
+			reviseWidgetPrototype
+			&& typeof reviseWidgetPrototype._attributeListRequest === 'function'
+			&& !reviseWidgetPrototype.__twMergeSelectionInfoForRevise
 		) {
 			const originalAttributeListRequest = reviseWidgetPrototype._attributeListRequest;
 			reviseWidgetPrototype._attributeListRequest = function (objects: any[], securityContext: any, callback: (results: any[]) => void) {

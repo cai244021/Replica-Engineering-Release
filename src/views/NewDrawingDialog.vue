@@ -961,8 +961,8 @@ const handleSubmit = async () => {
 									isWorkUnderWIP: widgetData.isWorkUnderWIP || false,
 									WorkUnderConfigData: widgetData.WorkUnderConfigData || '',
 									ap_custoParams:
-										widgetData.ap_custoParams ||
-										'{"selectedExtensions":["XCADExtension","EnterpriseExtension","MaterialUsageExtension"],"selectedTypes":["VPMReference","VPMInstance","VPMRepReference","3DShape"]}',
+										widgetData.ap_custoParams
+										|| '{"selectedExtensions":["XCADExtension","EnterpriseExtension","MaterialUsageExtension"],"selectedTypes":["VPMReference","VPMInstance","VPMRepReference","3DShape"]}',
 									ap_custo: widgetData.ap_custo || ''
 								}
 							});

@@ -50,11 +50,15 @@ export const useLifecycleCommands = (partInfo: any, baseInfoStore: any) => {
 
 		const originalAuthenticatedRequest = WAFData.authenticatedRequest;
 		WAFData.authenticatedRequest = function (url: string, options: any) {
-			const isReviseFromRequest =
-				url &&
-				(url.includes('/prepare_revise_checkavailability') || url.includes('/attributeList') || url.includes('/prepare_revise_maskattributes'));
-			const shouldPatchReviseFromRequestData =
-				url && (url.includes('/prepare_revise_checkavailability') || url.includes('/prepare_revise_maskattributes'));
+			const reviseFromRequestUrls = [
+				'/prepare_revise_checkavailability',
+				'/attributeList',
+				'/prepare_revise_maskattributes',
+				'/getversionnumberproposal'
+			];
+			const isReviseFromRequest = reviseFromRequestUrls.some(requestUrl => url?.includes(requestUrl));
+			const shouldPatchReviseFromRequestData
+				= url && (url.includes('/prepare_revise_checkavailability') || url.includes('/prepare_revise_maskattributes'));
 			if (shouldPatchReviseFromRequestData && options?.data) {
 				try {
 					const requestData = typeof options.data === 'string' ? JSON.parse(options.data) : options.data;
@@ -140,6 +144,46 @@ export const useLifecycleCommands = (partInfo: any, baseInfoStore: any) => {
 		WAFData.__twPatchReviseFromRequest = true;
 	};
 
+	const applyReviseFromWidgetPatch = (ReviseFromController: any) => {
+		const ReviseFromControllerCtor = ReviseFromController?.default || ReviseFromController;
+		const prototype = ReviseFromControllerCtor?.prototype;
+		if (!prototype || prototype.__twPatchReviseFromVersionProposal) return;
+		const originalGetVersionNumberProposal = prototype.getVersionNumberProposal;
+		if (typeof originalGetVersionNumberProposal !== 'function') return;
+		prototype.getVersionNumberProposal = function (physicalIds: any[], securityContext: any) {
+			const normalizedPhysicalIds = Array.isArray(physicalIds) ? physicalIds : [];
+			const validPhysicalIds = Array.from(
+				new Set(normalizedPhysicalIds.map(id => String(id || '').trim()).filter(id => /^[0-9a-fA-F]{32}$/.test(id)))
+			);
+			const fallbackPhysicalId
+				= currentReviseTargetNodes[0]?.physicalid || currentReviseTargetNodes[0]?.physicalId || currentReviseTargetNodes[0]?.objectId;
+			if (!validPhysicalIds.length && fallbackPhysicalId) validPhysicalIds.push(fallbackPhysicalId);
+			if (validPhysicalIds.length !== normalizedPhysicalIds.length) {
+				console.warn('[TW_EngineeringRelease] 修正 ReviseFrom getversionnumberproposal physicalIds:', {
+					original: physicalIds,
+					normalized: validPhysicalIds
+				});
+			}
+			return originalGetVersionNumberProposal.call(this, validPhysicalIds, securityContext);
+		};
+		prototype.__twPatchReviseFromVersionProposal = true;
+	};
+
+	const registerCompareCommonUtilsShim = (requireFn: any) => {
+		const defineFn = (window as any).define || (window.top as any)?.define;
+		if (!defineFn || requireFn?.defined?.('DS/CompareCommon/Utils')) return;
+		defineFn('DS/CompareCommon/Utils', [], function () {
+			return {
+				augDroppedObject: function (droppedObject: any, _context: any, onComplete: any) {
+					if (typeof onComplete === 'function') onComplete(droppedObject);
+				},
+				showAlertBox: function (message: any) {
+					console.warn('[TW_EngineeringRelease] CompareCommon/Utils shim alert:', message);
+				}
+			};
+		});
+	};
+
 	const callLifecycleReviseEntry = (ReviseCmd: any, physicalId: string, commandId = 'revise_command') => {
 		const ReviseCmdCtor = ReviseCmd?.default || ReviseCmd;
 		if (typeof ReviseCmdCtor !== 'function') {
@@ -149,16 +193,17 @@ export const useLifecycleCommands = (partInfo: any, baseInfoStore: any) => {
 		const objectType = pickOpenWithField(partInfo.value, 'ds6w:type', 'type', 'objectType', 'displayType') || 'VPMReference';
 		const objectName = pickOpenWithField(partInfo.value, 'ds6w:label', 'label', 'displayName', 'name', 'title') || physicalId;
 		const revision = pickOpenWithField(partInfo.value, 'ds6wg:revision', 'revision') || '';
-		const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
+		const displayName = objectName;
 		const typeDisplayName = pickOpenWithField(partInfo.value, 'typeDisplayName', 'displayType', 'globalType') || '物理产品';
 		const current = pickOpenWithField(partInfo.value, 'ds6w:status', 'status') || '工作中';
 		const currentInternal =
-			current === '工作中'
-				? 'IN_WORK'
-				: current === '已发布'
-					? 'RELEASED'
-					: String(current).includes('.')
-						? String(current).split('.').pop() || current
+			
+				current === '工作中'
+					? 'IN_WORK'
+					: current === '已发布'
+						? 'RELEASED'
+						: String(current).includes('.')
+							? String(current).split('.').pop() || current
 						: current;
 		const policy = pickOpenWithField(partInfo.value, 'ds6w:policy', 'policy') || 'VPLM_SMB_Definition_MajorRev';
 		const cadMaster = pickOpenWithField(partInfo.value, 'ds6w:cadMaster', 'cadMaster') || '3DEXPERIENCE';
@@ -265,14 +310,10 @@ export const useLifecycleCommands = (partInfo: any, baseInfoStore: any) => {
 			context: mockContext
 		});
 
-		reviseCmd._useMerge = true;
-		reviseCmd._useMergeNRF = true;
-		console.log('[TW_EngineeringRelease] 强制启用 CompareCmd 路径: _useMerge=true, _useMergeNRF=true');
-
 		if (typeof reviseCmd.execute !== 'function') {
 			throw new Error('DS/LifecycleCmd/ReviseCmd 实例未暴露 execute 方法');
 		}
-		reviseCmd.execute();
+		reviseCmd.execute([targetNode]);
 	};
 
 	const openLifecycleReviseFromCmd = async (physicalId: string) => {
@@ -287,25 +328,9 @@ export const useLifecycleCommands = (partInfo: any, baseInfoStore: any) => {
 				topWindow.widget.body = document.body;
 			}
 			const requireFn = topWindow.require || topWindow.requirejs || (window as any).require || (window as any).requirejs;
+			registerCompareCommonUtilsShim(requireFn);
 
-			if (!topWindow.__compareCommonLoaded) {
-				await new Promise<void>((resolve, reject) => {
-					const script = document.createElement('script');
-					script.src = '/OOTBSources/CompareCommon.js';
-					script.onload = () => {
-						topWindow.__compareCommonLoaded = true;
-						console.log('[TW_EngineeringRelease] CompareCommon.js loaded');
-						resolve();
-					};
-					script.onerror = error => {
-						console.error('[TW_EngineeringRelease] Failed to load CompareCommon.js:', error);
-						reject(error);
-					};
-					document.head.appendChild(script);
-				});
-			}
-
-			const [ReviseFromCmd, WAFData] = await Promise.all([
+			const [ReviseFromCmd, WAFData, ReviseFromWidget] = await Promise.all([
 				new Promise<any>((resolve, reject) => {
 					requireFn(
 						['DS/LifecycleCmd/ReviseFromCmd'],
@@ -319,10 +344,18 @@ export const useLifecycleCommands = (partInfo: any, baseInfoStore: any) => {
 						(module: any) => resolve(module),
 						(error: unknown) => reject(error)
 					);
+				}),
+				new Promise<any>((resolve, reject) => {
+					requireFn(
+						['DS/ReviseFromWidget/ReviseFromWidget'],
+						(module: any) => resolve(module),
+						(error: unknown) => reject(error)
+					);
 				})
 			]);
 
 			applyReviseFromRequestPatch(WAFData);
+			applyReviseFromWidgetPatch(ReviseFromWidget);
 			callLifecycleReviseEntry(ReviseFromCmd, physicalId, 'reviseFrom_command');
 			setTimeout(() => {
 				lifecycleCmdLoading.value = false;
@@ -338,4 +371,3 @@ export const useLifecycleCommands = (partInfo: any, baseInfoStore: any) => {
 		openLifecycleReviseFromCmd
 	};
 };
-
