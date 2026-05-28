@@ -1195,27 +1195,9 @@ const handleCreatePart = () => {
 	dialogStore.openPartDialog();
 };
 
-const handleImportFromSpreadsheet = async () => {
-	try {
-		const topWindow = (window.top || window.parent || window) as any;
-
-		// 尝试通过 hash 跳转打开导入功能
-		// 导入 widget 的 ID 可能是 ENOXIMPT_AP 或类似名称
-		const widgetId = 'ENOXIMPT_AP';
-		const encoded = encodeURIComponent(JSON.stringify({}));
-		const hashSuffix = `/app:${widgetId}/content:X3DContentId=${encoded}`;
-
-		try {
-			const currentHash = topWindow.location.hash || '';
-			const baseHash = currentHash.replace(/\/app:[^/]+(?:\/content:[^]*)?$/, '');
-			topWindow.location.hash = (baseHash || '#/tabId:New%20Tab') + hashSuffix;
-		} catch {
-			(window.top || window).location.href = `${window.location.origin}/3ddashboard/#/tabId:New%20Tab${hashSuffix}`;
-		}
-	} catch (error) {
-		console.error('[HomeView] 打开导入页面失败:', error);
-		ElMessage.error('打开导入页面失败');
-	}
+const handleImportFromSpreadsheet = () => {
+	// TODO: 实现导入功能
+	console.log('从电子表格创建');
 };
 
 // 获取状态类型
