@@ -46,6 +46,13 @@
 					<el-icon><CirclePlus /></el-icon>
 					<span>新零件</span>
 				</div>
+				<div
+					class="nav-item"
+					title="从电子表格创建"
+					@click="handleImportFromSpreadsheet">
+					<el-icon><Document /></el-icon>
+					<span>从电子表格创建</span>
+				</div>
 			</div>
 		</div>
 
@@ -202,28 +209,34 @@
 														<el-dropdown-item command="delete">删除</el-dropdown-item>
 														<el-dropdown-item
 															command="revision"
-															disabled>
-															修订版
+															divided
+															:disabled="lifecycleCmdLoading">
+															<span class="part-action-menu-icon">☷</span>
+															<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '修订版' }}</span>
 														</el-dropdown-item>
 														<el-dropdown-item
 															command="newRevision"
-															disabled>
-															新修订版
+															:disabled="lifecycleCmdLoading">
+															<span class="part-action-menu-icon">↳</span>
+															<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '新修订版' }}</span>
 														</el-dropdown-item>
 														<el-dropdown-item
 															command="newBranch"
-															disabled>
-															新建分支
+															:disabled="lifecycleCmdLoading">
+															<span class="part-action-menu-icon">⌘</span>
+															<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '新建分支' }}</span>
 														</el-dropdown-item>
 														<el-dropdown-item
 															command="newRevisionSource"
-															disabled>
-															新修订版源
+															:disabled="lifecycleCmdLoading">
+															<span class="part-action-menu-icon">⌁</span>
+															<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '新修订版源' }}</span>
 														</el-dropdown-item>
 														<el-dropdown-item
 															command="copy"
-															disabled>
-															复制
+															:disabled="lifecycleCmdLoading">
+															<span class="part-action-menu-icon">⧉</span>
+															<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '复制' }}</span>
 														</el-dropdown-item>
 														<el-dropdown-item command="compare">比较</el-dropdown-item>
 														<el-dropdown-item
@@ -449,28 +462,34 @@
 											<el-dropdown-item command="delete">删除</el-dropdown-item>
 											<el-dropdown-item
 												command="revision"
-												disabled>
-												修订版
+												divided
+												:disabled="lifecycleCmdLoading">
+												<span class="part-action-menu-icon">☷</span>
+												<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '修订版' }}</span>
 											</el-dropdown-item>
 											<el-dropdown-item
 												command="newRevision"
-												disabled>
-												新修订版
+												:disabled="lifecycleCmdLoading">
+												<span class="part-action-menu-icon">↳</span>
+												<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '新修订版' }}</span>
 											</el-dropdown-item>
 											<el-dropdown-item
 												command="newBranch"
-												disabled>
-												新建分支
+												:disabled="lifecycleCmdLoading">
+												<span class="part-action-menu-icon">⌘</span>
+												<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '新建分支' }}</span>
 											</el-dropdown-item>
 											<el-dropdown-item
 												command="newRevisionSource"
-												disabled>
-												新修订版源
+												:disabled="lifecycleCmdLoading">
+												<span class="part-action-menu-icon">⌁</span>
+												<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '新修订版源' }}</span>
 											</el-dropdown-item>
 											<el-dropdown-item
 												command="copy"
-												disabled>
-												复制
+												:disabled="lifecycleCmdLoading">
+												<span class="part-action-menu-icon">⧉</span>
+												<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '复制' }}</span>
 											</el-dropdown-item>
 											<el-dropdown-item command="compare">比较</el-dropdown-item>
 											<el-dropdown-item
@@ -577,7 +596,8 @@ import {
 	ArrowRight,
 	EditPen,
 	Compass,
-	VideoPlay
+	VideoPlay,
+	Upload
 } from '@element-plus/icons-vue';
 import { ElCheckbox, ElMessage, ElMessageBox } from 'element-plus';
 import searchApi from '@/api/searchApi';
@@ -587,6 +607,7 @@ import type { DeleteReportItem } from '@/api/partDetailApi';
 import { useBaseInfoStore, useDialogStore } from '@/store';
 import dsSearchInput from '@/plugins/ds-search-input';
 import { isDev } from '@/utils/env';
+import { useLifecycleCommands } from '@/composables/lifecycleCommands';
 
 const dialogStore = useDialogStore();
 
@@ -637,6 +658,15 @@ const loading = ref(false);
 const productList = ref<any[]>([]);
 const productTableRef = ref<any>(null);
 const draggingProductId = ref('');
+const lifecyclePartInfo = ref<any>({});
+const {
+	lifecycleCmdLoading,
+	openLifecycleHistoryCmd,
+	openLifecycleReviseCmd,
+	openLifecycleNewBranchCmd,
+	openLifecycleDuplicateCmd,
+	openLifecycleReviseFromCmd
+} = useLifecycleCommands(lifecyclePartInfo, baseInfoStore);
 
 interface ProductDragItem {
 	'objectId': string;
@@ -1165,6 +1195,29 @@ const handleCreatePart = () => {
 	dialogStore.openPartDialog();
 };
 
+const handleImportFromSpreadsheet = async () => {
+	try {
+		const topWindow = (window.top || window.parent || window) as any;
+
+		// 尝试通过 hash 跳转打开导入功能
+		// 导入 widget 的 ID 可能是 ENOXIMPT_AP 或类似名称
+		const widgetId = 'ENOXIMPT_AP';
+		const encoded = encodeURIComponent(JSON.stringify({}));
+		const hashSuffix = `/app:${widgetId}/content:X3DContentId=${encoded}`;
+
+		try {
+			const currentHash = topWindow.location.hash || '';
+			const baseHash = currentHash.replace(/\/app:[^/]+(?:\/content:[^]*)?$/, '');
+			topWindow.location.hash = (baseHash || '#/tabId:New%20Tab') + hashSuffix;
+		} catch {
+			(window.top || window).location.href = `${window.location.origin}/3ddashboard/#/tabId:New%20Tab${hashSuffix}`;
+		}
+	} catch (error) {
+		console.error('[HomeView] 打开导入页面失败:', error);
+		ElMessage.error('打开导入页面失败');
+	}
+};
+
 // 获取状态类型
 const getStatusType = (status: string) => {
 	switch (status) {
@@ -1506,8 +1559,55 @@ const handleDeleteProduct = async (item: any) => {
 	}
 };
 
+const setLifecyclePartInfo = (item: any) => {
+	lifecyclePartInfo.value = {
+		'ds6w:label': item?.name,
+		'label': item?.name,
+		'displayName': item?.name,
+		'name': item?.identifier || item?.name,
+		'ds6wg:revision': item?.revision || '',
+		'revision': item?.revision || '',
+		'ds6w:status': item?.statusRaw || item?.status,
+		'status': item?.status,
+		'ds6w:type': item?.type || 'VPMReference',
+		'type': item?.type || 'VPMReference',
+		'typeDisplayName': item?.type || '物理产品',
+		'displayType': item?.type || '物理产品',
+		'type_icon_url': item?.thumbnail || '',
+		'thumbnail_2d': item?.thumbnail || ''
+	};
+};
+
+const handleLifecycleCardCommand = async (command: string, item: any) => {
+	const physicalId = item?.id || item?.physicalid || item?.physicalId;
+	if (!physicalId) {
+		ElMessage.warning('未找到当前对象物理ID');
+		return;
+	}
+	setLifecyclePartInfo(item);
+	if (command === 'revision') {
+		await openLifecycleHistoryCmd(physicalId);
+		return;
+	}
+	if (command === 'newRevision') {
+		await openLifecycleReviseCmd(physicalId);
+		return;
+	}
+	if (command === 'newBranch') {
+		await openLifecycleNewBranchCmd(physicalId);
+		return;
+	}
+	if (command === 'newRevisionSource') {
+		await openLifecycleReviseFromCmd(physicalId);
+		return;
+	}
+	if (command === 'copy') {
+		await openLifecycleDuplicateCmd(physicalId);
+	}
+};
+
 // 处理卡片下拉菜单命令
-const handleCardCommand = (command: string, item: any) => {
+const handleCardCommand = async (command: string, item: any) => {
 	if (command === 'open') {
 		handleRowDoubleClick(item);
 	} else if (command === 'setEnterpriseCode') {
@@ -1522,6 +1622,8 @@ const handleCardCommand = (command: string, item: any) => {
 		handleLockItem(item);
 	} else if (command === 'unlock') {
 		handleUnlockItem(item);
+	} else if (['revision', 'newRevision', 'newBranch', 'newRevisionSource', 'copy'].includes(command)) {
+		await handleLifecycleCardCommand(command, item);
 	}
 };
 

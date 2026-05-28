@@ -1,4 +1,5 @@
 ﻿import { ref } from 'vue';
+import { ElMessage } from 'element-plus';
 
 let currentReviseTargetNodes: any[] = [];
 
@@ -57,8 +58,8 @@ export const useLifecycleCommands = (partInfo: any, baseInfoStore: any) => {
 				'/getversionnumberproposal'
 			];
 			const isReviseFromRequest = reviseFromRequestUrls.some(requestUrl => url?.includes(requestUrl));
-			const shouldPatchReviseFromRequestData
-				= url && (url.includes('/prepare_revise_checkavailability') || url.includes('/prepare_revise_maskattributes'));
+			const shouldPatchReviseFromRequestData =
+				url && (url.includes('/prepare_revise_checkavailability') || url.includes('/prepare_revise_maskattributes'));
 			if (shouldPatchReviseFromRequestData && options?.data) {
 				try {
 					const requestData = typeof options.data === 'string' ? JSON.parse(options.data) : options.data;
@@ -155,8 +156,8 @@ export const useLifecycleCommands = (partInfo: any, baseInfoStore: any) => {
 			const validPhysicalIds = Array.from(
 				new Set(normalizedPhysicalIds.map(id => String(id || '').trim()).filter(id => /^[0-9a-fA-F]{32}$/.test(id)))
 			);
-			const fallbackPhysicalId
-				= currentReviseTargetNodes[0]?.physicalid || currentReviseTargetNodes[0]?.physicalId || currentReviseTargetNodes[0]?.objectId;
+			const fallbackPhysicalId =
+				currentReviseTargetNodes[0]?.physicalid || currentReviseTargetNodes[0]?.physicalId || currentReviseTargetNodes[0]?.objectId;
 			if (!validPhysicalIds.length && fallbackPhysicalId) validPhysicalIds.push(fallbackPhysicalId);
 			if (validPhysicalIds.length !== normalizedPhysicalIds.length) {
 				console.warn('[TW_EngineeringRelease] 修正 ReviseFrom getversionnumberproposal physicalIds:', {
@@ -184,6 +185,201 @@ export const useLifecycleCommands = (partInfo: any, baseInfoStore: any) => {
 		});
 	};
 
+	const getRequireFn = async () => {
+		const topWindow = (window.top || window.parent || window) as any;
+		if (!topWindow.widget) {
+			const { widget } = await import('@widget-lab/3ddashboard-utils');
+			topWindow.widget = widget;
+			(widget as any).body = document.body;
+		} else if (!topWindow.widget.body) {
+			topWindow.widget.body = document.body;
+		}
+		return topWindow.require || topWindow.requirejs || (window as any).require || (window as any).requirejs;
+	};
+
+	const requireDsModule = async (requireFn: any, moduleName: string) =>
+		new Promise<any>((resolve, reject) => {
+			requireFn(
+				[moduleName],
+				(module: any) => resolve(module),
+				(error: unknown) => reject(error)
+			);
+		});
+
+	const buildLifecycleTargetNode = (physicalId: string) => {
+		const objectType = pickOpenWithField(partInfo.value, 'ds6w:type', 'type', 'objectType', 'displayType') || 'VPMReference';
+		const objectName = pickOpenWithField(partInfo.value, 'ds6w:label', 'label', 'displayName', 'name', 'title') || physicalId;
+		const revision = pickOpenWithField(partInfo.value, 'ds6wg:revision', 'revision') || '';
+		const displayName = objectName;
+		const typeDisplayName = pickOpenWithField(partInfo.value, 'typeDisplayName', 'displayType', 'globalType') || '物理产品';
+		const current = pickOpenWithField(partInfo.value, 'ds6w:status', 'status') || '工作中';
+		const currentInternal =
+			current === '工作中'
+				? 'IN_WORK'
+				: current === '已发布'
+					? 'RELEASED'
+					: String(current).includes('.')
+						? String(current).split('.').pop() || current
+						: current;
+		const policy = pickOpenWithField(partInfo.value, 'ds6w:policy', 'policy') || 'VPLM_SMB_Definition_MajorRev';
+		const cadMaster = pickOpenWithField(partInfo.value, 'ds6w:cadMaster', 'cadMaster') || '3DEXPERIENCE';
+		const imageUrl =
+			pickOpenWithField(partInfo.value, 'type_icon_url', 'icon', 'thumbnail_2d') || '/snresources/images/icons/small/I_VPMNavProduct.png';
+
+		return {
+			'getID': () => physicalId,
+			'id': physicalId,
+			'objectId': physicalId,
+			'physicalid': physicalId,
+			physicalId,
+			'type': objectType,
+			objectType,
+			'displayType': typeDisplayName,
+			'displayName': displayName,
+			'label': displayName,
+			'title': displayName,
+			'name': objectName,
+			'revision': revision,
+			'typeDisplayName': typeDisplayName,
+			'baseType': 'PLMEntity',
+			'current': current,
+			'currentDisplayName': current,
+			'current_internal': currentInternal,
+			'state': currentInternal,
+			'stateNls': current,
+			'maturityNls': current,
+			'maturityTitle': current,
+			'ds6w:status': current,
+			'ds6w:status-original': `${policy}.${currentInternal}`,
+			'imageUrl': imageUrl,
+			'tenant': 'OnPremise',
+			'envId': 'OnPremise',
+			'serviceId': '3DSpace',
+			'contextId': baseInfoStore.securityContext || '',
+			'objectTaxonomies': X3D_OBJECT_TAXONOMIES,
+			'_options': { relationid: physicalId },
+			'attributes': {
+				'ds6w:label': displayName,
+				'ds6w:name': objectName,
+				'ds6w:type': objectType,
+				'ds6w:status': current,
+				'ds6w:status-original': `${policy}.${currentInternal}`,
+				'ds6w:policy': policy,
+				'PLMEntity.V_Name': objectName
+			},
+			'object': {
+				'ds6w:label': displayName,
+				'ds6w:name': objectName,
+				'ds6w:type': objectType,
+				'PLMEntity.V_Name': objectName,
+				'attribute[PLMEntity.V_Name]': objectName,
+				'displayName': displayName,
+				'name': objectName,
+				'label': displayName,
+				'title': displayName,
+				'revision': revision,
+				'current': current,
+				'currentDisplayName': current,
+				'current_internal': currentInternal,
+				'state': currentInternal,
+				'stateNls': current,
+				'maturityNls': current,
+				'maturityTitle': current,
+				'ds6w:status': current,
+				'ds6w:status-original': `${policy}.${currentInternal}`,
+				'cadMaster': cadMaster,
+				'typeDisplayName': typeDisplayName
+			},
+			'options': {
+				'ds6w:status': current,
+				'ds6w:status-original': `${policy}.${currentInternal}`,
+				'current': current,
+				'currentDisplayName': current,
+				'state': currentInternal,
+				'stateNls': current,
+				'icons': [imageUrl],
+				'ds6w:type': typeDisplayName
+			},
+			'policy': policy,
+			'cadMaster': cadMaster,
+			'locked': false,
+			'lockedBy': null,
+			'branch': null,
+			'branch.uuid': null,
+			'type.kindof[PLMReference]': 'TRUE',
+			'popup': true
+		};
+	};
+
+	const buildMockContext = (targetNode: any) => ({
+		getSelectedNodes: () => [targetNode],
+		getEditMode: () => false,
+		getPADTreeDocument: () => ({ getXSO: () => ({ onPostAdd: () => {}, onPostRemove: () => {}, onEmpty: () => {}, get: () => [targetNode] }) }),
+		getCurrentFolder: () => '{}',
+		addEvent: () => {},
+		selectedNodes: [targetNode]
+	});
+
+	const openLifecycleCommand = async (
+		physicalId: string,
+		moduleName: string,
+		commandId: string,
+		execute: (cmd: any, targetNode: any) => void,
+		errorText: string
+	) => {
+		lifecycleCmdLoading.value = true;
+		try {
+			const requireFn = await getRequireFn();
+			const Cmd = await requireDsModule(requireFn, moduleName);
+			const CmdCtor = Cmd?.default || Cmd;
+			const targetNode = buildLifecycleTargetNode(physicalId);
+			const cmd = new CmdCtor({ ID: commandId, context: buildMockContext(targetNode) });
+			execute(cmd, targetNode);
+			setTimeout(() => {
+				lifecycleCmdLoading.value = false;
+			}, 1000);
+		} catch (error) {
+			console.error(`[TW_EngineeringRelease] ${errorText}:`, error);
+			ElMessage.error(errorText);
+			lifecycleCmdLoading.value = false;
+		}
+	};
+
+	const openLifecycleHistoryCmd = (physicalId: string) =>
+		openLifecycleCommand(physicalId, 'DS/LifecycleCmd/HistoryCmd', 'history_command', cmd => cmd.execute(), '打开修订版失败');
+
+	const openLifecycleReviseCmd = async (physicalId: string) => {
+		lifecycleCmdLoading.value = true;
+		try {
+			const requireFn = await getRequireFn();
+			const [ReviseCmd] = await Promise.all([
+				requireDsModule(requireFn, 'DS/LifecycleCmd/ReviseCmd'),
+				requireDsModule(requireFn, 'DS/ReviseWidget/ReviseWidget'),
+				requireDsModule(requireFn, 'DS/WAFData/WAFData')
+			]);
+			callLifecycleReviseEntry(ReviseCmd, physicalId, 'revise_command');
+			setTimeout(() => {
+				lifecycleCmdLoading.value = false;
+			}, 1000);
+		} catch (error) {
+			console.error('[TW_EngineeringRelease] 打开新修订版失败:', error);
+			ElMessage.error('打开新修订版失败');
+			lifecycleCmdLoading.value = false;
+		}
+	};
+
+	const openLifecycleNewBranchCmd = (physicalId: string) =>
+		openLifecycleCommand(physicalId, 'DS/LifecycleCmd/NewBranchCmd', 'newbranch_command', cmd => cmd.execute(), '打开新建分支失败');
+
+	const openLifecycleDuplicateCmd = (physicalId: string) =>
+		openLifecycleCommand(
+			physicalId,
+			'DS/LifecycleCmd/DuplicateCmd',
+			'duplicate_command',
+			(cmd, targetNode) => cmd.execute(targetNode),
+			'打开复制失败'
+		);
+
 	const callLifecycleReviseEntry = (ReviseCmd: any, physicalId: string, commandId = 'revise_command') => {
 		const ReviseCmdCtor = ReviseCmd?.default || ReviseCmd;
 		if (typeof ReviseCmdCtor !== 'function') {
@@ -197,13 +393,12 @@ export const useLifecycleCommands = (partInfo: any, baseInfoStore: any) => {
 		const typeDisplayName = pickOpenWithField(partInfo.value, 'typeDisplayName', 'displayType', 'globalType') || '物理产品';
 		const current = pickOpenWithField(partInfo.value, 'ds6w:status', 'status') || '工作中';
 		const currentInternal =
-			
-				current === '工作中'
-					? 'IN_WORK'
-					: current === '已发布'
-						? 'RELEASED'
-						: String(current).includes('.')
-							? String(current).split('.').pop() || current
+			current === '工作中'
+				? 'IN_WORK'
+				: current === '已发布'
+					? 'RELEASED'
+					: String(current).includes('.')
+						? String(current).split('.').pop() || current
 						: current;
 		const policy = pickOpenWithField(partInfo.value, 'ds6w:policy', 'policy') || 'VPLM_SMB_Definition_MajorRev';
 		const cadMaster = pickOpenWithField(partInfo.value, 'ds6w:cadMaster', 'cadMaster') || '3DEXPERIENCE';
@@ -368,6 +563,10 @@ export const useLifecycleCommands = (partInfo: any, baseInfoStore: any) => {
 
 	return {
 		lifecycleCmdLoading,
+		openLifecycleHistoryCmd,
+		openLifecycleReviseCmd,
+		openLifecycleNewBranchCmd,
+		openLifecycleDuplicateCmd,
 		openLifecycleReviseFromCmd
 	};
 };
