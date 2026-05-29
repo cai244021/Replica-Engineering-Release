@@ -6179,13 +6179,12 @@ const loadPartDetail = async (physicalId: string) => {
 			// 从展开响应中提取零件基本信息
 			const dbPartInfo = expandApi.extractPartInfoFromDbExpand(expandResponse, physicalId);
 			if (dbPartInfo) {
-				// 如果已有零件信息（手动切换DB模式），只更新非图片字段，保持缩略图不变
-				if (partInfo.value) {
-					console.log('[PartDetailView] DB模式 保留原有零件信息，仅更新子级数据');
-				} else {
-					// 首次加载（如从创建页跳转），使用DB模式返回的零件信息
+				// 若是加载不同的零件或首次加载，覆盖 partInfo；否则保持原有策略
+				if (!partInfo.value || currentPhysicalId.value !== physicalId) {
 					partInfo.value = dbPartInfo as PartInfo;
-					console.log('[PartDetailView] DB模式 零件信息:', partInfo.value);
+					console.log('[PartDetailView] DB模式 零件信息(覆盖):', partInfo.value);
+				} else {
+					console.log('[PartDetailView] DB模式 保留原有零件信息，仅更新子级数据');
 				}
 			} else {
 				console.warn('[PartDetailView] DB模式 未能从展开响应中提取零件信息');
@@ -6210,6 +6209,27 @@ const loadPartDetail = async (physicalId: string) => {
 			console.log('[PartDetailView] 使用索引模式查询');
 			const response = await partDetailApi.getPartDetail(physicalId);
 			console.log('[PartDetailView] 零件详情响应:', response);
+
+			// 兜底：索引模式返回结果数为 0 时，切换到数据库模式并重试
+			const nresults = (response as any)?.infos?.nresults;
+			if (nresults === 0) {
+				console.log('[PartDetailView] 索引模式 nresults=0，切换数据库模式并重试');
+				queryModeStore.switchToDbMode();
+				const [expandResponse, docs] = await Promise.all([
+					expandApi.getExpandDataDbMode(physicalId),
+					expandApi.getSpecificationDocuments(physicalId)
+				]);
+				const dbPartInfo = expandApi.extractPartInfoFromDbExpand(expandResponse, physicalId);
+				partInfo.value = dbPartInfo ? (dbPartInfo as PartInfo) : null;
+				currentPhysicalId.value = physicalId;
+				const productChildren = parseStructureExpandData(expandResponse, physicalId);
+				const docChildren = expandApi.parseDocumentsToTreeNodes(docs, 0, [physicalId]);
+				const treeData = filterManufacturableRows([...productChildren, ...docChildren]).sort((a, b) =>
+					(a.label || '').localeCompare(b.label || '', 'zh')
+				);
+				childrenData.value = treeData;
+				return;
+			}
 
 			if (response && response.results && response.results.length > 0) {
 				// 第一个结果是零件基本信息
