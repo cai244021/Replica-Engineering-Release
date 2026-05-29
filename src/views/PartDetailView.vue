@@ -7582,12 +7582,21 @@ const handleChildrenDrop = async (data: string, childrenDropZone: HTMLElement, e
 			return;
 		}
 
-		const insertName = droppedItems.length > 1 ? '全部选定对象' : droppedItems[0]?.title || '选定对象';
-		await ElMessageBox.confirm(`是否确定要向 物理产品${target.name} 插入 ${insertName}？`, '插入', {
-			confirmButtonText: '插入',
-			cancelButtonText: '取消',
-			type: 'warning'
-		});
+		const insertName = droppedItems.length > 1 ? `全部选定对象 (${droppedItems.length})` : droppedItems[0]?.title || '选定对象';
+		if (droppedItems.every(item => item.isInternalChildRow && item.relationId)) {
+			const sourceLabel = droppedItems.length > 1 ? `全部选定对象 (${droppedItems.length})` : `物理产品${droppedItems[0]?.title || '选定对象'}`;
+			await ElMessageBox.confirm(`是否确定要将 ${sourceLabel} 重新设置父级为 物理产品${target.name}？`, '重新设置父级', {
+				confirmButtonText: '重新设置父级',
+				cancelButtonText: '取消',
+				type: 'warning'
+			});
+		} else {
+			await ElMessageBox.confirm(`是否确定要向 物理产品${target.name} 插入 ${insertName}？`, '插入', {
+				confirmButtonText: '插入',
+				cancelButtonText: '取消',
+				type: 'warning'
+			});
+		}
 
 		childrenLoading.value = true;
 		const isInternalMove = droppedItems.every(item => item.isInternalChildRow && item.relationId);
@@ -7659,6 +7668,10 @@ const initDragAndDrop = () => {
 							if (items.length === 1) {
 								const physicalId = items[0]?.objectId;
 								if (physicalId) {
+									if (currentPhysicalId.value && currentPhysicalId.value !== physicalId) {
+										partDetailNavigationStack.value.push(currentPhysicalId.value);
+									}
+									selectedChildrenRows.value = [];
 									await loadPartDetail(physicalId);
 									ElMessage.success('加载零件信息成功');
 								}

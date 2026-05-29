@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 
 interface ChildDragItem {
 	objectId: string;
@@ -8,6 +8,11 @@ interface ChildDragItem {
 	physicalId: string;
 	parentPhysicalId: string;
 	sequence: number;
+	// below fields help detect internal move on drop
+	relationId?: string;
+	path?: string[];
+	sourceParentRowId?: string;
+	rowId?: string;
 }
 
 export const useDragDrop = (selectedChildrenRows: any, isFlatStructureView: any, isChildrenRowSelected: (row: any) => boolean, childrenData: any) => {
@@ -44,7 +49,11 @@ export const useDragDrop = (selectedChildrenRows: any, isFlatStructureView: any,
 			name: row.label || row.name || '',
 			physicalId: row.resourceid || row.physicalid || row.id || '',
 			parentPhysicalId,
-			sequence: childDragSequence++
+			sequence: childDragSequence++,
+			relationId: row.relationId,
+			path: Array.isArray(row.path) ? row.path : undefined,
+			sourceParentRowId: parentRow?.id,
+			rowId: row.id
 		};
 	};
 
@@ -52,10 +61,10 @@ export const useDragDrop = (selectedChildrenRows: any, isFlatStructureView: any,
 		const items = dragRows.map(toChildDragItem);
 		return {
 			data: {
-				items,
-				source: 'PartDetailView'
-			}
-		};
+				items
+			},
+			source: { amd: 'TW_EngineeringRelease/PartDetailView' }
+		} as any;
 	};
 
 	const setDragData = (event: DragEvent, payload: any) => {

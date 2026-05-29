@@ -116,7 +116,7 @@
 							<div
 								class="product-card"
 								draggable="true"
-								:class="{ dragging: draggingProductId === item.id }"
+								:class="{ dragging: draggingProductId === item.id, selected: showAll }"
 								@dragstart="handleProductDragStart($event, item)"
 								@dragend="handleProductDragEnd"
 								@dblclick="handleRowDoubleClick(item)">
@@ -357,7 +357,11 @@
 						border
 						row-key="id"
 						:row-class-name="getProductRowClassName"
-						@row-dblclick="handleRowDoubleClick">
+						@row-dblclick="handleRowDoubleClick"
+						@selection-change="handleProductSelectionChange">
+						<el-table-column
+							type="selection"
+							width="44" />
 						<el-table-column
 							prop="name"
 							label="名称"
@@ -685,7 +689,7 @@ const sidebarCollapsed = ref(false);
 // 视图模式
 const viewMode = ref<'grid' | 'list'>('grid');
 
-// 显示全部
+// 显示全部（全选当前页）
 const showAll = ref(false);
 const searchData = ref('');
 
@@ -695,6 +699,7 @@ const loading = ref(false);
 // 产品列表数据
 const productList = ref<any[]>([]);
 const productTableRef = ref<any>(null);
+const selectedProductRows = ref<any[]>([]);
 const draggingProductId = ref('');
 const lifecyclePartInfo = ref<any>({});
 const {
@@ -821,6 +826,42 @@ const bindListRowDragEvents = async () => {
 
 watch([viewMode, productList], () => {
 	bindListRowDragEvents();
+});
+
+// 主列表选择变化
+const handleProductSelectionChange = (rows: any[]) => {
+	selectedProductRows.value = rows;
+	// 同步 showAll 状态：当全量选中时置为 true，否则 false
+	showAll.value = rows.length > 0 && rows.length === productList.value.length;
+};
+
+// 勾选“全选”时：同步数据层选择；列表视图联动表格选择；网格视图仅视觉高亮
+watch(showAll, async checked => {
+	// 同步选中数据（两种视图通用）
+	selectedProductRows.value = checked ? [...productList.value] : [];
+
+	await nextTick();
+	if (viewMode.value !== 'list') return;
+	const table = productTableRef.value as any;
+	if (!table) return;
+	if (checked) {
+		// 清空后逐行选中，确保和 Element Plus 的受控选择行为一致
+		table.clearSelection?.();
+		productList.value.forEach(row => table.toggleRowSelection?.(row, true));
+	} else {
+		table.clearSelection?.();
+	}
+});
+
+// 视图切换为列表且已勾选“全选”时，补选中所有行
+watch(viewMode, async mode => {
+	if (mode !== 'list') return;
+	if (!showAll.value) return;
+	await nextTick();
+	const table = productTableRef.value as any;
+	if (!table) return;
+	table.clearSelection?.();
+	productList.value.forEach(row => table.toggleRowSelection?.(row, true));
 });
 
 // 企业项目编号对话框
@@ -1399,16 +1440,16 @@ const confirmDeleteProduct = async (item: any) => {
 					),
 					includeStructure.value
 						? h(
-							ElCheckbox,
-							{
-								'modelValue': unrecoverableChecked.value,
-								'onUpdate:modelValue': (value: unknown) => {
-									unrecoverableChecked.value = value === true;
-									setTimeout(() => updateConfirmButtonDisabled(), 0);
-								}
-							},
-							() => '我知道无法恢复删除的对象。'
-						)
+								ElCheckbox,
+								{
+									'modelValue': unrecoverableChecked.value,
+									'onUpdate:modelValue': (value: unknown) => {
+										unrecoverableChecked.value = value === true;
+										setTimeout(() => updateConfirmButtonDisabled(), 0);
+									}
+								},
+								() => '我知道无法恢复删除的对象。'
+							)
 						: null
 				])
 			])
@@ -1438,8 +1479,8 @@ const handleDeleteProduct = async (item: any) => {
 		const includeStructure = await confirmDeleteProduct(item);
 		loading.value = true;
 		const accessResponse = await partDetailApi.checkDeleteAccess([physicalId]);
-		const hasDeleteAccess
-			= accessResponse.status !== 'failure' && (accessResponse.results || []).every((result: any) => result?.hasDeleteAccess === true);
+		const hasDeleteAccess =
+			accessResponse.status !== 'failure' && (accessResponse.results || []).every((result: any) => result?.hasDeleteAccess === true);
 		if (!hasDeleteAccess) {
 			ElMessage.error('没有删除权限');
 			if (accessResponse.report?.length) showDeleteReportDialog(accessResponse.report);
@@ -1916,6 +1957,11 @@ onUnmounted(() => {
 
 					&.dragging {
 						opacity: 0.6;
+					}
+
+					&.selected {
+						border-color: #409eff;
+						box-shadow: 0 0 0 1px #409eff inset;
 					}
 
 					&:hover {
