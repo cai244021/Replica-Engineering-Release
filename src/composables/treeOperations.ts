@@ -1,13 +1,6 @@
-import { ref } from 'vue';
 import { ElMessage } from 'element-plus';
-
-interface TreeNode {
-	id: string;
-	resourceid?: string;
-	physicalid?: string;
-	children?: TreeNode[];
-	expanded?: boolean;
-}
+import expandApi from '@/api/expandApi';
+import type { TreeNode } from '@/api/expandApi';
 
 export const useTreeOperations = (
 	currentPhysicalId: any,
@@ -55,24 +48,42 @@ export const useTreeOperations = (
 		}
 
 		const selectedRows = [...selectedChildrenRows.value];
-		if (selectedRows.length === 0) {
-			ElMessage.warning('请先选择要展开的行');
-			return;
-		}
-
-		console.log('[PartDetailView] 展开选中行, 选中行数:', selectedRows.length);
 
 		try {
-			const expandPromises = selectedRows.map(row => {
-				const physicalId = row.resourceid || row.physicalid || row.id;
-				console.log('[PartDetailView] 展开行:', physicalId);
-				return partDetailApi.expandStructure(physicalId);
-			});
+			if (selectedRows.length === 0) {
+				// 无选择：以根节点为前缀展开2层（相对前缀1层），直接替换根的子节点
+				console.log('[PartDetailView] 展开根节点（无选择），层数: 2');
+				const params = expandApi.buildExpandRequestParams(rootPhysicalId, null, 2);
+				const response = await expandApi.expandWithParams(params);
+				const newChildren = expandApi.parseExpandDataRecursive(response as any, rootPhysicalId, [rootPhysicalId]);
+				(childrenData.value as TreeNode[]) = newChildren.map(n => ({ ...n, level: 0 }));
+				ElMessage.success('展开成功');
+				return;
+			}
 
-			await Promise.all(expandPromises);
+			console.log('[PartDetailView] 展开选中行, 选中行数:', selectedRows.length);
+			// 有选择：按每个选中行的 path 作为前缀展开到下一层
+			const params = expandApi.buildExpandRequestParams(rootPhysicalId, selectedRows, 2);
+			const response = await expandApi.expandWithParams(params);
+			selectedRows.forEach((row: TreeNode) => {
+				const prefixPath = row.path || [rootPhysicalId];
+				const newChildren = expandApi.parseExpandDataRecursive(response as any, rootPhysicalId, prefixPath);
+				if (newChildren.length) {
+					const parentLevel = row.level || 0;
+					const adjustLevel = (nodes: TreeNode[]): TreeNode[] =>
+						nodes.map(n => ({
+							...n,
+							level: (n.level || 0) + parentLevel + 1,
+							children: n.children && n.children.length ? adjustLevel(n.children) : []
+						}));
+					row.children = adjustLevel(newChildren);
+					row.hasChildren = true;
+					row.isExpanded = true;
+				}
+			});
 			ElMessage.success('展开成功');
 		} catch (error) {
-			console.error('[PartDetailView] 展开选中行失败:', error);
+			console.error('[PartDetailView] 展开失败:', error);
 			ElMessage.error('展开失败');
 		}
 	};
@@ -88,15 +99,36 @@ export const useTreeOperations = (
 		console.log('[PartDetailView] 全部展开, 选中行数:', selectedRows.length);
 
 		try {
-			const rowsToExpand = selectedRows.length > 0 ? selectedRows : [{ resourceid: rootPhysicalId, physicalid: rootPhysicalId, id: rootPhysicalId }];
+			// 全部展开：若无选中行则对根节点多层展开；有选中行则对所选路径多层展开
+			const targetRows = selectedRows.length > 0 ? selectedRows : null;
+			const level = 10; // 默认一个较大的层数实现“全部展开”
+			const params = expandApi.buildExpandRequestParams(rootPhysicalId, targetRows, level);
+			const response = await expandApi.expandWithParams(params);
 
-			const expandPromises = rowsToExpand.map(row => {
-				const physicalId = row.resourceid || row.physicalid || row.id;
-				console.log('[PartDetailView] 展开行:', physicalId);
-				return partDetailApi.expandStructure(physicalId);
-			});
+			if (targetRows && targetRows.length) {
+				// 更新选中行的子节点（递归多层）
+				targetRows.forEach((row: TreeNode) => {
+					const prefixPath = row.path || [rootPhysicalId];
+					const newChildren = expandApi.parseExpandDataRecursive(response as any, rootPhysicalId, prefixPath);
+					if (newChildren.length) {
+						const parentLevel = row.level || 0;
+						const adjustLevel = (nodes: TreeNode[]): TreeNode[] =>
+							nodes.map(n => ({
+								...n,
+								level: (n.level || 0) + parentLevel + 1,
+								children: n.children && n.children.length ? adjustLevel(n.children) : []
+							}));
+						row.children = adjustLevel(newChildren);
+						row.hasChildren = true;
+						row.isExpanded = true;
+					}
+				});
+			} else {
+				// 无选中行：直接替换根的子节点
+				const newChildren = expandApi.parseExpandDataRecursive(response as any, rootPhysicalId, [rootPhysicalId]);
+				(childrenData.value as TreeNode[]) = newChildren.map(n => ({ ...n, level: 0 }));
+			}
 
-			await Promise.all(expandPromises);
 			ElMessage.success('全部展开成功');
 		} catch (error) {
 			console.error('[PartDetailView] 全部展开失败:', error);
@@ -106,21 +138,25 @@ export const useTreeOperations = (
 
 	const handleCollapseAll = async () => {
 		const selectedRows = [...selectedChildrenRows.value];
-		console.log('[PartDetailView] 全部折叠, 选中行数:', selectedRows.length);
+		console.log('[PartDetailView] 全部折叠(本地), 选中行数:', selectedRows.length);
 
-		try {
-			const collapsePromises = selectedRows.map(row => {
-				const physicalId = row.resourceid || row.physicalid || row.id;
-				console.log('[PartDetailView] 折叠行:', physicalId);
-				return partDetailApi.collapseStructure(physicalId);
-			});
+		// 递归折叠指定节点
+		const collapseNode = (row: any) => {
+			if (!row) return;
+			row.isExpanded = false;
+			if (Array.isArray(row.children)) {
+				row.children.forEach(collapseNode);
+			}
+		};
 
-			await Promise.all(collapsePromises);
-			ElMessage.success('全部折叠成功');
-		} catch (error) {
-			console.error('[PartDetailView] 全部折叠失败:', error);
-			ElMessage.error('全部折叠失败');
+		if (selectedRows.length > 0) {
+			selectedRows.forEach(collapseNode);
+		} else {
+			// 未选择行时，折叠整棵树
+			(childrenData.value || []).forEach(collapseNode);
 		}
+
+		ElMessage.success('全部折叠成功');
 	};
 
 	return {

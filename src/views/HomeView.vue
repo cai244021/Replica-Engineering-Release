@@ -152,61 +152,67 @@
 												@click.stop>
 												<el-icon class="dropdown-icon"><ArrowDown /></el-icon>
 												<template #dropdown>
-													<el-dropdown-menu>
+													<el-dropdown-menu class="part-action-dropdown-menu">
 														<el-dropdown-item command="open">
-															<el-icon>
-																<Document />
-															</el-icon>
-															打开
+															<span class="part-action-menu-icon">↪</span>
+															<span class="part-action-menu-label">打开</span>
 														</el-dropdown-item>
 														<div
 															class="open-with-submenu-wrapper"
 															@click.stop
 															@mouseenter="positionSubmenu">
 															<div class="open-with-trigger">
-																打开方式
-																<el-icon class="submenu-arrow"><ArrowRight /></el-icon>
+																<span class="part-action-menu-icon">↪</span>
+																<span class="part-action-menu-label">打开方式</span>
+																<el-icon class="part-action-menu-arrow submenu-arrow"><ArrowRight /></el-icon>
 															</div>
 															<div class="open-with-submenu">
 																<div
 																	class="submenu-item"
 																	@click="handleOpenWithClick('3D Markup', item)">
-																	<el-icon><EditPen /></el-icon>
+																	<span class="part-action-menu-icon">✎</span>
 																	<span>3D Markup</span>
 																</div>
 																<div
 																	class="submenu-item"
 																	@click="handleOpenWithClick('3D Navigate', item)">
-																	<el-icon><Compass /></el-icon>
+																	<span class="part-action-menu-icon">🧭</span>
 																	<span>3D Navigate</span>
 																</div>
 																<div
 																	class="submenu-item"
 																	@click="handleOpenWithClick('3DPlay', item)">
-																	<el-icon><VideoPlay /></el-icon>
+																	<span class="part-action-menu-icon">▶</span>
 																	<span>3DPlay</span>
 																</div>
 																<div
 																	class="submenu-item"
 																	@click="handleOpenWithClick('Collaborative Lifecycle', item)">
-																	<el-icon><Refresh /></el-icon>
+																	<span class="part-action-menu-icon">↻</span>
 																	<span>Collaborative Lifecycle</span>
 																</div>
 																<div
 																	class="submenu-item submenu-item-divided"
 																	@click="handleOpenWithClick('more', item)">
-																	<el-icon><Plus /></el-icon>
+																	<span class="part-action-menu-icon">＋</span>
 																	<span>更多应用程序</span>
 																</div>
 															</div>
 														</div>
-														<el-dropdown-item command="setEnterpriseCode">设置企业项目编号</el-dropdown-item>
+														<el-dropdown-item command="setEnterpriseCode">
+															<span class="part-action-menu-icon">▦</span>
+															<span class="part-action-menu-label">设置企业项目编号</span>
+														</el-dropdown-item>
 														<el-dropdown-item
 															command="editContext"
 															disabled>
-															编辑配置上下文
+															<span class="part-action-menu-icon">⌘</span>
+															<span class="part-action-menu-label">编辑配置上下文</span>
 														</el-dropdown-item>
-														<el-dropdown-item command="delete">删除</el-dropdown-item>
+														<el-dropdown-item command="delete">
+															<span class="part-action-menu-icon">⌫</span>
+															<span class="part-action-menu-label">删除</span>
+														</el-dropdown-item>
 														<el-dropdown-item
 															command="revision"
 															divided
@@ -238,39 +244,57 @@
 															<span class="part-action-menu-icon">⧉</span>
 															<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '复制' }}</span>
 														</el-dropdown-item>
-														<el-dropdown-item command="compare">比较</el-dropdown-item>
+														<el-dropdown-item command="compare">
+															<span class="part-action-menu-icon">↔</span>
+															<span class="part-action-menu-label">比较</span>
+														</el-dropdown-item>
 														<el-dropdown-item
 															command="maturity"
 															disabled>
-															成熟度
+															<span class="part-action-menu-icon">♻</span>
+															<span class="part-action-menu-label">成熟度</span>
 														</el-dropdown-item>
-														<el-dropdown-item command="lock">锁定</el-dropdown-item>
-														<el-dropdown-item command="unlock">解锁</el-dropdown-item>
+														<el-dropdown-item command="lock">
+															<span class="part-action-menu-icon">🔒</span>
+															<span class="part-action-menu-label">锁定</span>
+														</el-dropdown-item>
+														<el-dropdown-item command="unlock">
+															<span class="part-action-menu-icon">🔓</span>
+															<span class="part-action-menu-label">解锁</span>
+														</el-dropdown-item>
 														<el-dropdown-item
 															command="move"
 															disabled>
-															移动
+															<span class="part-action-menu-icon">⇥</span>
+															<span class="part-action-menu-label">移动</span>
 														</el-dropdown-item>
 														<el-dropdown-item
 															command="share"
 															disabled>
-															共享
+															<span class="part-action-menu-icon">↗</span>
+															<span class="part-action-menu-label">共享</span>
 														</el-dropdown-item>
-														<el-dropdown-item command="relationship">关系</el-dropdown-item>
+														<el-dropdown-item command="relationship">
+															<span class="part-action-menu-icon">⚭</span>
+															<span class="part-action-menu-label">关系</span>
+														</el-dropdown-item>
 														<el-dropdown-item
 															command="relatedChanges"
 															disabled>
-															相关更改
+															<span class="part-action-menu-icon">▤</span>
+															<span class="part-action-menu-label">相关更改</span>
 														</el-dropdown-item>
 														<el-dropdown-item
 															command="subscribe"
 															disabled>
-															订阅
+															<span class="part-action-menu-icon">☁</span>
+															<span class="part-action-menu-label">订阅</span>
 														</el-dropdown-item>
 														<el-dropdown-item
 															command="info"
 															disabled>
-															信息
+															<span class="part-action-menu-icon">⚙</span>
+															<span class="part-action-menu-label">信息</span>
 														</el-dropdown-item>
 													</el-dropdown-menu>
 												</template>
@@ -405,61 +429,67 @@
 										<ArrowDown />
 									</el-icon>
 									<template #dropdown>
-										<el-dropdown-menu>
+										<el-dropdown-menu class="part-action-dropdown-menu">
 											<el-dropdown-item command="open">
-												<el-icon>
-													<Document />
-												</el-icon>
-												打开
+												<span class="part-action-menu-icon">↪</span>
+												<span class="part-action-menu-label">打开</span>
 											</el-dropdown-item>
 											<div
 												class="open-with-submenu-wrapper"
 												@click.stop
 												@mouseenter="positionSubmenu">
 												<div class="open-with-trigger">
-													打开方式
-													<el-icon class="submenu-arrow"><ArrowRight /></el-icon>
+													<span class="part-action-menu-icon">↪</span>
+													<span class="part-action-menu-label">打开方式</span>
+													<el-icon class="part-action-menu-arrow submenu-arrow"><ArrowRight /></el-icon>
 												</div>
 												<div class="open-with-submenu">
 													<div
 														class="submenu-item"
 														@click="handleOpenWithClick('3D Markup', row)">
-														<el-icon><EditPen /></el-icon>
+														<span class="part-action-menu-icon">✎</span>
 														<span>3D Markup</span>
 													</div>
 													<div
 														class="submenu-item"
 														@click="handleOpenWithClick('3D Navigate', row)">
-														<el-icon><Compass /></el-icon>
+														<span class="part-action-menu-icon">🧭</span>
 														<span>3D Navigate</span>
 													</div>
 													<div
 														class="submenu-item"
 														@click="handleOpenWithClick('3DPlay', row)">
-														<el-icon><VideoPlay /></el-icon>
+														<span class="part-action-menu-icon">▶</span>
 														<span>3DPlay</span>
 													</div>
 													<div
 														class="submenu-item"
 														@click="handleOpenWithClick('Collaborative Lifecycle', row)">
-														<el-icon><Refresh /></el-icon>
+														<span class="part-action-menu-icon">↻</span>
 														<span>Collaborative Lifecycle</span>
 													</div>
 													<div
 														class="submenu-item submenu-item-divided"
 														@click="handleOpenWithClick('more', row)">
-														<el-icon><Plus /></el-icon>
+														<span class="part-action-menu-icon">＋</span>
 														<span>更多应用程序</span>
 													</div>
 												</div>
 											</div>
-											<el-dropdown-item command="setEnterpriseCode">设置企业项目编号</el-dropdown-item>
+											<el-dropdown-item command="setEnterpriseCode">
+												<span class="part-action-menu-icon">▦</span>
+												<span class="part-action-menu-label">设置企业项目编号</span>
+											</el-dropdown-item>
 											<el-dropdown-item
 												command="editContext"
 												disabled>
-												编辑配置上下文
+												<span class="part-action-menu-icon">⌘</span>
+												<span class="part-action-menu-label">编辑配置上下文</span>
 											</el-dropdown-item>
-											<el-dropdown-item command="delete">删除</el-dropdown-item>
+											<el-dropdown-item command="delete">
+												<span class="part-action-menu-icon">⌫</span>
+												<span class="part-action-menu-label">删除</span>
+											</el-dropdown-item>
 											<el-dropdown-item
 												command="revision"
 												divided
@@ -491,39 +521,57 @@
 												<span class="part-action-menu-icon">⧉</span>
 												<span class="part-action-menu-label">{{ lifecycleCmdLoading ? '加载中...' : '复制' }}</span>
 											</el-dropdown-item>
-											<el-dropdown-item command="compare">比较</el-dropdown-item>
+											<el-dropdown-item command="compare">
+												<span class="part-action-menu-icon">↔</span>
+												<span class="part-action-menu-label">比较</span>
+											</el-dropdown-item>
 											<el-dropdown-item
 												command="maturity"
 												disabled>
-												成熟度
+												<span class="part-action-menu-icon">♻</span>
+												<span class="part-action-menu-label">成熟度</span>
 											</el-dropdown-item>
-											<el-dropdown-item command="lock">锁定</el-dropdown-item>
-											<el-dropdown-item command="unlock">解锁</el-dropdown-item>
+											<el-dropdown-item command="lock">
+												<span class="part-action-menu-icon">🔒</span>
+												<span class="part-action-menu-label">锁定</span>
+											</el-dropdown-item>
+											<el-dropdown-item command="unlock">
+												<span class="part-action-menu-icon">🔓</span>
+												<span class="part-action-menu-label">解锁</span>
+											</el-dropdown-item>
 											<el-dropdown-item
 												command="move"
 												disabled>
-												移动
+												<span class="part-action-menu-icon">⇥</span>
+												<span class="part-action-menu-label">移动</span>
 											</el-dropdown-item>
 											<el-dropdown-item
 												command="share"
 												disabled>
-												共享
+												<span class="part-action-menu-icon">↗</span>
+												<span class="part-action-menu-label">共享</span>
 											</el-dropdown-item>
-											<el-dropdown-item command="relationship">关系</el-dropdown-item>
+											<el-dropdown-item command="relationship">
+												<span class="part-action-menu-icon">⚭</span>
+												<span class="part-action-menu-label">关系</span>
+											</el-dropdown-item>
 											<el-dropdown-item
 												command="relatedChanges"
 												disabled>
-												相关更改
+												<span class="part-action-menu-icon">▤</span>
+												<span class="part-action-menu-label">相关更改</span>
 											</el-dropdown-item>
 											<el-dropdown-item
 												command="subscribe"
 												disabled>
-												订阅
+												<span class="part-action-menu-icon">☁</span>
+												<span class="part-action-menu-label">订阅</span>
 											</el-dropdown-item>
 											<el-dropdown-item
 												command="info"
 												disabled>
-												信息
+												<span class="part-action-menu-icon">⚙</span>
+												<span class="part-action-menu-label">信息</span>
 											</el-dropdown-item>
 										</el-dropdown-menu>
 									</template>
@@ -585,22 +633,7 @@
 <script lang="ts" setup>
 import { ref, computed, h, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import {
-	Clock,
-	Box,
-	FolderOpened,
-	Plus,
-	CirclePlus,
-	ArrowLeft,
-	Grid,
-	Menu,
-	Document,
-	ArrowDown,
-	ArrowRight,
-	EditPen,
-	Compass,
-	VideoPlay
-} from '@element-plus/icons-vue';
+import { Clock, Box, FolderOpened, Plus, CirclePlus, ArrowLeft, Grid, Menu, Document, ArrowDown, ArrowRight } from '@element-plus/icons-vue';
 import { ElCheckbox, ElMessage, ElMessageBox } from 'element-plus';
 import searchApi from '@/api/searchApi';
 import recentApi from '@/api/recentApi';
@@ -1054,128 +1087,8 @@ const fetchRecentProducts = async () => {
 // 加载默认数据（最近）
 const loadDefaultData = () => {
 	console.log('[HomeView] 加载默认数据');
-	productList.value = [
-		{
-			id: '1',
-			name: 'V - A',
-			status: '工作中',
-			owner: 'Admin Platform',
-			date: '2026/3/',
-			thumbnail: ''
-		},
-		{
-			id: '2',
-			name: '物理产品0000005 - A',
-			status: '工作中',
-			owner: 'Admin Platform',
-			date: '2026/3/',
-			thumbnail: ''
-		},
-		{
-			id: '3',
-			name: 'PPR Context0000004 - A',
-			status: '工作中',
-			owner: 'Admin Platform',
-			date: '2026/3/',
-			thumbnail: ''
-		},
-		{
-			id: '4',
-			name: '物理产品0000166 - AA.1',
-			status: '已发布',
-			owner: 'Admin Platform',
-			date: '2026/3/',
-			thumbnail: ''
-		},
-		{
-			id: '5',
-			name: '物理产品0000166 - AA.2',
-			status: '已发布',
-			owner: 'Admin Platform',
-			date: '2026/3/',
-			thumbnail: ''
-		},
-		{
-			id: '6',
-			name: '总成1 - AA.1',
-			status: '工作中',
-			owner: 'Admin Platform',
-			date: '2026/3/',
-			thumbnail: ''
-		},
-		{
-			id: '7',
-			name: '总成2 - AA.2',
-			status: '工作中',
-			owner: 'Admin Platform',
-			date: '2026/3/',
-			thumbnail: ''
-		},
-		{
-			id: '8',
-			name: '总成222 - AA.1',
-			status: '工作中',
-			owner: 'Admin Platform',
-			date: '2026/3/',
-			thumbnail: ''
-		},
-		{
-			id: '9',
-			name: '测试批量连接2 - AA.1',
-			status: '工作中',
-			owner: 'Admin Platform',
-			date: '2026/4/',
-			thumbnail: ''
-		},
-		{
-			id: '10',
-			name: '测试批量连接 - AA.1',
-			status: '工作中',
-			owner: 'Admin Platform',
-			date: '2026/4/',
-			thumbnail: ''
-		},
-		{
-			id: '11',
-			name: '测试总成0401 - AA.1',
-			status: '工作中',
-			owner: 'Admin Platform',
-			date: '2026/4/',
-			thumbnail: ''
-		},
-		{
-			id: '12',
-			name: '0401总成 - AA.1',
-			status: '工作中',
-			owner: 'Admin Platform',
-			date: '2026/4/',
-			thumbnail: ''
-		},
-		{
-			id: '13',
-			name: 'V5 - AA.1',
-			status: '工作中',
-			owner: 'Admin Platform',
-			date: '2026/4/',
-			thumbnail: ''
-		},
-		{
-			id: '14',
-			name: 'test12121212121212 - AA.1',
-			status: '已发布',
-			owner: 'Admin Platform',
-			date: '2026/4/',
-			thumbnail: ''
-		},
-		{
-			id: '15',
-			name: 'TestProduct - A',
-			status: '工作中',
-			owner: 'Admin Platform',
-			date: '2026/4/',
-			thumbnail: ''
-		}
-	];
+	productList.value = [];
+	loading.value = true;
 };
 
 // 格式化日期
@@ -1486,16 +1399,16 @@ const confirmDeleteProduct = async (item: any) => {
 					),
 					includeStructure.value
 						? h(
-								ElCheckbox,
-								{
-									'modelValue': unrecoverableChecked.value,
-									'onUpdate:modelValue': (value: unknown) => {
-										unrecoverableChecked.value = value === true;
-										setTimeout(() => updateConfirmButtonDisabled(), 0);
-									}
-								},
-								() => '我知道无法恢复删除的对象。'
-							)
+							ElCheckbox,
+							{
+								'modelValue': unrecoverableChecked.value,
+								'onUpdate:modelValue': (value: unknown) => {
+									unrecoverableChecked.value = value === true;
+									setTimeout(() => updateConfirmButtonDisabled(), 0);
+								}
+							},
+							() => '我知道无法恢复删除的对象。'
+						)
 						: null
 				])
 			])
@@ -1525,8 +1438,8 @@ const handleDeleteProduct = async (item: any) => {
 		const includeStructure = await confirmDeleteProduct(item);
 		loading.value = true;
 		const accessResponse = await partDetailApi.checkDeleteAccess([physicalId]);
-		const hasDeleteAccess =
-			accessResponse.status !== 'failure' && (accessResponse.results || []).every((result: any) => result?.hasDeleteAccess === true);
+		const hasDeleteAccess
+			= accessResponse.status !== 'failure' && (accessResponse.results || []).every((result: any) => result?.hasDeleteAccess === true);
 		if (!hasDeleteAccess) {
 			ElMessage.error('没有删除权限');
 			if (accessResponse.report?.length) showDeleteReportDialog(accessResponse.report);
@@ -2149,6 +2062,31 @@ onUnmounted(() => {
 		max-width: 200px;
 		overflow: visible;
 		padding: 0;
+	}
+
+	.part-action-menu-icon {
+		display: inline-flex;
+		flex: 0 0 22px;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		color: #6b7c8d;
+		font-size: 13px;
+	}
+
+	.part-action-menu-label {
+		flex: 1 1 auto;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 12px;
+	}
+
+	.part-action-menu-arrow {
+		flex: 0 0 auto;
+		margin-left: 7px;
+		color: #606266;
+		font-size: 12px;
 	}
 }
 

@@ -2461,7 +2461,8 @@ const getChildEnterpriseCode = (row: TreeNode) => {
 };
 
 const isChildrenRowSelected = (row: any) => selectedChildrenRows.value.some(item => item.id === row.id);
-const isFlatStructureView = computed(() => structureViewMode.value === 'flat');
+// 在非缩进视图（扁平、产品叶、产品原材料）下，禁用展开/折叠菜单
+const isFlatStructureView = computed(() => structureViewMode.value !== 'indented');
 const isDocumentRow = (row: TreeNode) => (row as any).type === 'Document' || row.typeDisplayName === 'Document';
 const canDownloadSelectedDocuments = computed(() => !!selectedChildrenRows.value.length && selectedChildrenRows.value.every(isDocumentRow));
 const filterManufacturableRows = (rows: TreeNode[]) => {

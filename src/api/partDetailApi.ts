@@ -1760,6 +1760,24 @@ class PartDetailAPI {
 			throw error;
 		}
 	}
+
+	/**
+	 * 展开结构（占位实现）
+	 * 目前前端基于 progressiveexpand 已一次性获取全量数据，
+	 * 这里保留方法以兼容调用链并避免报错。
+	 */
+	async expandStructure(physicalId: string): Promise<void> {
+		console.log('[PartDetailAPI] expandStructure (noop):', physicalId);
+		return;
+	}
+
+	/**
+	 * 折叠结构（占位实现）
+	 */
+	async collapseStructure(physicalId: string): Promise<void> {
+		console.log('[PartDetailAPI] collapseStructure (noop):', physicalId);
+		return;
+	}
 }
 
 export interface AttributeDataItem {
