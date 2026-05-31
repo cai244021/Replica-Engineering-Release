@@ -95,6 +95,12 @@
 									<span class="part-action-menu-label">设置企业项目编号</span>
 								</el-dropdown-item>
 								<el-dropdown-item
+									command="editConfigurationContext"
+									@click="editCfgVisible = true">
+									<span class="part-action-menu-icon">⚙</span>
+									<span class="part-action-menu-label">编辑配置上下文</span>
+								</el-dropdown-item>
+								<el-dropdown-item
 									command="delete"
 									:disabled="lifecycleCmdLoading">
 									<span class="part-action-menu-icon">⌫</span>
@@ -1946,11 +1952,26 @@
 			</template>
 		</el-dialog>
 	</div>
+	<el-dialog
+		v-model="editCfgVisible"
+		:title="`编辑配置上下文${partInfo?.['ds6w:label'] ? ' - ' + partInfo['ds6w:label'] : ''}`"
+		width="500px"
+		:close-on-click-modal="false"
+		draggable>
+		<InternalConfig :physical-id="currentPhysicalId" />
+		<template #footer>
+			<div class="dialog-footer">
+				<el-button @click="editCfgVisible = false">关闭</el-button>
+			</div>
+		</template>
+	</el-dialog>
 </template>
 
 <script setup lang="ts">
 import { computed, h, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import InternalConfig from '@/views/InternalConfig.vue';
+const editCfgVisible = ref(false);
 import {
 	ArrowDown,
 	ArrowUp,
@@ -3121,8 +3142,8 @@ const loadDuplicateSecurityContext = async () => {
 			type: 'VPMReference',
 			xrequestedwith: 'xmlhttprequest'
 		});
-		const options: DuplicateSecurityContextOption[]
-			= createContextRes.credentials?.map((credential: { ctxname: string; prjtitle?: string; ctxtitle?: string }) => ({
+		const options: DuplicateSecurityContextOption[] =
+			createContextRes.credentials?.map((credential: { ctxname: string; prjtitle?: string; ctxtitle?: string }) => ({
 				value: credential.ctxname,
 				label: credential.prjtitle || credential.ctxtitle || credential.ctxname
 			})) || [];
@@ -3928,8 +3949,8 @@ const treeReorderSelectedIndexes = computed(() =>
 const canMoveTreeReorderUp = computed(() => !!treeReorderSelectedIndexes.value.length && treeReorderSelectedIndexes.value[0] > 0);
 const canMoveTreeReorderDown = computed(
 	() =>
-		!!treeReorderSelectedIndexes.value.length
-		&& treeReorderSelectedIndexes.value[treeReorderSelectedIndexes.value.length - 1] < treeReorderRows.value.length - 1
+		!!treeReorderSelectedIndexes.value.length &&
+		treeReorderSelectedIndexes.value[treeReorderSelectedIndexes.value.length - 1] < treeReorderRows.value.length - 1
 );
 const treeReorderDialogStyle = computed(() => ({
 	left: `${treeReorderDialogMaximized.value ? 8 : treeReorderDialogPosition.value.left}px`,
@@ -4946,8 +4967,8 @@ const handleSelectedRowNewRevision = async () => {
 		const targetNodes = selectedRows.map(row => {
 			const physicalId = row.resourceid || row.id;
 			const objectType = pickValidField('objectType', 'type') || 'VPMReference';
-			const objectName
-				= pickValidField('ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
+			const objectName =
+				pickValidField('ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
 			const revision = pickValidField('revision', 'ds6wg:revision');
 			const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
 			const typeDisplayName = normalizeTypeDisplayName(pickValidField('typeDisplayName', 'displayType', 'globalType', 'ds6w:type'));
@@ -5111,10 +5132,10 @@ const handleSelectedRowNewRevision = async () => {
 						if (isReviseRequest && originalOnComplete) {
 							options.onComplete = function (response: any) {
 								if (
-									(url.includes('/attributeList') || url.includes('/prepare_revise_checkavailability'))
-									&& response?.results
-									&& Array.isArray(response.results)
-									&& Array.isArray(currentReviseTargetNodes)
+									(url.includes('/attributeList') || url.includes('/prepare_revise_checkavailability')) &&
+									response?.results &&
+									Array.isArray(response.results) &&
+									Array.isArray(currentReviseTargetNodes)
 								) {
 									const sourceById = new Map<string, any>();
 									currentReviseTargetNodes.forEach(node => {
@@ -5163,9 +5184,9 @@ const handleSelectedRowNewRevision = async () => {
 				const ReviseWidgetCtor = ReviseWidget?.default || ReviseWidget;
 				const reviseWidgetPrototype = ReviseWidgetCtor?.prototype;
 				if (
-					reviseWidgetPrototype
-					&& typeof reviseWidgetPrototype._attributeListRequest === 'function'
-					&& !reviseWidgetPrototype.__twMergeSelectionInfoForRevise
+					reviseWidgetPrototype &&
+					typeof reviseWidgetPrototype._attributeListRequest === 'function' &&
+					!reviseWidgetPrototype.__twMergeSelectionInfoForRevise
 				) {
 					const originalAttributeListRequest = reviseWidgetPrototype._attributeListRequest;
 					reviseWidgetPrototype._attributeListRequest = function (objects: any[], securityContext: any, callback: (results: any[]) => void) {
@@ -5298,8 +5319,8 @@ const handleSelectedRowNewBranch = async () => {
 		const targetNodes = selectedRows.map(row => {
 			const physicalId = row.resourceid || row.id;
 			const objectType = pickValidField('objectType', 'type') || 'VPMReference';
-			const objectName
-				= pickValidField('ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
+			const objectName =
+				pickValidField('ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
 			const revision = pickValidField('revision', 'ds6wg:revision');
 			const displayName = revision && !objectName.endsWith(` ${revision}`) ? `${objectName} ${revision}` : objectName;
 			const typeDisplayName = normalizeTypeDisplayName(pickValidField('typeDisplayName', 'displayType', 'globalType', 'ds6w:type'));
@@ -5572,8 +5593,8 @@ const handleSelectedRowCopy = async () => {
 
 		const widgetData = selectedRows.map(row => {
 			const physicalId = row.resourceid || row.id;
-			const objectName
-				= pickValidField(row, 'ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
+			const objectName =
+				pickValidField(row, 'ds6w:label', 'label', 'title', 'displayName', 'objectName', 'identifier', 'partNumber', 'name') || physicalId;
 			const revision = pickValidField(row, 'revision', 'ds6wg:revision');
 			const displayName = objectName;
 			const typeDisplayName = normalizeTypeDisplayName(pickValidField(row, 'typeDisplayName', 'displayType', 'globalType', 'ds6w:type'));
@@ -6288,8 +6309,8 @@ const loadExpandData = async (physicalId: string) => {
 	}
 };
 
-const { handleStructureViewCommand, handleManufacturableToggle, handleManufacturableView, handleIndentedStructureView, handleFlatStructureView }
-	= useStructureView(
+const { handleStructureViewCommand, handleManufacturableToggle, handleManufacturableView, handleIndentedStructureView, handleFlatStructureView } =
+	useStructureView(
 		currentPhysicalId,
 		structureViewMode,
 		structureUsageView,
@@ -6969,9 +6990,9 @@ const buildLifecycleTargetNodeFromPartInfo = (physicalId: string) =>
 	});
 
 const getDeleteTargetLabel = (target: any) =>
-	pickOpenWithField(target, 'label', 'displayName', 'title', 'name', 'objectName', 'identifier')
-	|| pickOpenWithField(target, 'physicalid', 'physicalId', 'objectId', 'id')
-	|| '-';
+	pickOpenWithField(target, 'label', 'displayName', 'title', 'name', 'objectName', 'identifier') ||
+	pickOpenWithField(target, 'physicalid', 'physicalId', 'objectId', 'id') ||
+	'-';
 
 const showDeleteReportDialog = (report: DeleteReportItem[]) => {
 	ElMessageBox.alert(
@@ -7060,16 +7081,16 @@ const confirmDeleteTargets = async (targetNodes: any[]) => {
 					),
 					includeStructure.value
 						? h(
-							ElCheckbox,
-							{
-								'modelValue': unrecoverableChecked.value,
-								'onUpdate:modelValue': (value: unknown) => {
-									unrecoverableChecked.value = value === true;
-									setTimeout(() => updateConfirmButtonDisabled(), 0);
-								}
-							},
-							() => '我知道无法恢复删除的对象。'
-						)
+								ElCheckbox,
+								{
+									'modelValue': unrecoverableChecked.value,
+									'onUpdate:modelValue': (value: unknown) => {
+										unrecoverableChecked.value = value === true;
+										setTimeout(() => updateConfirmButtonDisabled(), 0);
+									}
+								},
+								() => '我知道无法恢复删除的对象。'
+							)
 						: null
 				])
 			])

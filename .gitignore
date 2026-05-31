@@ -27,7 +27,7 @@ coverage
 *.njsproj
 *.sln
 *.sw?
-
+/OOTBSources
 *.tsbuildinfo
 Interface/重复确认.har
 Interface/重复项.har
@@ -55,7 +55,6 @@ Interface/success.har
 .agents/skills/skill-creator/scripts/run_eval.py
 .agents/skills/skill-creator/scripts/run_loop.py
 .agents/skills/skill-creator/scripts/utils.py
-/OOTBSources
 .windsurf/workflows/analyze-har.md
 Interface/修订版源error.har
 Interface/HAR分析报告.md

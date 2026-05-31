@@ -21,6 +21,10 @@ export const useHeaderActions = (
 ) => {
 	const handleHeaderActionCommand = async (command: string) => {
 		console.log('[TW_EngineeringRelease] header action command:', command);
+		if (command === 'editConfigurationContext') {
+			// 由 InternalConfig 对话框页面负责数据加载与展示
+			return;
+		}
 		if (command === 'delete') {
 			const physicalId = getParentPhysicalId();
 			console.log('[TW_EngineeringRelease] delete 点击，当前物理ID:', physicalId);

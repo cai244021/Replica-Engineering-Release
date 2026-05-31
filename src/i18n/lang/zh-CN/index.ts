@@ -11,6 +11,9 @@ export default {
 		edit: '编辑',
 		add: '新增'
 	},
+	config: {
+		defaultEffectivity: '模型版本、变体和选项'
+	},
 	menu: {
 		home: '首页',
 		about: '关于',

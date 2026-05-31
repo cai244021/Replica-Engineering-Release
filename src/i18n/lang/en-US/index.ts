@@ -10,6 +10,9 @@ export default {
 		edit: 'Edit',
 		add: 'Add'
 	},
+	config: {
+		defaultEffectivity: 'Effectivity Based Model'
+	},
 	menu: {
 		home: 'Home',
 		about: 'About',

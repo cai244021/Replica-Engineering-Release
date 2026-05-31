@@ -1,0 +1,1536 @@
+编辑配置上下文功能
+1:点击按钮:先判断是否有设置上下文的权限
+resources/modeler/configuration/pandoServices/getPandOAccessInformation?tenant=OnPremise
+请求参数
+{
+    "version": "1.0",
+    "commandList": [
+        "GetAttachedModels",
+        "AttachModels",
+        "DetachModels"
+    ]
+}
+响应
+{
+    "GetAttachedModels": "Granted",
+    "AttachModels": "Granted",
+    "DetachModels": "Granted",
+    "version": "1.0"
+}
+GetAttachedModels、AttachModels、DetachModels 都为Granted就继续往下调用接口
+resources/modeler/configuration/navigationServices/getMultipleConfigurationContextInfo?tenant=OnPremise
+请求接口
+{
+    "version": "1.2",
+    "pidList": [
+        "物理ID"
+    ],
+    "modelMask": "Read",
+    "enabledCriteria": "YES",
+    "cfgCtxt": "YES",
+    "xRevisionContent": "YES",
+    "isUniqueInDB": "YES"
+}
+响应接口
+失败的接口 isConfigurable、isCriteriaEditable 都为NO
+{
+    "referencesInfo": [
+        {
+            "pid": "D5D205296E1600006A1BE87E000075F7",
+            "isConfigurable": "NO",
+            "hasConfigContext": "NO",
+            "isCriteriaEditable": "NO"
+        }
+    ],
+    "contextInfo": [],
+    "enabledCriteria": [],
+    "version": "1.2"
+}
+成功的接口， isCriteriaEditable、isConfigurable 都为YES 
+{
+    "referencesInfo": [
+        {
+            "pid": "D5D205296E1600006A1BE72A00007557",
+            "isConfigurable": "YES",
+            "hasConfigContext": "NO",
+            "isCriteriaEditable": "YES",
+            "isUniqueInDB": "TRUE",
+            "hasXRevisionGraph": "NO",
+            "revisionMode": "Explicit"
+        }
+    ],
+    "contextInfo": [],
+    "enabledCriteria": [],
+    "version": "1.2"
+}
+
+
+
+resources/modeler/configuration/navigationServices/getMultipleConfigurationContextInfo?tenant=OnPremise
+如果contextInfo不为空的情况下，页面需要展示已经设置好的上下文，响应如下contextInfo 就是需要显示的内容，显示格式看截图
+{
+    "referencesInfo": [
+        {
+            "pid": "D5D205296E1600006A1BE72A00007557",
+            "isConfigurable": "YES",
+            "hasConfigContext": "YES",
+            "isCriteriaEditable": "YES",
+            "isUniqueInDB": "TRUE",
+            "hasXRevisionGraph": "NO",
+            "revisionMode": "Effectivity Based Model"
+        }
+    ],
+    "contextInfo": [
+        {
+            "modelPID": "D5D205296E1600006A1BE4F3000121EC",
+            "contextOf": [
+                "D5D205296E1600006A1BE72A00007557"
+            ],
+            "notContextOf": [],
+            "content": {
+                "results": [
+                    {
+                        "type_icon_url": "/snresources/images/icons/small/I_PLCModel.png",
+                        "computed": {
+                            "label": {
+                                "path": "Marketing Name",
+                                "selectable": "attribute[Marketing Name]",
+                                "name": "Marketing Name",
+                                "value": [
+                                    "SUV"
+                                ]
+                            }
+                        },
+                        "data": [
+                            {
+                                "path": "Marketing Name",
+                                "visible": true,
+                                "nls": "标题",
+                                "maxlength": 0,
+                                "selectable": "attribute[Marketing Name]",
+                                "name": "Marketing Name",
+                                "readOnly": false,
+                                "type": "string",
+                                "value": [
+                                    "SUV"
+                                ],
+                                "UIPosition": 3,
+                                "keepformat": false
+                            }
+                        ],
+                        "physicalID": "D5D205296E1600006A1BE4F3000121EC",
+                        "basicData": [
+                            {
+                                "nls": "合作区",
+                                "selectable": "project",
+                                "name": "project",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "Common Space"
+                                ],
+                                "UIPosition": 11
+                            },
+                            {
+                                "visible": true,
+                                "nls": "描述",
+                                "selectable": "description",
+                                "multiline": true,
+                                "name": "description",
+                                "readOnly": false,
+                                "type": "string",
+                                "UIPosition": 4
+                            },
+                            {
+                                "nls": "类型",
+                                "selectable": "type",
+                                "name": "type",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "模型"
+                                ],
+                                "UIPosition": 1
+                            },
+                            {
+                                "nls": "创建日期",
+                                "selectable": "originated",
+                                "name": "originated",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "2026/05/31@07:36:19:GMT"
+                                ],
+                                "UIPosition": 8
+                            },
+                            {
+                                "nls": "成熟度状态",
+                                "selectable": "current",
+                                "name": "current",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "工作中"
+                                ],
+                                "UIPosition": 12
+                            },
+                            {
+                                "nls": "修改日期",
+                                "selectable": "modified",
+                                "name": "modified",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "2026/05/31@07:36:36:GMT"
+                                ],
+                                "UIPosition": 9
+                            },
+                            {
+                                "nls": "所有者",
+                                "selectable": "owner",
+                                "name": "owner",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "Admin Platform"
+                                ],
+                                "UIPosition": 7
+                            },
+                            {
+                                "nls": "修订版",
+                                "selectable": "revision",
+                                "name": "revision",
+                                "readOnly": true,
+                                "type": "string",
+                                "UIPosition": 5
+                            },
+                            {
+                                "nls": "组织",
+                                "selectable": "organization",
+                                "name": "organization",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "Company Name"
+                                ],
+                                "UIPosition": 10
+                            },
+                            {
+                                "visible": true,
+                                "nls": "名称",
+                                "selectable": "name",
+                                "name": "name",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "SUV"
+                                ],
+                                "UIPosition": 2
+                            }
+                        ],
+                        "metatype": "bus",
+                        "type": "Model",
+                        "type_icon_large_url": "/snresources/images/icons/large/I_PLCModel108x144.png",
+                        "PLMParametersAvailable": false,
+                        "preview_url": "",
+                        "success": true,
+                        "modifyAccess": true,
+                        "groupData": []
+                    }
+                ]
+            }
+        }
+    ],
+    "enabledCriteria": [
+        {
+            "criteriaName": "feature",
+            "activatedFor": [
+                "D5D205296E1600006A1BE72A00007557"
+            ],
+            "notActivatedFor": []
+        },
+        {
+            "criteriaName": "productState",
+            "activatedFor": [
+                "D5D205296E1600006A1BE72A00007557"
+            ],
+            "notActivatedFor": []
+        }
+    ],
+    "version": "1.2"
+}
+暂时先做到这里
+
+点击+号，显示搜索框，点击搜索框调用的接口，如果输入了文字需要进行文字的匹配
+federated/search?xrequestedwith=xmlhttprequest&tenant=OnPremise
+注意:https://3dsearch.r2026.v6.com/   是这个请求地址，项目中已经有怎么获取到3dsearch 的网址
+请求参数: D5D205296E1600006A1BE4F3000121EC 这个是当前页面展示的Model，
+单个Model的请求参数如下
+ "query": "(flattenedtaxonomies:\"types/Model\")AND  ( NOT current:\"Inactive\") AND ( NOT current: \"Obsolete\")  NOT (physicalid:D5D205296E1600006A1BE4F3000121EC)",
+
+如果有多个Model是以下的参数
+query:"(flattenedtaxonomies:\"types/Model\")AND  ( NOT current:\"Inactive\") AND ( NOT current: \"Obsolete\")  NOT (physicalid:D5D205295D8B000069BA3C4900000098)NOT (physicalid:D5D205296E1600006A1BE4F3000121EC)"
+
+如果Model为空的的请求参数
+"query": "(flattenedtaxonomies:\"types/Model\")AND  ( NOT current:\"Inactive\") AND ( NOT current: \"Obsolete\")   OR (flattenedtaxonomies:\"types/Products\")AND  ( NOT current:\"Inactive\") AND ( NOT current: \"Obsolete\")  ",
+
+如果输入框里面输入了值的请求参数如下，如果有Model需要加上Model的请求参数
+    "query": "( (flattenedtaxonomies:\"types/Model\")AND  ( NOT current:\"Inactive\") AND ( NOT current: \"Obsolete\")   OR (flattenedtaxonomies:\"types/Products\")AND  ( NOT current:\"Inactive\") AND ( NOT current: \"Obsolete\")   ) AND (([ds6w:label]:(ddd)) OR ([ds6w:label]:(*ddd*)) OR ([name]:(ddd)) OR ([name]:(*ddd*)))",
+
+{
+    "with_indexing_date": true,
+    "with_nls": false,
+    "label": "cfgLabel",
+    "locale": "en",
+    "select_predicate": [
+        "ds6w:label",
+        "ds6w:type",
+        "ds6w:description",
+        "ds6w:identifier",
+        "ds6w:modified",
+        "ds6w:created",
+        "ds6w:responsible",
+        "ds6w:lastModifiedBy",
+        "ds6wg:marketing_Name",
+        "ds6wg:revision",
+        "ds6w:what/ds6w:status"
+    ],
+    "select_file": [
+        "icon",
+        "thumbnail_2d"
+    ],
+    "query": "(flattenedtaxonomies:\"types/Model\")AND  ( NOT current:\"Inactive\") AND ( NOT current: \"Obsolete\")  NOT (physicalid:D5D205296E1600006A1BE4F3000121EC)",
+    "order_by": "desc",
+    "order_field": "relevance",
+    "nresults": 1000,
+    "start": "0",
+    "source": [],
+    "tenant": "OnPremise"
+}
+响应如下，有7条数据，resourceid是主键 和 显示使用的是 ds6w:label-ds6wg:revision
+{
+    "infos": {
+        "estimated": false,
+        "nresults": 7,
+        "nmatches": 7,
+        "nhits": 7,
+        "version": "1.1",
+        "next_start": "7 0 1 323904678",
+        "sources": [
+            {
+                "status": true,
+                "name": "3dspace",
+                "service": "3DSpace",
+                "time": "172",
+                "indexingDate": {
+                    "allvaultsacl": 1780226022
+                }
+            },
+            {
+                "status": true,
+                "name": "swym",
+                "service": "3DSwym",
+                "time": "191"
+            }
+        ]
+    },
+    "results": [
+        {
+            "attributes": [
+                {
+                    "format": "internal",
+                    "name": "resourceid",
+                    "type": "string",
+                    "value": "D5D205296E1600006A16990200010768"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:hasBranch",
+                    "type": "string",
+                    "value": "false",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:status/ds6w:reserved",
+                    "type": "boolean",
+                    "value": "FALSE",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:policy",
+                    "type": "string",
+                    "value": "Model",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible/ds6w:organizationResponsible",
+                    "type": "string",
+                    "value": "Company Name",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible/ds6w:originator",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:isLastRevisionPerState",
+                    "type": "string",
+                    "value": "true",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:isLastRevision",
+                    "type": "string",
+                    "value": "true",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:type",
+                    "type": "string",
+                    "value": "Model",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:created",
+                    "type": "date",
+                    "value": "2026-05-27T07:10:58Z",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:status",
+                    "type": "string",
+                    "value": "Model.Marketing",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:lastModifiedBy",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:modified",
+                    "type": "date",
+                    "value": "2026-05-27T07:16:38Z",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:where/ds6w:context/ds6w:project",
+                    "type": "string",
+                    "value": "Common Space",
+                    "field": "implicit"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:label",
+                    "type": "string",
+                    "value": "OOO"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:identifier",
+                    "type": "string",
+                    "value": "MV-43709429-00000002"
+                },
+                {
+                    "format": "internal",
+                    "name": "type_icon_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/small/I_PLCModel.png"
+                },
+                {
+                    "format": "internal",
+                    "name": "preview_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/large/I_PLCModel108x144.png"
+                },
+                {
+                    "format": "internal",
+                    "name": "sourceid",
+                    "type": "string",
+                    "value": "3dspace"
+                }
+            ]
+        },
+        {
+            "attributes": [
+                {
+                    "format": "internal",
+                    "name": "resourceid",
+                    "type": "string",
+                    "value": "D5D205295D8B000069BA3C4900000098"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:hasBranch",
+                    "type": "string",
+                    "value": "false",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:status/ds6w:reserved",
+                    "type": "boolean",
+                    "value": "FALSE",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:policy",
+                    "type": "string",
+                    "value": "Model",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible/ds6w:organizationResponsible",
+                    "type": "string",
+                    "value": "Company Name",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible/ds6w:originator",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:isLastRevisionPerState",
+                    "type": "string",
+                    "value": "true",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:isLastRevision",
+                    "type": "string",
+                    "value": "true",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:type",
+                    "type": "string",
+                    "value": "Model",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:created",
+                    "type": "date",
+                    "value": "2026-03-18T05:46:49Z",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:status",
+                    "type": "string",
+                    "value": "Model.Marketing",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:modified",
+                    "type": "date",
+                    "value": "2026-03-24T07:31:44Z",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:where/ds6w:context/ds6w:project",
+                    "type": "string",
+                    "value": "Common Space",
+                    "field": "implicit"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:label",
+                    "type": "string",
+                    "value": "xxxx"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:identifier",
+                    "type": "string",
+                    "value": "M-0000001"
+                },
+                {
+                    "format": "internal",
+                    "name": "type_icon_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/small/I_PLCModel.png"
+                },
+                {
+                    "format": "internal",
+                    "name": "preview_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/large/I_PLCModel108x144.png"
+                },
+                {
+                    "format": "internal",
+                    "name": "sourceid",
+                    "type": "string",
+                    "value": "3dspace"
+                }
+            ]
+        },
+        {
+            "attributes": [
+                {
+                    "format": "internal",
+                    "name": "resourceid",
+                    "type": "string",
+                    "value": "D5D20529D38E360069C377C60000007A"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:hasBranch",
+                    "type": "string",
+                    "value": "false",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:status/ds6w:reserved",
+                    "type": "boolean",
+                    "value": "FALSE",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:policy",
+                    "type": "string",
+                    "value": "Model",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible/ds6w:organizationResponsible",
+                    "type": "string",
+                    "value": "Company Name",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible/ds6w:originator",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:isLastRevisionPerState",
+                    "type": "string",
+                    "value": "true",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:isLastRevision",
+                    "type": "string",
+                    "value": "true",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:type",
+                    "type": "string",
+                    "value": "Model",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:created",
+                    "type": "date",
+                    "value": "2026-03-25T05:51:02Z",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:status",
+                    "type": "string",
+                    "value": "Model.Marketing",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:lastModifiedBy",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:modified",
+                    "type": "date",
+                    "value": "2026-03-25T05:51:14Z",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:where/ds6w:context/ds6w:project",
+                    "type": "string",
+                    "value": "Common Space",
+                    "field": "implicit"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:label",
+                    "type": "string",
+                    "value": "ssss"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:identifier",
+                    "type": "string",
+                    "value": "M-0000002"
+                },
+                {
+                    "format": "internal",
+                    "name": "type_icon_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/small/I_PLCModel.png"
+                },
+                {
+                    "format": "internal",
+                    "name": "preview_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/large/I_PLCModel108x144.png"
+                },
+                {
+                    "format": "internal",
+                    "name": "sourceid",
+                    "type": "string",
+                    "value": "3dspace"
+                }
+            ]
+        },
+        {
+            "attributes": [
+                {
+                    "format": "internal",
+                    "name": "resourceid",
+                    "type": "string",
+                    "value": "D5D205290311370069C3816500000092"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:hasBranch",
+                    "type": "string",
+                    "value": "false",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:status/ds6w:reserved",
+                    "type": "boolean",
+                    "value": "FALSE",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:policy",
+                    "type": "string",
+                    "value": "Model",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible/ds6w:organizationResponsible",
+                    "type": "string",
+                    "value": "Company Name",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible/ds6w:originator",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:isLastRevisionPerState",
+                    "type": "string",
+                    "value": "true",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:isLastRevision",
+                    "type": "string",
+                    "value": "true",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:type",
+                    "type": "string",
+                    "value": "Model",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:created",
+                    "type": "date",
+                    "value": "2026-03-25T06:32:05Z",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:status",
+                    "type": "string",
+                    "value": "Model.Marketing",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:lastModifiedBy",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:modified",
+                    "type": "date",
+                    "value": "2026-03-25T06:33:44Z",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:where/ds6w:context/ds6w:project",
+                    "type": "string",
+                    "value": "Common Space",
+                    "field": "implicit"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:label",
+                    "type": "string",
+                    "value": "20260325-Model"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:description",
+                    "type": "string",
+                    "value": "xxxxxxxx"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:identifier",
+                    "type": "string",
+                    "value": "20260325-Model"
+                },
+                {
+                    "format": "internal",
+                    "name": "type_icon_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/small/I_PLCModel.png"
+                },
+                {
+                    "format": "internal",
+                    "name": "preview_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/large/I_PLCModel108x144.png"
+                },
+                {
+                    "format": "internal",
+                    "name": "sourceid",
+                    "type": "string",
+                    "value": "3dspace"
+                }
+            ]
+        },
+        {
+            "attributes": [
+                {
+                    "format": "internal",
+                    "name": "resourceid",
+                    "type": "string",
+                    "value": "D5D20529D38E360069C4EA9400001B46"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:hasBranch",
+                    "type": "string",
+                    "value": "false",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:status/ds6w:reserved",
+                    "type": "boolean",
+                    "value": "FALSE",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:policy",
+                    "type": "string",
+                    "value": "Model",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible/ds6w:organizationResponsible",
+                    "type": "string",
+                    "value": "Company Name",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible/ds6w:originator",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:isLastRevisionPerState",
+                    "type": "string",
+                    "value": "true",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:isLastRevision",
+                    "type": "string",
+                    "value": "true",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:type",
+                    "type": "string",
+                    "value": "Model",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:created",
+                    "type": "date",
+                    "value": "2026-03-26T08:13:08Z",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:status",
+                    "type": "string",
+                    "value": "Model.Marketing",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:lastModifiedBy",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:modified",
+                    "type": "date",
+                    "value": "2026-03-26T08:13:08Z",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:where/ds6w:context/ds6w:project",
+                    "type": "string",
+                    "value": "Default",
+                    "field": "implicit"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:label",
+                    "type": "string",
+                    "value": "testModel"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:identifier",
+                    "type": "string",
+                    "value": "testModel"
+                },
+                {
+                    "format": "internal",
+                    "name": "type_icon_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/small/I_PLCModel.png"
+                },
+                {
+                    "format": "internal",
+                    "name": "preview_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/large/I_PLCModel108x144.png"
+                },
+                {
+                    "format": "internal",
+                    "name": "sourceid",
+                    "type": "string",
+                    "value": "3dspace"
+                }
+            ]
+        },
+        {
+            "attributes": [
+                {
+                    "format": "internal",
+                    "name": "resourceid",
+                    "type": "string",
+                    "value": "D5D20529D38E360069C4EACB00001B66"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:hasBranch",
+                    "type": "string",
+                    "value": "false",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:status/ds6w:reserved",
+                    "type": "boolean",
+                    "value": "FALSE",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:policy",
+                    "type": "string",
+                    "value": "Model",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible/ds6w:organizationResponsible",
+                    "type": "string",
+                    "value": "Company Name",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible/ds6w:originator",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:isLastRevisionPerState",
+                    "type": "string",
+                    "value": "true",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:isLastRevision",
+                    "type": "string",
+                    "value": "true",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:type",
+                    "type": "string",
+                    "value": "Model",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:created",
+                    "type": "date",
+                    "value": "2026-03-26T08:14:03Z",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:status",
+                    "type": "string",
+                    "value": "Model.Marketing",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:lastModifiedBy",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:modified",
+                    "type": "date",
+                    "value": "2026-03-26T08:14:21Z",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:where/ds6w:context/ds6w:project",
+                    "type": "string",
+                    "value": "Common Space",
+                    "field": "implicit"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:label",
+                    "type": "string",
+                    "value": "testM"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:identifier",
+                    "type": "string",
+                    "value": "testM"
+                },
+                {
+                    "format": "internal",
+                    "name": "type_icon_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/small/I_PLCModel.png"
+                },
+                {
+                    "format": "internal",
+                    "name": "preview_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/large/I_PLCModel108x144.png"
+                },
+                {
+                    "format": "internal",
+                    "name": "sourceid",
+                    "type": "string",
+                    "value": "3dspace"
+                }
+            ]
+        },
+        {
+            "attributes": [
+                {
+                    "format": "internal",
+                    "name": "resourceid",
+                    "type": "string",
+                    "value": "D5D20529D38E360069CA34170000217C"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:hasBranch",
+                    "type": "string",
+                    "value": "false",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:status/ds6w:reserved",
+                    "type": "boolean",
+                    "value": "FALSE",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:policy",
+                    "type": "string",
+                    "value": "Model",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible/ds6w:organizationResponsible",
+                    "type": "string",
+                    "value": "Company Name",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:responsible/ds6w:originator",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:isLastRevisionPerState",
+                    "type": "string",
+                    "value": "true",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:isLastRevision",
+                    "type": "string",
+                    "value": "true",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:type",
+                    "type": "string",
+                    "value": "Model",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:created",
+                    "type": "date",
+                    "value": "2026-03-30T08:28:07Z",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:what/ds6w:status",
+                    "type": "string",
+                    "value": "Model.Marketing",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:who/ds6w:lastModifiedBy",
+                    "type": "string",
+                    "value": "Admin Platform",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:when/ds6w:modified",
+                    "type": "date",
+                    "value": "2026-03-31T02:56:59Z",
+                    "field": "implicit"
+                },
+                {
+                    "format": "ds6w_facet",
+                    "name": "ds6w:where/ds6w:context/ds6w:project",
+                    "type": "string",
+                    "value": "Common Space",
+                    "field": "implicit"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:label",
+                    "type": "string",
+                    "value": "xxxx"
+                },
+                {
+                    "format": "attribute",
+                    "name": "ds6w:identifier",
+                    "type": "string",
+                    "value": "MV-43709429-00000001"
+                },
+                {
+                    "format": "internal",
+                    "name": "type_icon_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/small/I_PLCModel.png"
+                },
+                {
+                    "format": "internal",
+                    "name": "preview_url",
+                    "type": "string",
+                    "value": "https://3dspace.r2026.v6.com/3dspace/snresources/images/icons/large/I_PLCModel108x144.png"
+                },
+                {
+                    "format": "internal",
+                    "name": "sourceid",
+                    "type": "string",
+                    "value": "3dspace"
+                }
+            ]
+        }
+    ],
+    "facets": [
+        {
+            "sixw": "ds6w:what/ds6w:policy",
+            "type": "string",
+            "field": "implicit",
+            "object": "Model",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 7
+        },
+        {
+            "sixw": "ds6w:what/ds6w:status",
+            "type": "string",
+            "field": "implicit",
+            "object": "Model.Marketing",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 7
+        },
+        {
+            "sixw": "ds6w:what/ds6w:status/ds6w:reserved",
+            "type": "boolean",
+            "field": "implicit",
+            "object": "FALSE",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 7
+        },
+        {
+            "sixw": "ds6w:what/ds6w:type",
+            "type": "string",
+            "field": "implicit",
+            "object": "Model",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 7
+        },
+        {
+            "sixw": "ds6w:when/ds6w:created",
+            "type": "date",
+            "field": "implicit",
+            "object": "2026/03/18",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 1
+        },
+        {
+            "sixw": "ds6w:when/ds6w:created",
+            "type": "date",
+            "field": "implicit",
+            "object": "2026/03/25",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 2
+        },
+        {
+            "sixw": "ds6w:when/ds6w:created",
+            "type": "date",
+            "field": "implicit",
+            "object": "2026/03/26",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 2
+        },
+        {
+            "sixw": "ds6w:when/ds6w:created",
+            "type": "date",
+            "field": "implicit",
+            "object": "2026/03/30",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 1
+        },
+        {
+            "sixw": "ds6w:when/ds6w:created",
+            "type": "date",
+            "field": "implicit",
+            "object": "2026/05/27",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 1
+        },
+        {
+            "sixw": "ds6w:when/ds6w:hasBranch",
+            "type": "string",
+            "field": "implicit",
+            "object": "false",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 7
+        },
+        {
+            "sixw": "ds6w:when/ds6w:isLastRevision",
+            "type": "string",
+            "field": "implicit",
+            "object": "true",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 7
+        },
+        {
+            "sixw": "ds6w:when/ds6w:isLastRevisionPerState",
+            "type": "string",
+            "field": "implicit",
+            "object": "true",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 7
+        },
+        {
+            "sixw": "ds6w:when/ds6w:modified",
+            "type": "date",
+            "field": "implicit",
+            "object": "2026/03/24",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 1
+        },
+        {
+            "sixw": "ds6w:when/ds6w:modified",
+            "type": "date",
+            "field": "implicit",
+            "object": "2026/03/25",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 2
+        },
+        {
+            "sixw": "ds6w:when/ds6w:modified",
+            "type": "date",
+            "field": "implicit",
+            "object": "2026/03/26",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 2
+        },
+        {
+            "sixw": "ds6w:when/ds6w:modified",
+            "type": "date",
+            "field": "implicit",
+            "object": "2026/03/31",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 1
+        },
+        {
+            "sixw": "ds6w:when/ds6w:modified",
+            "type": "date",
+            "field": "implicit",
+            "object": "2026/05/27",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 1
+        },
+        {
+            "sixw": "ds6w:where/ds6w:context/ds6w:project",
+            "type": "string",
+            "field": "implicit",
+            "object": "Common Space",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 6
+        },
+        {
+            "sixw": "ds6w:where/ds6w:context/ds6w:project",
+            "type": "string",
+            "field": "implicit",
+            "object": "Default",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 1
+        },
+        {
+            "sixw": "ds6w:who/ds6w:lastModifiedBy",
+            "type": "string",
+            "field": "implicit",
+            "object": "Admin Platform",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 6
+        },
+        {
+            "sixw": "ds6w:who/ds6w:responsible",
+            "type": "string",
+            "field": "implicit",
+            "object": "Admin Platform",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 7
+        },
+        {
+            "sixw": "ds6w:who/ds6w:responsible/ds6w:organizationResponsible",
+            "type": "string",
+            "field": "implicit",
+            "object": "Company Name",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 7
+        },
+        {
+            "sixw": "ds6w:who/ds6w:responsible/ds6w:originator",
+            "type": "string",
+            "field": "implicit",
+            "object": "Admin Platform",
+            "sources": [
+                "3dspace"
+            ],
+            "count": 7
+        }
+    ]
+}

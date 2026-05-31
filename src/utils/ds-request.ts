@@ -175,6 +175,14 @@ const dashboardGet = async (url: string) => {
 	return dashboardRequest('GET', url);
 };
 
+export function getSpaceBaseURL() {
+	const url = isDev ? baseApi : spaceUrl ? spaceUrl : window.location.href.split('/webapp')[0];
+	if (url && url.startsWith('/')) {
+		return window.location.origin + url;
+	}
+	return url || '';
+}
+
 export const http = { get, getText, post, put, putForm, delete: del, dashboardPost, dashboardGet };
 export const searchHttp = { get: searchGet, post: searchPost };
 export default http;
