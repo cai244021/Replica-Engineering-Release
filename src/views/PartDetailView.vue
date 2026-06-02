@@ -1954,16 +1954,10 @@
 	</div>
 	<el-dialog
 		v-model="editCfgVisible"
-		:title="`编辑配置上下文${partInfo?.['ds6w:label'] ? ' - ' + partInfo['ds6w:label'] : ''}`"
-		width="500px"
-		:close-on-click-modal="false"
+		title="编辑配置上下文"
+		width="80%"
 		draggable>
-		<InternalConfig :physical-id="currentPhysicalId" :visible="editCfgVisible" />
-		<template #footer>
-			<div class="dialog-footer">
-				<el-button @click="editCfgVisible = false">关闭</el-button>
-			</div>
-		</template>
+		<InternalConfig :physical-id="currentPhysicalId" />
 	</el-dialog>
 </template>
 
