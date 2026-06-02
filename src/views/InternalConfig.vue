@@ -3,11 +3,11 @@ import { onMounted, ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { onClickOutside } from '@vueuse/core';
 import http, { getSpaceBaseURL, searchHttp } from '@/utils/ds-request';
-import { Plus, Setting, Search } from '@element-plus/icons-vue';
+import { Plus, Setting, Search, Delete, Check } from '@element-plus/icons-vue';
 
 const { t, locale } = useI18n();
 
-const props = defineProps<{ physicalId?: string }>();
+const props = defineProps<{ physicalId?: string; visible?: boolean }>();
 
 const loading = ref(false);
 const errorMsg = ref('');
@@ -31,6 +31,11 @@ const showSettingsPanel = ref(false);
 const revisionChecked = ref(false);
 const variantChecked = ref(false);
 
+// 选中的模型ID
+const selectedModelId = ref<string>('');
+const contentRef = ref<HTMLElement | null>(null);
+const headerRef = ref<HTMLElement | null>(null);
+
 const getPhysicalId = () => {
 	if (props.physicalId) return props.physicalId;
 	const hash = typeof location !== 'undefined' ? location.hash : '';
@@ -53,7 +58,7 @@ const postJson = async (path: string, body: any): Promise<any> => {
 	return http.post(url, body);
 };
 
-const canEdit = ref<boolean | null>(null);
+const canEdit = ref<boolean>(false);
 
 const fetchData = async () => {
 	const pid = getPhysicalId();
@@ -100,6 +105,7 @@ const fetchData = async () => {
 		enabledCriteria.value = Array.isArray(ctxResp?.enabledCriteria) ? ctxResp.enabledCriteria : [];
 	} catch (e: any) {
 		errorMsg.value = e?.message || String(e);
+		console.error('[InternalConfig] fetchData error:', e);
 	} finally {
 		loading.value = false;
 	}
@@ -111,6 +117,16 @@ watch(
 	() => props.physicalId,
 	(newVal, oldVal) => {
 		if (newVal && newVal !== oldVal) {
+			fetchData();
+		}
+	}
+);
+
+// 监听 visible 变化，每次弹框打开时刷新数据
+watch(
+	() => props.visible,
+	(newVal) => {
+		if (newVal) {
 			fetchData();
 		}
 	}
@@ -130,8 +146,8 @@ const existingModelIds = computed(() => {
 	const ids: string[] = [];
 	contextInfo.value.forEach(ci => {
 		const res = ci?.content?.results?.[0] || {};
-		const basic = Array.isArray(res?.basicData) ? res.basicData : [];
-		const physicalId = basic.find((b: any) => b?.name === 'physicalid')?.value?.[0];
+		// physicalID 在根级别，不在 basicData 中
+		const physicalId = res?.physicalID;
 		if (physicalId) ids.push(physicalId);
 	});
 	return ids;
@@ -157,7 +173,8 @@ const items = computed(() => {
 		const iconUrl = res?.type_icon_large_url
 			? ensureFullUrl(res.type_icon_large_url)
 			: ensureFullUrl(res?.type_icon_url?.replace('/small/', '/large/').replace('.png', '108x144.png') || '');
-		return { label, project, state, modified, icon: iconUrl };
+		const physicalId = res?.physicalID || '';
+		return { label, project, state, modified, icon: iconUrl, physicalId };
 	});
 });
 
@@ -195,23 +212,71 @@ onClickOutside(searchInputRef, (event) => {
 	showSearchResults.value = false;
 });
 
+// 点击内容区域外部取消选中模型（排除头部按钮区域）
+onClickOutside(contentRef, (event) => {
+	// 如果点击的是头部区域，不取消选中
+	const headerEl = headerRef.value;
+	if (headerEl && (headerEl === event.target || headerEl.contains(event.target as Node))) {
+		return;
+	}
+	selectedModelId.value = '';
+});
+
 // 点击设置
 const handleSettingClick = () => {
 	showSettingsPanel.value = !showSettingsPanel.value;
 };
 
+// 删除选中的模型
+const handleDeleteModel = async () => {
+	console.log('[InternalConfig] Delete clicked, physicalId:', props.physicalId, 'selectedModelId:', selectedModelId.value);
+	if (!props.physicalId || !selectedModelId.value) {
+		console.error('[InternalConfig] 缺少物理ID或模型ID');
+		return;
+	}
+
+	try {
+		const body = {
+			version: '1.2',
+			pidList: [props.physicalId],
+			content: {
+				attachCfgCtxt: [],
+				detachCfgCtxt: [selectedModelId.value]
+			}
+		};
+
+		console.log('[InternalConfig] Detach Model Request:', body);
+		const res: any = await http.post(
+			'/resources/modeler/configuration/authoringServices/setConfiguredObjectInfo?cfgCtxt=1&tenant=OnPremise',
+			body
+		);
+		console.log('[InternalConfig] Detach Model Response:', res);
+
+		if (res?.result === 'SUCCEED') {
+			// 删除成功，刷新模型列表并清空选中
+			await fetchData();
+			selectedModelId.value = '';
+		} else {
+			console.error('[InternalConfig] 删除模型失败:', res);
+		}
+	} catch (e: any) {
+		console.error('[InternalConfig] Detach Model Error:', e);
+	}
+};
+
 // 构建搜索 query
 const buildSearchQuery = (keyword: string) => {
-	const existingIds = existingModelIds.value;
+	const hasModels = items.value.length > 0;
+	let baseQuery = '';
 
-	// 基础 query：排除 Inactive 和 Obsolete 状态
-	let baseQuery = '(flattenedtaxonomies:"types/Model")AND  ( NOT current:"Inactive") AND ( NOT current: "Obsolete")';
-
-	// 如果有已存在的模型，排除它们
-	if (existingIds.length > 0) {
-		existingIds.forEach(id => {
-			baseQuery += ` NOT (physicalid:${id})`;
-		});
+	if (hasModels) {
+		// 有模型时，排除已存在的模型
+		const existingIds = items.value.map(it => it.physicalId).filter(Boolean);
+		const excludeIds = existingIds.map(id => `NOT (physicalid:${id})`).join('');
+		baseQuery = `(flattenedtaxonomies:"types/Model")AND  ( NOT current:"Inactive") AND ( NOT current: "Obsolete") ${excludeIds}`;
+	} else {
+		// 模型为空时，同时搜索 Model 和 Products 类型
+		baseQuery = `(flattenedtaxonomies:"types/Model")AND  ( NOT current:"Inactive") AND ( NOT current: "Obsolete")   OR (flattenedtaxonomies:"types/Products")AND  ( NOT current:"Inactive") AND ( NOT current: "Obsolete")`;
 	}
 
 	// 如果输入了关键词，添加文本匹配
@@ -297,20 +362,52 @@ const handleSearch = async () => {
 	}
 };
 
-// 选择搜索结果
-const handleSelectResult = (item: any) => {
+// 选择搜索结果 - 附加模型
+const handleSelectResult = async (item: any) => {
 	console.log('[InternalConfig] 选择模型:', item);
-	// TODO: 调用附加模型的接口
-	showSearchInput.value = false;
-	searchKeyword.value = '';
-	searchResults.value = [];
+	if (!props.physicalId || !item.resourceid) {
+		console.error('[InternalConfig] 缺少物理ID或模型ID');
+		return;
+	}
+
+	try {
+		const body = {
+			version: '1.2',
+			pidList: [props.physicalId],
+			content: {
+				attachCfgCtxt: [item.resourceid],
+				detachCfgCtxt: []
+			}
+		};
+
+		console.log('[InternalConfig] Attach Model Request:', body);
+		const res: any = await http.post(
+			'/resources/modeler/configuration/authoringServices/setConfiguredObjectInfo?cfgCtxt=1&tenant=OnPremise',
+			body
+		);
+		console.log('[InternalConfig] Attach Model Response:', res);
+
+		if (res?.result === 'SUCCEED') {
+			// 附加成功，刷新模型列表
+			await fetchData();
+			// 关闭搜索
+			showSearchInput.value = false;
+			showSearchResults.value = false;
+			searchKeyword.value = '';
+			searchResults.value = [];
+		} else {
+			console.error('[InternalConfig] 附加模型失败:', res);
+		}
+	} catch (e: any) {
+		console.error('[InternalConfig] Attach Model Error:', e);
+	}
 };
 </script>
 
 <template>
 	<div class="cfg-wrap">
 		<!-- 头部：活动条件 + 按钮 -->
-		<div class="cfg-header">
+		<div ref="headerRef" class="cfg-header">
 			<div class="cfg-header-left">
 				<span class="cfg-header-label">活动条件：</span>
 				<span class="cfg-header-value">
@@ -318,12 +415,20 @@ const handleSelectResult = (item: any) => {
 				</span>
 			</div>
 			<div class="cfg-header-actions">
-				<el-button v-if="canEdit && !refNotEditable" link class="cfg-action-btn" @click="handleAddClick">
+				<el-button v-if="canEdit && !refNotEditable" text class="cfg-action-btn" @click="handleAddClick">
 					<el-icon><Plus /></el-icon>
+				</el-button>
+				<!-- 删除按钮 -->
+			<el-button
+					v-if="canEdit && !refNotEditable && selectedModelId"
+					text
+					class="cfg-action-btn"
+					@click="handleDeleteModel">
+					<el-icon><Delete /></el-icon>
 				</el-button>
 				<el-button
 					v-if="canEdit && !refNotEditable && hasModel"
-					link
+					text
 					class="cfg-action-btn"
 					@click="handleSettingClick">
 					<el-icon><Setting /></el-icon>
@@ -405,11 +510,19 @@ const handleSelectResult = (item: any) => {
 			</div>
 
 			<!-- 有数据 -->
-			<div v-else class="cfg-content">
-				<div v-for="(it, idx) in items" :key="idx" class="cfg-card">
+			<div v-else ref="contentRef" class="cfg-content">
+				<div
+					v-for="(it, idx) in items"
+					:key="idx"
+					class="cfg-card"
+					:class="{ 'cfg-card-selected': selectedModelId === it.physicalId }"
+					@click="selectedModelId = it.physicalId">
 					<div class="cfg-row">
 						<div class="cfg-img-wrap">
 							<img v-if="it.icon" :src="it.icon" class="cfg-img" alt="" />
+							<div v-if="selectedModelId === it.physicalId" class="cfg-selected-icon">
+								<el-icon><Check /></el-icon>
+							</div>
 						</div>
 						<div class="cfg-info">
 							<div class="cfg-title">{{ it.label }}</div>
@@ -601,6 +714,15 @@ const handleSelectResult = (item: any) => {
 	border-radius: 4px;
 	background: #fff;
 	margin-bottom: 8px;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+.cfg-card:hover {
+	border-color: #c0c4cc;
+}
+.cfg-card-selected {
+	border-color: #409eff;
+	box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
 }
 
 .cfg-row {
@@ -618,6 +740,21 @@ const handleSelectResult = (item: any) => {
 	background: #f5f7fa;
 	border-radius: 4px;
 	overflow: hidden;
+	position: relative;
+}
+.cfg-selected-icon {
+	position: absolute;
+	bottom: 2px;
+	right: 2px;
+	width: 18px;
+	height: 18px;
+	background: #409eff;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-size: 12px;
 }
 .cfg-img {
 	max-width: 100%;

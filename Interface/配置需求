@@ -65,7 +65,7 @@ resources/modeler/configuration/navigationServices/getMultipleConfigurationConte
 }
 
 
-
+选择搜索框的内容，需要调用如下接口进行设置上下文
 resources/modeler/configuration/navigationServices/getMultipleConfigurationContextInfo?tenant=OnPremise
 如果contextInfo不为空的情况下，页面需要展示已经设置好的上下文，响应如下contextInfo 就是需要显示的内容，显示格式看截图
 {
@@ -276,6 +276,9 @@ query:"(flattenedtaxonomies:\"types/Model\")AND  ( NOT current:\"Inactive\") AND
 
 如果输入框里面输入了值的请求参数如下，如果有Model需要加上Model的请求参数
     "query": "( (flattenedtaxonomies:\"types/Model\")AND  ( NOT current:\"Inactive\") AND ( NOT current: \"Obsolete\")   OR (flattenedtaxonomies:\"types/Products\")AND  ( NOT current:\"Inactive\") AND ( NOT current: \"Obsolete\")   ) AND (([ds6w:label]:(ddd)) OR ([ds6w:label]:(*ddd*)) OR ([name]:(ddd)) OR ([name]:(*ddd*)))",
+
+如果为空的情况下
+    "query": "(flattenedtaxonomies:\"types/Model\")AND  ( NOT current:\"Inactive\") AND ( NOT current: \"Obsolete\")   OR (flattenedtaxonomies:\"types/Products\")AND  ( NOT current:\"Inactive\") AND ( NOT current: \"Obsolete\")  ",
 
 {
     "with_indexing_date": true,
@@ -1533,4 +1536,211 @@ query:"(flattenedtaxonomies:\"types/Model\")AND  ( NOT current:\"Inactive\") AND
             "count": 7
         }
     ]
+}
+
+设置上下文到物理产品上面的接口
+resources/modeler/configuration/authoringServices/setConfiguredObjectInfo?cfgCtxt=1&tenant=OnPremise
+请求接口:
+{
+    "version": "1.2",
+    "pidList": [
+        "零件物理ID"
+    ],
+    "content": {
+        "attachCfgCtxt": [
+            "搜索框选中的物理ID"
+        ],
+        "detachCfgCtxt": []
+    }
+}
+响应接口
+{
+    "details": [
+        {
+            "contexts": {
+                "content": [
+                    {
+                        "attributes": [
+                            {
+                                "type_icon_url": "/snresources/images/icons/small/I_PLCModel.png",
+                                "computed": {
+                                    "label": {
+                                        "path": "Marketing Name",
+                                        "selectable": "attribute[Marketing Name]",
+                                        "name": "Marketing Name",
+                                        "value": [
+                                            "20260325-Model"
+                                        ]
+                                    }
+                                },
+                                "data": [
+                                    {
+                                        "path": "Marketing Name",
+                                        "visible": true,
+                                        "nls": "标题",
+                                        "maxlength": 0,
+                                        "selectable": "attribute[Marketing Name]",
+                                        "name": "Marketing Name",
+                                        "readOnly": false,
+                                        "type": "string",
+                                        "value": [
+                                            "20260325-Model"
+                                        ],
+                                        "UIPosition": 3,
+                                        "keepformat": false
+                                    }
+                                ],
+                                "physicalID": "D5D205290311370069C3816500000092",
+                                "basicData": [
+                                    {
+                                        "nls": "合作区",
+                                        "selectable": "project",
+                                        "name": "project",
+                                        "readOnly": true,
+                                        "type": "string",
+                                        "value": [
+                                            "Common Space"
+                                        ],
+                                        "UIPosition": 11
+                                    },
+                                    {
+                                        "visible": true,
+                                        "nls": "描述",
+                                        "selectable": "description",
+                                        "multiline": true,
+                                        "name": "description",
+                                        "readOnly": false,
+                                        "type": "string",
+                                        "value": [
+                                            "xxxxxxxx"
+                                        ],
+                                        "UIPosition": 4
+                                    },
+                                    {
+                                        "nls": "类型",
+                                        "selectable": "type",
+                                        "name": "type",
+                                        "readOnly": true,
+                                        "type": "string",
+                                        "value": [
+                                            "模型"
+                                        ],
+                                        "UIPosition": 1
+                                    },
+                                    {
+                                        "nls": "创建日期",
+                                        "selectable": "originated",
+                                        "name": "originated",
+                                        "readOnly": true,
+                                        "type": "string",
+                                        "value": [
+                                            "2026/03/25@06:32:05:GMT"
+                                        ],
+                                        "UIPosition": 8
+                                    },
+                                    {
+                                        "nls": "成熟度状态",
+                                        "selectable": "current",
+                                        "name": "current",
+                                        "readOnly": true,
+                                        "type": "string",
+                                        "value": [
+                                            "工作中"
+                                        ],
+                                        "UIPosition": 12
+                                    },
+                                    {
+                                        "nls": "修改日期",
+                                        "selectable": "modified",
+                                        "name": "modified",
+                                        "readOnly": true,
+                                        "type": "string",
+                                        "value": [
+                                            "2026/03/25@06:33:44:GMT"
+                                        ],
+                                        "UIPosition": 9
+                                    },
+                                    {
+                                        "nls": "所有者",
+                                        "selectable": "owner",
+                                        "name": "owner",
+                                        "readOnly": true,
+                                        "type": "string",
+                                        "value": [
+                                            "Admin Platform"
+                                        ],
+                                        "UIPosition": 7
+                                    },
+                                    {
+                                        "nls": "修订版",
+                                        "selectable": "revision",
+                                        "name": "revision",
+                                        "readOnly": true,
+                                        "type": "string",
+                                        "UIPosition": 5
+                                    },
+                                    {
+                                        "nls": "组织",
+                                        "selectable": "organization",
+                                        "name": "organization",
+                                        "readOnly": true,
+                                        "type": "string",
+                                        "value": [
+                                            "Company Name"
+                                        ],
+                                        "UIPosition": 10
+                                    },
+                                    {
+                                        "visible": true,
+                                        "nls": "名称",
+                                        "selectable": "name",
+                                        "name": "name",
+                                        "readOnly": true,
+                                        "type": "string",
+                                        "value": [
+                                            "20260325-Model"
+                                        ],
+                                        "UIPosition": 2
+                                    }
+                                ],
+                                "metatype": "bus",
+                                "type": "Model",
+                                "type_icon_large_url": "/snresources/images/icons/large/I_PLCModel108x144.png",
+                                "PLMParametersAvailable": false,
+                                "preview_url": "",
+                                "success": true,
+                                "modifyAccess": true,
+                                "groupData": []
+                            }
+                        ],
+                        "modelID": "D5D205290311370069C3816500000092",
+                        "status": "attached"
+                    }
+                ],
+                "numberOf": 1
+            },
+            "status": "SUCCESS",
+            "id": "D5D205296E1600006A1BE72A00007557"
+        }
+    ],
+    "result": "SUCCEED",
+    "version": "1.2"
+}
+得到响应接口，如果result为SUCCEED，说明设置成功，需要展示到弹框的Model显示页面
+data里面的Marketing Name，对应到标题，其他的你需要看着data里面的字段，对应到Model显示页面的字段
+
+点击删除按钮
+复用这个接口 resources/modeler/configuration/authoringServices/setConfiguredObjectInfo?cfgCtxt=1&tenant=OnPremise
+请求参数改成这个detachCfgCtxt
+{
+    "version": "1.2",
+    "pidList": [
+        "零件物理ID"
+    ],
+    "content": {
+        "attachCfgCtxt": [],
+        "detachCfgCtxt": [
+            "模型物理ID"
+        ]
+    }
 }

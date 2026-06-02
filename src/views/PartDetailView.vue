@@ -1958,7 +1958,7 @@
 		width="500px"
 		:close-on-click-modal="false"
 		draggable>
-		<InternalConfig :physical-id="currentPhysicalId" />
+		<InternalConfig :physical-id="currentPhysicalId" :visible="editCfgVisible" />
 		<template #footer>
 			<div class="dialog-footer">
 				<el-button @click="editCfgVisible = false">关闭</el-button>
