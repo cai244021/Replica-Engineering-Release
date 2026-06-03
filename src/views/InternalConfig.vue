@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { onClickOutside } from '@vueuse/core';
 import http, { getSpaceBaseURL, searchHttp } from '@/utils/ds-request';
 import { Plus, Setting, Search, Delete, Check } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
 
 const { t, locale } = useI18n();
 
@@ -60,19 +61,21 @@ const postJson = async (path: string, body: any): Promise<any> => {
 
 const canEdit = ref<boolean>(false);
 
-const fetchData = async () => {
+const fetchData = async (showLoading = true, skipCheckboxInit = false) => {
 	const pid = getPhysicalId();
 	if (!pid) {
 		errorMsg.value = '未找到物理ID';
 		return;
 	}
-	loading.value = true;
+	if (showLoading) {
+		loading.value = true;
+	}
 	errorMsg.value = '';
 	referencesInfo.value = null;
 	contextInfo.value = [];
 	enabledCriteria.value = [];
 	showSearchInput.value = false;
-	showSettingsPanel.value = false;
+	// 注意：不重置 showSettingsPanel，避免设置面板闪烁
 	searchResults.value = [];
 	try {
 		const accessBody = {
@@ -103,6 +106,25 @@ const fetchData = async () => {
 		referencesInfo.value = ref0 || null;
 		contextInfo.value = Array.isArray(ctxResp?.contextInfo) ? ctxResp.contextInfo : [];
 		enabledCriteria.value = Array.isArray(ctxResp?.enabledCriteria) ? ctxResp.enabledCriteria : [];
+		// 保存 description 数据（用于模型版本类型）
+		if (ctxResp?.description) {
+			// 将 description 合并到 enabledCriteria 中方便使用
+			enabledCriteria.value = enabledCriteria.value.map((ec: any) => ({
+				...ec,
+				description: ctxResp.description
+			}));
+		}
+
+		// 根据 enabledCriteria 初始化复选框状态（仅在非跳过模式下）
+		if (!skipCheckboxInit && pid && Array.isArray(ctxResp?.enabledCriteria)) {
+			// 检查 productState - 如果 activatedFor 包含当前零件ID，则勾选模型版本
+			const productStateCriteria = ctxResp.enabledCriteria.find((ec: any) => ec.criteriaName === 'productState');
+			revisionChecked.value = productStateCriteria?.activatedFor?.includes(pid) || false;
+
+			// 检查 feature - 如果 activatedFor 包含当前零件ID，则勾选变体和选项
+			const featureCriteria = ctxResp.enabledCriteria.find((ec: any) => ec.criteriaName === 'feature');
+			variantChecked.value = featureCriteria?.activatedFor?.includes(pid) || false;
+		}
 	} catch (e: any) {
 		errorMsg.value = e?.message || String(e);
 		console.error('[InternalConfig] fetchData error:', e);
@@ -125,7 +147,7 @@ watch(
 // 监听 visible 变化，每次弹框打开时刷新数据
 watch(
 	() => props.visible,
-	(newVal) => {
+	newVal => {
 		if (newVal) {
 			fetchData();
 		}
@@ -135,11 +157,16 @@ watch(
 const refNotEditable = computed(() => {
 	const r = referencesInfo.value;
 	if (!r) return false;
-	return r.isConfigurable === 'NO' || r.isCriteriaEditable === 'NO';
+	return r.isConfigurable === 'NO';
 });
 
 // 是否有模型数据
 const hasModel = computed(() => items.value.length > 0);
+
+// 是否选择了模型版本（evolutionPid 不为空）
+const hasEvolution = computed(() => {
+	return contextInfo.value.some(ci => ci?.evolutionPid);
+});
 
 // 已存在的模型 physicalid 列表（用于排除）
 const existingModelIds = computed(() => {
@@ -161,20 +188,50 @@ const modelName = computed(() => {
 	return '';
 });
 
+// 格式化日期为 YYYY-MM-DD
+const formatDate = (dateStr: string) => {
+	if (!dateStr) return '';
+	// 处理格式: 2026/05/31@07:36:36:GMT -> 2026-05-31
+	const datePart = dateStr.split('@')[0];
+	if (!datePart) return dateStr;
+	return datePart.replace(/\//g, '-');
+};
+
 const items = computed(() => {
 	return contextInfo.value.map(ci => {
-		const res = ci?.content?.results?.[0] || {};
+		// 判断是哪种数据结构
+		// 类型1: 选择模型后 - 数据在 content.results[0] 中
+		// 类型2: 选择模型版本后 - 数据在 description[descId].results[0] 中
+		let res: any = null;
+
+		if (ci?.content?.results?.[0]) {
+			// 类型1: 标准模型数据
+			res = ci.content.results[0];
+		} else if (ci?.descId && enabledCriteria.value?.[0]?.description?.[ci.descId]?.results?.[0]) {
+			// 类型2: 模型版本数据在 enabledCriteria.description 中
+			res = enabledCriteria.value[0].description[ci.descId].results[0];
+		}
+
+		if (!res) {
+			return { label: '未命名', project: '', state: '', modified: '', icon: '', physicalId: '', revision: '' };
+		}
+
 		const basic = Array.isArray(res?.basicData) ? res.basicData : [];
 		const pick = (name: string) => basic.find((b: any) => b?.name === name)?.value?.[0] || '';
-		const label = res?.computed?.label?.value?.[0] || pick('name') || '未命名';
+		const revision = pick('revision');
+		let label = res?.computed?.label?.value?.[0] || pick('name') || '未命名';
+		// 如果有版本号，拼接到标题后面
+		if (revision) {
+			label = `${label} ${revision}`;
+		}
 		const project = pick('project');
 		const state = pick('current');
-		const modified = pick('modified');
+		const modified = formatDate(pick('modified'));
 		const iconUrl = res?.type_icon_large_url
 			? ensureFullUrl(res.type_icon_large_url)
 			: ensureFullUrl(res?.type_icon_url?.replace('/small/', '/large/').replace('.png', '108x144.png') || '');
 		const physicalId = res?.physicalID || '';
-		return { label, project, state, modified, icon: iconUrl, physicalId };
+		return { label, project, state, modified, icon: iconUrl, physicalId, revision };
 	});
 });
 
@@ -191,7 +248,7 @@ const handleAddClick = () => {
 };
 
 // 点击输入框外部关闭搜索结果（但保留输入框）
-onClickOutside(searchResultsRef, (event) => {
+onClickOutside(searchResultsRef, event => {
 	// 如果点击的是输入框，不关闭
 	const inputEl = searchInputRef.value;
 	if (inputEl && (inputEl === event.target || inputEl.contains(event.target as Node))) {
@@ -202,7 +259,7 @@ onClickOutside(searchResultsRef, (event) => {
 });
 
 // 点击输入框外部只隐藏搜索结果（保留输入框）
-onClickOutside(searchInputRef, (event) => {
+onClickOutside(searchInputRef, event => {
 	// 如果点击的是结果列表，不关闭
 	const resultsEl = searchResultsRef.value;
 	if (resultsEl && (resultsEl === event.target || resultsEl.contains(event.target as Node))) {
@@ -213,7 +270,7 @@ onClickOutside(searchInputRef, (event) => {
 });
 
 // 点击内容区域外部取消选中模型（排除头部按钮区域）
-onClickOutside(contentRef, (event) => {
+onClickOutside(contentRef, event => {
 	// 如果点击的是头部区域，不取消选中
 	const headerEl = headerRef.value;
 	if (headerEl && (headerEl === event.target || headerEl.contains(event.target as Node))) {
@@ -225,6 +282,116 @@ onClickOutside(contentRef, (event) => {
 // 点击设置
 const handleSettingClick = () => {
 	showSettingsPanel.value = !showSettingsPanel.value;
+};
+
+// 处理复选框变化 - 启用/禁用条件
+const handleCriteriaChange = async (criteriaType: 'productState' | 'feature', checked: boolean) => {
+	const pid = getPhysicalId();
+	if (!pid) {
+		console.error('[InternalConfig] 缺少物理ID');
+		return;
+	}
+
+	try {
+		const body = {
+			version: '1.2',
+			pidList: [pid],
+			content: {
+				enabledCriteria: {
+					[criteriaType]: checked ? 'true' : 'false'
+				}
+			}
+		};
+
+		console.log(`[InternalConfig] ${criteriaType} 变更为 ${checked}:`, body);
+		const res: any = await http.post('/resources/modeler/configuration/authoringServices/setConfiguredObjectInfo?cfgCtxt=1&tenant=OnPremise', body);
+		console.log('[InternalConfig] Criteria Change Response:', res);
+
+		if (res?.result === 'SUCCEED') {
+			// 成功，只更新本地的 enabledCriteria 状态，避免页面抖动
+			const criteria = enabledCriteria.value.find((ec: any) => ec.criteriaName === criteriaType);
+			if (criteria) {
+				if (checked) {
+					if (!criteria.activatedFor) criteria.activatedFor = [];
+					if (!criteria.activatedFor.includes(pid)) criteria.activatedFor.push(pid);
+				} else {
+					if (criteria.activatedFor) {
+						criteria.activatedFor = criteria.activatedFor.filter((id: string) => id !== pid);
+					}
+				}
+			}
+		} else if (res?.errorMessage) {
+			// 有错误消息，显示提示
+			console.error('[InternalConfig] 操作失败:', res.errorMessage);
+			ElMessage.error(res.errorMessage);
+			// 恢复原状态
+			if (criteriaType === 'productState') {
+				revisionChecked.value = !checked;
+			} else {
+				variantChecked.value = !checked;
+			}
+		} else {
+			// 其他失败情况
+			console.error('[InternalConfig] 操作失败:', res);
+			ElMessage.error(`设置${criteriaType === 'productState' ? '模型版本' : '变体和选项'}失败`);
+			// 恢复原状态
+			if (criteriaType === 'productState') {
+				revisionChecked.value = !checked;
+			} else {
+				variantChecked.value = !checked;
+			}
+		}
+	} catch (e: any) {
+		console.error('[InternalConfig] Criteria Change Error:', e);
+		// 尝试从错误响应中获取错误消息
+		let errorMessage = '未知错误';
+
+		// 尝试多种方式获取错误消息
+		if (e?.response?.data?.errorMessage) {
+			// axios 错误响应中的 data.errorMessage
+			errorMessage = e.response.data.errorMessage;
+		} else if (e?.response?.data?.message) {
+			// axios 错误响应中的 data.message
+			errorMessage = e.response.data.message;
+		} else if (e?.response?.data) {
+			// 尝试解析整个 data
+			const data = e.response.data;
+			if (typeof data === 'string') {
+				try {
+					const parsed = JSON.parse(data);
+					if (parsed.errorMessage) {
+						errorMessage = parsed.errorMessage;
+					} else if (parsed.message) {
+						errorMessage = parsed.message;
+					}
+				} catch {
+					errorMessage = data;
+				}
+			} else if (typeof data === 'object') {
+				// 直接是对象的情况
+				if (data.errorMessage) {
+					errorMessage = data.errorMessage;
+				} else if (data.message) {
+					errorMessage = data.message;
+				}
+			}
+		} else if (e?.errorMessage) {
+			// 错误对象直接有 errorMessage
+			errorMessage = e.errorMessage;
+		} else if (e?.message) {
+			// 使用错误对象的 message
+			errorMessage = e.message;
+		}
+
+		console.log('[InternalConfig] Extracted error message:', errorMessage);
+		ElMessage.error(errorMessage);
+		// 恢复原状态
+		if (criteriaType === 'productState') {
+			revisionChecked.value = !checked;
+		} else {
+			variantChecked.value = !checked;
+		}
+	}
 };
 
 // 删除选中的模型
@@ -246,10 +413,7 @@ const handleDeleteModel = async () => {
 		};
 
 		console.log('[InternalConfig] Detach Model Request:', body);
-		const res: any = await http.post(
-			'/resources/modeler/configuration/authoringServices/setConfiguredObjectInfo?cfgCtxt=1&tenant=OnPremise',
-			body
-		);
+		const res: any = await http.post('/resources/modeler/configuration/authoringServices/setConfiguredObjectInfo?cfgCtxt=1&tenant=OnPremise', body);
 		console.log('[InternalConfig] Detach Model Response:', res);
 
 		if (res?.result === 'SUCCEED') {
@@ -381,10 +545,7 @@ const handleSelectResult = async (item: any) => {
 		};
 
 		console.log('[InternalConfig] Attach Model Request:', body);
-		const res: any = await http.post(
-			'/resources/modeler/configuration/authoringServices/setConfiguredObjectInfo?cfgCtxt=1&tenant=OnPremise',
-			body
-		);
+		const res: any = await http.post('/resources/modeler/configuration/authoringServices/setConfiguredObjectInfo?cfgCtxt=1&tenant=OnPremise', body);
 		console.log('[InternalConfig] Attach Model Response:', res);
 
 		if (res?.result === 'SUCCEED') {
@@ -407,7 +568,9 @@ const handleSelectResult = async (item: any) => {
 <template>
 	<div class="cfg-wrap">
 		<!-- 头部：活动条件 + 按钮 -->
-		<div ref="headerRef" class="cfg-header">
+		<div
+			ref="headerRef"
+			class="cfg-header">
 			<div class="cfg-header-left">
 				<span class="cfg-header-label">活动条件：</span>
 				<span class="cfg-header-value">
@@ -415,19 +578,25 @@ const handleSelectResult = async (item: any) => {
 				</span>
 			</div>
 			<div class="cfg-header-actions">
-				<el-button v-if="canEdit && !refNotEditable" text class="cfg-action-btn" @click="handleAddClick">
+				<!-- +号按钮：有编辑权限且未选择模型版本时显示 -->
+				<el-button
+					v-if="canEdit && !refNotEditable && !hasEvolution"
+					text
+					class="cfg-action-btn"
+					@click="handleAddClick">
 					<el-icon><Plus /></el-icon>
 				</el-button>
-				<!-- 删除按钮 -->
-			<el-button
+				<!-- 删除按钮：始终显示（有权限且选中模型时） -->
+				<el-button
 					v-if="canEdit && !refNotEditable && selectedModelId"
 					text
 					class="cfg-action-btn"
 					@click="handleDeleteModel">
 					<el-icon><Delete /></el-icon>
 				</el-button>
+				<!-- 设置按钮：有编辑权限且未选择模型版本且有模型时显示 -->
 				<el-button
-					v-if="canEdit && !refNotEditable && hasModel"
+					v-if="canEdit && !refNotEditable && !hasEvolution && hasModel"
 					text
 					class="cfg-action-btn"
 					@click="handleSettingClick">
@@ -437,7 +606,10 @@ const handleSelectResult = async (item: any) => {
 		</div>
 
 		<!-- 搜索框 - 独立悬浮 -->
-		<div v-if="showSearchInput" ref="searchInputRef" class="cfg-search-input-wrap">
+		<div
+			v-if="showSearchInput"
+			ref="searchInputRef"
+			class="cfg-search-input-wrap">
 			<el-input
 				v-model="searchKeyword"
 				placeholder="搜索..."
@@ -445,44 +617,70 @@ const handleSelectResult = async (item: any) => {
 				:prefix-icon="Search"
 				@focus="handleSearchInputFocus"
 				@input="handleSearch"
-				@clear="handleSearch">
-			</el-input>
+				@clear="handleSearch"></el-input>
 		</div>
 		<!-- 搜索结果列表 - 独立悬浮 -->
-		<div v-if="showSearchResults" ref="searchResultsRef" class="cfg-search-results-overlay">
-			<div v-loading="searchLoading" class="cfg-search-results">
+		<div
+			v-if="showSearchResults"
+			ref="searchResultsRef"
+			class="cfg-search-results-overlay">
+			<div
+				v-loading="searchLoading"
+				class="cfg-search-results">
 				<div
 					v-for="item in searchResults"
 					:key="item.resourceid"
 					class="cfg-search-item"
 					@click="handleSelectResult(item)">
-					<img v-if="item.icon" :src="item.icon" class="cfg-search-item-icon" alt="" />
+					<img
+						v-if="item.icon"
+						:src="item.icon"
+						class="cfg-search-item-icon"
+						alt="" />
 					<span class="cfg-search-item-label">{{ item.displayName }}</span>
 				</div>
-				<div v-if="!searchLoading && searchResults.length === 0" class="cfg-search-empty">暂无搜索结果</div>
+				<div
+					v-if="!searchLoading && searchResults.length === 0"
+					class="cfg-search-empty">
+					暂无搜索结果
+				</div>
 			</div>
 		</div>
 
 		<!-- 设置面板 -->
-		<div v-if="showSettingsPanel && hasModel" class="cfg-settings-panel">
+		<div
+			v-if="showSettingsPanel && hasModel"
+			class="cfg-settings-panel">
 			<div class="cfg-settings-row">
 				<div class="cfg-settings-col">
 					<div class="cfg-settings-title">变更</div>
-					<el-checkbox v-model="revisionChecked" class="cfg-settings-checkbox">
+					<el-checkbox
+						v-model="revisionChecked"
+						class="cfg-settings-checkbox"
+						@change="(val: boolean) => handleCriteriaChange('productState', val)">
 						<span class="cfg-checkbox-label">模型版本</span>
 					</el-checkbox>
 				</div>
 				<div class="cfg-settings-divider"></div>
 				<div class="cfg-settings-col">
 					<div class="cfg-settings-title">可变性</div>
-					<el-checkbox v-model="variantChecked" class="cfg-settings-checkbox">
+					<el-checkbox
+						v-model="variantChecked"
+						class="cfg-settings-checkbox"
+						@change="(val: boolean) => handleCriteriaChange('feature', val)">
 						<span class="cfg-checkbox-label">变体和选项</span>
 					</el-checkbox>
 				</div>
 			</div>
 		</div>
 
-		<el-alert v-if="errorMsg" :title="errorMsg" type="error" show-icon closable class="cfg-alert" />
+		<el-alert
+			v-if="errorMsg"
+			:title="errorMsg"
+			type="error"
+			show-icon
+			closable
+			class="cfg-alert" />
 
 		<el-alert
 			v-else-if="canEdit === false"
@@ -498,19 +696,29 @@ const handleSelectResult = async (item: any) => {
 			show-icon
 			class="cfg-alert" />
 
-		<el-skeleton v-if="loading" :rows="4" animated />
+		<el-skeleton
+			v-if="loading"
+			:rows="4"
+			animated />
 
 		<template v-else>
 			<!-- 空状态 -->
-			<div v-if="!items.length" class="cfg-empty">
+			<div
+				v-if="!items.length"
+				class="cfg-empty">
 				<div class="cfg-empty-img">
-					<img :src="`${baseURL}/snresources/images/icons/large/I_PLCModel108x144.png`" alt="" />
+					<img
+						:src="`${baseURL}/snresources/images/icons/large/I_PLCModel108x144.png`"
+						alt="" />
 				</div>
 				<div class="cfg-empty-text">没有附加配置上下文</div>
 			</div>
 
 			<!-- 有数据 -->
-			<div v-else ref="contentRef" class="cfg-content">
+			<div
+				v-else
+				ref="contentRef"
+				class="cfg-content">
 				<div
 					v-for="(it, idx) in items"
 					:key="idx"
@@ -519,8 +727,14 @@ const handleSelectResult = async (item: any) => {
 					@click="selectedModelId = it.physicalId">
 					<div class="cfg-row">
 						<div class="cfg-img-wrap">
-							<img v-if="it.icon" :src="it.icon" class="cfg-img" alt="" />
-							<div v-if="selectedModelId === it.physicalId" class="cfg-selected-icon">
+							<img
+								v-if="it.icon"
+								:src="it.icon"
+								class="cfg-img"
+								alt="" />
+							<div
+								v-if="selectedModelId === it.physicalId"
+								class="cfg-selected-icon">
 								<el-icon><Check /></el-icon>
 							</div>
 						</div>
@@ -636,42 +850,45 @@ const handleSelectResult = async (item: any) => {
 
 /* 设置面板 */
 .cfg-settings-panel {
-	margin-bottom: 12px;
-	padding: 12px 16px;
-	background: #f5f7fa;
+	margin-bottom: 8px;
+	padding: 8px 12px;
+	background: transparent;
+	border: 1px solid #e4e7ed;
 	border-radius: 4px;
 }
 .cfg-settings-row {
 	display: flex;
-	align-items: stretch;
+	align-items: center;
 }
 .cfg-settings-col {
 	flex: 1;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	padding: 8px 0;
+	padding: 4px 0;
 }
 .cfg-settings-divider {
 	width: 1px;
+	height: 40px;
 	background: #dcdfe6;
 	margin: 0 8px;
 }
 .cfg-settings-title {
-	font-size: 14px;
+	font-size: 13px;
 	font-weight: 500;
 	color: #303133;
-	margin-bottom: 12px;
+	margin-bottom: 8px;
 }
 .cfg-settings-checkbox {
-	--el-checkbox-font-size: 13px;
+	--el-checkbox-font-size: 12px;
+	margin: 0;
 }
 .cfg-settings-checkbox :deep(.el-checkbox__label) {
-	padding-left: 6px;
+	padding-left: 4px;
 }
 .cfg-checkbox-label {
 	color: #606266;
-	font-size: 13px;
+	font-size: 12px;
 }
 
 .cfg-alert {

@@ -1778,6 +1778,101 @@ class PartDetailAPI {
 		console.log('[PartDetailAPI] collapseStructure (noop):', physicalId);
 		return;
 	}
+
+	/**
+	 * 获取多个配置上下文信息
+	 * 接口: POST /resources/modeler/configuration/navigationServices/getMultipleConfigurationContextInfo
+	 * @param pidList PID列表
+	 * @returns 配置上下文信息
+	 */
+	async getMultipleConfigurationContextInfo(pidList: string[]): Promise<ConfigContextResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			console.log('[PartDetailAPI] 3DSpace URL 为空，先获取 URL');
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			console.log('[PartDetailAPI] SecurityContext 为空，先获取');
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/modeler/configuration/navigationServices/getMultipleConfigurationContextInfo';
+		const url = `${endpoint}?tenant=OnPremise`;
+		const params: ConfigContextParams = {
+			version: '1.2',
+			pidList: pidList,
+			modelMask: 'Read',
+			enabledCriteria: 'YES',
+			cfgCtxt: 'YES',
+			xRevisionContent: 'YES',
+			isUniqueInDB: 'YES'
+		};
+
+		console.log('[PartDetailAPI] 获取配置上下文信息 URL:', url);
+		console.log('[PartDetailAPI] 获取配置上下文信息参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.post(url, params as unknown as Record<string, unknown>, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 获取配置上下文信息响应:', response);
+			return response as ConfigContextResponse;
+		} catch (error) {
+			console.error('[PartDetailAPI] 获取配置上下文信息失败:', error);
+			throw error;
+		}
+	}
+
+	/**
+	 * 获取多个过滤对象信息（有效性和变体/选项）
+	 * 接口: POST /resources/modeler/configuration/navigationServices/getMultipleFilterableObjectInfo
+	 * @param pidList 关系PID列表
+	 * @returns 过滤对象信息
+	 */
+	async getMultipleFilterableObjectInfo(pidList: string[]): Promise<FilterableObjectResponse> {
+		const baseInfoStore = useBaseInfoStore();
+
+		if (!baseInfoStore.spaceUrl) {
+			console.log('[PartDetailAPI] 3DSpace URL 为空，先获取 URL');
+			await baseInfoStore.fetchSpaceUrl();
+		}
+
+		if (!baseInfoStore.securityContext) {
+			console.log('[PartDetailAPI] SecurityContext 为空，先获取');
+			await baseInfoStore.getCollaborativeSpace();
+		}
+
+		const securityContext = baseInfoStore.securityContext || '';
+		const endpoint = '/resources/modeler/configuration/navigationServices/getMultipleFilterableObjectInfo';
+		const url = `${endpoint}?tenant=OnPremise`;
+		const params: FilterableObjectParams = {
+			version: '2.0',
+			output: {
+				targetFormat: 'TXT',
+				withDescription: 'YES',
+				view: 'ALL',
+				domains: 'ALL'
+			},
+			pidList: pidList
+		};
+
+		console.log('[PartDetailAPI] 获取过滤对象信息 URL:', url);
+		console.log('[PartDetailAPI] 获取过滤对象信息参数:', JSON.stringify(params, null, 2));
+
+		try {
+			const response = await http.post(url, params as unknown as Record<string, unknown>, {
+				SecurityContext: securityContext
+			});
+			console.log('[PartDetailAPI] 获取过滤对象信息响应:', response);
+			return response as FilterableObjectResponse;
+		} catch (error) {
+			console.error('[PartDetailAPI] 获取过滤对象信息失败:', error);
+			throw error;
+		}
+	}
 }
 
 export interface AttributeDataItem {
@@ -1857,6 +1952,154 @@ export interface AttributeUpdateResult {
 
 export interface AttributeUpdateResponse {
 	results: AttributeUpdateResult[];
+}
+
+// ==================== 配置上下文相关接口 ====================
+
+// 引用信息
+export interface ConfigContextReferenceInfo {
+	pid: string;
+	isConfigurable: string;
+	hasConfigContext: string;
+	isCriteriaEditable: string;
+	isUniqueInDB: string;
+	hasXRevisionGraph: string;
+	revisionMode: string;
+}
+
+// 上下文信息
+export interface ConfigContextInfo {
+	modelPID?: string;
+	modelName?: string;
+	evolutionPid?: string;
+	evolutionName?: string;
+	evolutionRevision?: string;
+	contextOf: string[];
+	notContextOf: string[];
+	descId?: string;
+	content?: {
+		results: Array<{
+			type_icon_url?: string;
+			computed?: {
+				label?: {
+					path: string;
+					selectable: string;
+					name: string;
+					value?: string[];
+				};
+			};
+			data?: Array<{
+				path: string;
+				visible?: boolean;
+				nls?: string;
+				selectable: string;
+				name: string;
+				readOnly?: boolean;
+				type: string;
+				value?: string[];
+				UIPosition?: number;
+			}>;
+			physicalID: string;
+			basicData?: Array<{
+				nls: string;
+				selectable: string;
+				name: string;
+				readOnly: boolean;
+				type: string;
+				value?: string[];
+				UIPosition?: number;
+			}>;
+			metatype?: string;
+			type?: string;
+		}>;
+	};
+}
+
+// 启用条件
+export interface EnabledCriteria {
+	criteriaName: string;
+	activatedFor: string[];
+	notActivatedFor: string[];
+}
+
+// 配置上下文响应
+export interface ConfigContextResponse {
+	referencesInfo: ConfigContextReferenceInfo[];
+	contextInfo: ConfigContextInfo[];
+	enabledCriteria: EnabledCriteria[];
+	description?: Record<string, {
+		results: Array<{
+			computed?: {
+				label?: {
+					path: string;
+					selectable: string;
+					name: string;
+					value?: string[];
+				};
+			};
+			data?: Array<{
+				path: string;
+				selectable: string;
+				name: string;
+				value?: string[];
+			}>;
+			basicData?: Array<{
+				selectable: string;
+				name: string;
+				value?: string[];
+			}>;
+		}>;
+	}>;
+	version?: string;
+}
+
+// 配置上下文请求参数
+export interface ConfigContextParams {
+	version: string;
+	pidList: string[];
+	modelMask: string;
+	enabledCriteria: string;
+	cfgCtxt: string;
+	xRevisionContent: string;
+	isUniqueInDB: string;
+}
+
+// ==================== 有效性和变体/选项相关接口 ====================
+
+// 过滤对象信息请求参数
+export interface FilterableObjectParams {
+	version: string;
+	output: {
+		targetFormat: string;
+		withDescription: string;
+		view: string;
+		domains: string;
+	};
+	pidList: string[];
+}
+
+// 过滤对象信息响应内容
+export interface FilterableObjectContent {
+	Evolution?: {
+		Current: string | null;
+		Projected: string | null;
+		Source: string | null;
+	};
+	Variant?: string;
+}
+
+// 过滤对象信息响应项
+export interface FilterableObjectItem {
+	content?: FilterableObjectContent;
+	hasEffectivity: string;
+	status: string;
+}
+
+// 过滤对象信息响应
+export interface FilterableObjectResponse {
+	version: string;
+	format: string;
+	expressions: Record<string, FilterableObjectItem>;
 }
 
 export default new PartDetailAPI();

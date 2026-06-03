@@ -1954,10 +1954,16 @@
 	</div>
 	<el-dialog
 		v-model="editCfgVisible"
-		title="编辑配置上下文"
-		width="80%"
-		draggable>
-		<InternalConfig :physical-id="currentPhysicalId" />
+		:title="`编辑配置上下文${partInfo?.['ds6w:label'] ? ' - ' + partInfo['ds6w:label'] : ''}`"
+		width="500px"
+		draggable
+		:close-on-click-modal="false">
+		<InternalConfig
+			:physical-id="currentPhysicalId"
+			:visible="editCfgVisible" />
+		<template #footer>
+			<el-button @click="editCfgVisible = false">关闭</el-button>
+		</template>
 	</el-dialog>
 </template>
 
@@ -2002,7 +2008,9 @@ import type {
 	DeleteReportItem,
 	UnparentResponseResult,
 	UpdateEntireStructureRevisionConfirmation,
-	VersionGraphVersion
+	VersionGraphVersion,
+	ConfigContextResponse,
+	FilterableObjectResponse
 } from '@/api/partDetailApi';
 import type { ReservationOperation } from '@/api/partDetailApi';
 import { useBaseInfoStore } from '@/store';
@@ -2028,6 +2036,7 @@ import catflNlsZh from '@/i18n/lang/zh-CN/CATFLNls_zh.json';
 import catflNlsEn from '@/i18n/lang/en-US/CATFLNls_en.json';
 import { useLifecycleCommands } from '@/composables/lifecycleCommands';
 import { useDragDrop } from '@/composables/dragDrop';
+import { parseConfigContextDisplayValue, parseConfigContextBatch } from '@/utils/configContextParser';
 import { useDialogs } from '@/composables/dialogs';
 import { useTreeOperations } from '@/composables/treeOperations';
 import { useExportImport } from '@/composables/exportImport';
@@ -2448,8 +2457,23 @@ const columnWidths = ref<Record<string, number>>({
 	reserved: 80,
 	modified: 150,
 	globalType: 120,
-	identifier: 180
+	identifier: 180,
+	configContext: 150,
+	effectivity: 150,
+	deformOption: 300
 });
+
+// 配置上下文数据
+const configContextData = ref<Record<string, string>>({});
+const configContextLoading = ref<Record<string, boolean>>({});
+const configContextLoaded = ref<Record<string, boolean>>({});
+const configContextCache = ref<ConfigContextResponse | null>(null);
+
+// 有效性和变体/选项数据
+const filterableObjectData = ref<Record<string, { effectivity: string; variant: string }>>({});
+const filterableObjectLoading = ref<Record<string, boolean>>({});
+const filterableObjectLoaded = ref<Record<string, boolean>>({});
+const filterableObjectCache = ref<FilterableObjectResponse | null>(null);
 const reverseRoutes = computed(() =>
 	maturityStates.value
 		.map(state => getRouteFromCurrent(state.stateSysName))
@@ -4570,6 +4594,66 @@ const childrenTableColumns = computed<Column<TreeNode>[]>(() => [
 		title: '名称',
 		width: columnWidths.value.identifier,
 		headerCellRenderer: () => createResizableHeader('identifier', '名称')
+	},
+	{
+		key: 'configContext',
+		dataKey: 'configContext',
+		title: '配置上下文',
+		width: columnWidths.value.configContext,
+		headerCellRenderer: () => createResizableHeader('configContext', '配置上下文'),
+		cellRenderer: ({ rowData }) => {
+			const displayValue = getConfigContextDisplayValue(rowData);
+			return h('span', createChildrenCellProps('configContext'), displayValue);
+		}
+	},
+	{
+		key: 'effectivity',
+		dataKey: 'effectivity',
+		title: '有效性',
+		width: columnWidths.value.effectivity,
+		headerCellRenderer: () => createResizableHeader('effectivity', '有效性'),
+		cellRenderer: ({ rowData }) => {
+			const displayValue = getEffectivityDisplayValue(rowData);
+			return h('span', createChildrenCellProps('effectivity'), displayValue);
+		}
+	},
+	{
+		key: 'deformOption',
+		dataKey: 'deformOption',
+		title: '变形/选项',
+		width: columnWidths.value.deformOption,
+		headerCellRenderer: () => createResizableHeader('deformOption', '变形/选项'),
+		cellRenderer: ({ rowData }) => {
+			const { hasValue, value } = getVariantDisplayValue(rowData);
+			if (hasValue) {
+				// 有值时显示为链接形式
+				return h(
+					'a',
+					{
+						...createChildrenCellProps('deformOption'),
+						style:
+							'color: #409eff; cursor: pointer; text-decoration: underline; max-width: 100%; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;',
+						title: value,
+						onClick: () => handleVariantClick(rowData)
+					},
+					value
+				);
+			} else if (value === '加载中...') {
+				// 加载中
+				return h('span', createChildrenCellProps('deformOption'), value);
+			} else {
+				// 无值时显示链接形式的"无"
+				return h(
+					'a',
+					{
+						...createChildrenCellProps('deformOption'),
+						style: 'color: #409eff; cursor: pointer; text-decoration: underline;',
+						onClick: () => handleVariantClick(rowData)
+					},
+					'无'
+				);
+			}
+		}
 	}
 ]);
 
@@ -6274,6 +6358,187 @@ const loadPartDetail = async (physicalId: string) => {
 	}
 };
 
+// 加载配置上下文数据（批量懒加载）
+const loadConfigContextData = async (pidList: string[]) => {
+	if (!pidList.length) return;
+
+	// 过滤掉已加载或正在加载的PID
+	const pendingPids = pidList.filter(pid => !configContextLoaded.value[pid] && !configContextLoading.value[pid]);
+	if (!pendingPids.length) return;
+
+	// 标记正在加载
+	pendingPids.forEach(pid => {
+		configContextLoading.value[pid] = true;
+	});
+
+	try {
+		console.log('[PartDetailView] 批量加载配置上下文数据:', pendingPids);
+		const response = await partDetailApi.getMultipleConfigurationContextInfo(pendingPids);
+		console.log('[PartDetailView] 配置上下文数据响应:', response);
+
+		// 缓存响应
+		configContextCache.value = response;
+
+		// 解析并存储显示值
+		const parsedData = parseConfigContextBatch(response, pendingPids);
+		pendingPids.forEach(pid => {
+			configContextData.value[pid] = parsedData[pid] || '-';
+			configContextLoaded.value[pid] = true;
+		});
+	} catch (error) {
+		console.error('[PartDetailView] 加载配置上下文数据失败:', error);
+		pendingPids.forEach(pid => {
+			configContextData.value[pid] = '-';
+			configContextLoaded.value[pid] = true;
+		});
+	} finally {
+		pendingPids.forEach(pid => {
+			configContextLoading.value[pid] = false;
+		});
+	}
+};
+
+// 触发批量加载配置上下文和过滤对象信息（用于滚动时调用）
+const batchLoadConfigContext = () => {
+	// 获取所有可见行的对象物理ID（使用resourceid而不是id）
+	const visiblePids = flattenChildrenData.value.map(row => row.resourceid).filter(Boolean);
+
+	if (visiblePids.length > 0) {
+		loadConfigContextData(visiblePids);
+	}
+
+	// 获取所有可见行的关系物理ID（使用id而不是resourceid）
+	const visibleRelationIds = flattenChildrenData.value.map(row => row.id).filter(Boolean);
+
+	if (visibleRelationIds.length > 0) {
+		loadFilterableObjectData(visibleRelationIds);
+	}
+};
+
+// 获取单个PID的配置上下文显示值
+const getConfigContextDisplayValue = (row: TreeNode): string => {
+	// 使用对象的物理ID（resourceid）而不是关系的物理ID（id）
+	const pid = row.resourceid;
+	if (!pid) return '-';
+
+	// 如果已加载，直接返回
+	if (configContextLoaded.value[pid]) {
+		return configContextData.value[pid] || '-';
+	}
+
+	// 如果正在加载，返回加载中状态
+	if (configContextLoading.value[pid]) {
+		return '加载中...';
+	}
+
+	// 返回加载中状态，由滚动事件触发批量加载
+	return '加载中...';
+};
+
+// 加载过滤对象信息数据（批量懒加载）
+const loadFilterableObjectData = async (relationIdList: string[]) => {
+	if (!relationIdList.length) return;
+
+	// 过滤掉已加载或正在加载的关系ID
+	const pendingIds = relationIdList.filter(id => !filterableObjectLoaded.value[id] && !filterableObjectLoading.value[id]);
+	if (!pendingIds.length) return;
+
+	// 标记正在加载
+	pendingIds.forEach(id => {
+		filterableObjectLoading.value[id] = true;
+	});
+
+	try {
+		console.log('[PartDetailView] 批量加载过滤对象信息:', pendingIds);
+		const response = await partDetailApi.getMultipleFilterableObjectInfo(pendingIds);
+		console.log('[PartDetailView] 过滤对象信息响应:', response);
+
+		// 缓存响应
+		filterableObjectCache.value = response;
+
+		// 解析并存储显示值
+		pendingIds.forEach(id => {
+			const item = response.expressions?.[id];
+			if (item) {
+				const effectivity = item.hasEffectivity === 'YES' ? '是' : '否';
+				const variant = item.content?.Variant || '';
+				filterableObjectData.value[id] = { effectivity, variant };
+			} else {
+				filterableObjectData.value[id] = { effectivity: '否', variant: '' };
+			}
+			filterableObjectLoaded.value[id] = true;
+		});
+	} catch (error) {
+		console.error('[PartDetailView] 加载过滤对象信息失败:', error);
+		pendingIds.forEach(id => {
+			filterableObjectData.value[id] = { effectivity: '否', variant: '' };
+			filterableObjectLoaded.value[id] = true;
+		});
+	} finally {
+		pendingIds.forEach(id => {
+			filterableObjectLoading.value[id] = false;
+		});
+	}
+};
+
+// 触发批量加载过滤对象信息（用于滚动时调用）
+const batchLoadFilterableObject = () => {
+	// 获取所有可见行的关系物理ID（使用id而不是resourceid）
+	const visibleRelationIds = flattenChildrenData.value.map(row => row.id).filter(Boolean);
+
+	if (visibleRelationIds.length > 0) {
+		loadFilterableObjectData(visibleRelationIds);
+	}
+};
+
+// 获取有效性显示值
+const getEffectivityDisplayValue = (row: TreeNode): string => {
+	// 使用关系的物理ID（id）
+	const relationId = row.id;
+	if (!relationId) return '-';
+
+	// 如果已加载，直接返回
+	if (filterableObjectLoaded.value[relationId]) {
+		return filterableObjectData.value[relationId]?.effectivity || '否';
+	}
+
+	// 如果正在加载，返回加载中状态
+	if (filterableObjectLoading.value[relationId]) {
+		return '加载中...';
+	}
+
+	// 返回加载中状态，由滚动事件触发批量加载
+	return '加载中...';
+};
+
+// 获取变体/选项显示值
+const getVariantDisplayValue = (row: TreeNode): { hasValue: boolean; value: string } => {
+	// 使用关系的物理ID（id）
+	const relationId = row.id;
+	if (!relationId) return { hasValue: false, value: '' };
+
+	// 如果已加载，直接返回
+	if (filterableObjectLoaded.value[relationId]) {
+		const variant = filterableObjectData.value[relationId]?.variant || '';
+		return { hasValue: !!variant, value: variant };
+	}
+
+	// 如果正在加载，返回加载中状态
+	if (filterableObjectLoading.value[relationId]) {
+		return { hasValue: false, value: '加载中...' };
+	}
+
+	// 返回加载中状态，由滚动事件触发批量加载
+	return { hasValue: false, value: '加载中...' };
+};
+
+// 处理变体/选项点击事件
+const handleVariantClick = (row: TreeNode) => {
+	console.log('[PartDetailView] 点击变体/选项:', row);
+	// TODO: 实现弹出页面逻辑
+	ElMessage.info('变体/选项详情功能待实现');
+};
+
 // 加载展开数据（子级）
 const loadExpandData = async (physicalId: string) => {
 	// 数据库模式下已在 loadPartDetail 中完成展开加载，跳过
@@ -7818,6 +8083,17 @@ onMounted(() => {
 
 	// 初始化拖拽功能
 	initDragAndDrop();
+
+	// 监听 flattenChildrenData 变化，触发配置上下文批量加载
+	watch(
+		flattenChildrenData,
+		() => {
+			nextTick(() => {
+				batchLoadConfigContext();
+			});
+		},
+		{ immediate: true }
+	);
 });
 
 // 页面卸载

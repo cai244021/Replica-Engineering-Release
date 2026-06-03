@@ -1744,3 +1744,953 @@ data里面的Marketing Name，对应到标题，其他的你需要看着data里�
         ]
     }
 }
+
+
+选择模型版本的响应结果
+{
+    "referencesInfo": [
+        {
+            "pid": "D5D205296E1600006A1D39A800007647",
+            "isConfigurable": "YES",
+            "hasConfigContext": "YES",
+            "isCriteriaEditable": "NO",
+            "isUniqueInDB": "TRUE",
+            "hasXRevisionGraph": "NO",
+            "revisionMode": "Explicit"
+        }
+    ],
+    "contextInfo": [
+        {
+            "modelPID": "D5D205296E1600006A1BE4F3000121EC",
+            "modelName": "SUV",
+            "evolutionPid": "D5D205296E1600006A1BE504000121FC",
+            "evolutionName": "SUV",
+            "evolutionRevision": "A",
+            "contextOf": [
+                "D5D205296E1600006A1D39A800007647"
+            ],
+            "notContextOf": [],
+            "descId": "desc1"
+        }
+    ],
+    "enabledCriteria": [
+        {
+            "criteriaName": "feature",
+            "activatedFor": [
+                "D5D205296E1600006A1D39A800007647"
+            ],
+            "notActivatedFor": []
+        }
+    ],
+    "description": {
+        "desc1": {
+            "results": [
+                {
+                    "type_icon_url": "/snresources/images/icons/small/iconSmallProduct.png",
+                    "computed": {
+                        "label": {
+                            "path": "Marketing Name",
+                            "selectable": "attribute[Marketing Name]",
+                            "name": "Marketing Name",
+                            "value": [
+                                "SUV"
+                            ]
+                        }
+                    },
+                    "data": [
+                        {
+                            "path": "Originator",
+                            "nls": "发起者",
+                            "selectable": "attribute[Originator]",
+                            "name": "Originator",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "Admin Platform"
+                            ],
+                            "UIPosition": 12,
+                            "keepformat": false
+                        },
+                        {
+                            "path": "Base Price",
+                            "visible": true,
+                            "nls": "基本价格",
+                            "maxlength": 0,
+                            "selectable": "attribute[Base Price]",
+                            "name": "Base Price",
+                            "readOnly": false,
+                            "type": "real",
+                            "value": [
+                                "0.0"
+                            ],
+                            "UIPosition": 8,
+                            "keepformat": false
+                        },
+                        {
+                            "path": "Marketing Name",
+                            "visible": true,
+                            "nls": "标题",
+                            "maxlength": 0,
+                            "selectable": "attribute[Marketing Name]",
+                            "name": "Marketing Name",
+                            "readOnly": false,
+                            "type": "string",
+                            "value": [
+                                "SUV"
+                            ],
+                            "mandatory": true,
+                            "UIPosition": 3,
+                            "keepformat": false
+                        }
+                    ],
+                    "physicalID": "D5D205296E1600006A1BE504000121FC",
+                    "basicData": [
+                        {
+                            "nls": "合作区",
+                            "selectable": "project",
+                            "name": "project",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "Common Space"
+                            ],
+                            "UIPosition": 11
+                        },
+                        {
+                            "visible": true,
+                            "nls": "描述",
+                            "selectable": "description",
+                            "multiline": true,
+                            "name": "description",
+                            "readOnly": false,
+                            "type": "string",
+                            "UIPosition": 4
+                        },
+                        {
+                            "nls": "类型",
+                            "selectable": "type",
+                            "name": "type",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "模型版本"
+                            ],
+                            "UIPosition": 2
+                        },
+                        {
+                            "nls": "创建日期",
+                            "selectable": "originated",
+                            "name": "originated",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "2026/05/31@07:36:36:GMT"
+                            ],
+                            "UIPosition": 13
+                        },
+                        {
+                            "nls": "成熟度状态",
+                            "selectable": "current",
+                            "name": "current",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "工作中"
+                            ],
+                            "UIPosition": 6
+                        },
+                        {
+                            "nls": "修改日期",
+                            "selectable": "modified",
+                            "name": "modified",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "2026/05/31@07:45:06:GMT"
+                            ],
+                            "UIPosition": 9
+                        },
+                        {
+                            "valueDB": [
+                                "admin_platform"
+                            ],
+                            "nls": "所有者",
+                            "selectable": "owner",
+                            "name": "owner",
+                            "readOnly": false,
+                            "type": "string",
+                            "value": [
+                                "Admin Platform"
+                            ],
+                            "mandatory": true,
+                            "UIPosition": 7
+                        },
+                        {
+                            "nls": "修订版",
+                            "selectable": "revision",
+                            "name": "revision",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "A"
+                            ],
+                            "UIPosition": 5
+                        },
+                        {
+                            "nls": "组织",
+                            "selectable": "organization",
+                            "name": "organization",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "Company Name"
+                            ],
+                            "UIPosition": 10
+                        },
+                        {
+                            "visible": true,
+                            "nls": "名称",
+                            "selectable": "name",
+                            "name": "name",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "SUV"
+                            ],
+                            "UIPosition": 1
+                        }
+                    ],
+                    "metatype": "bus",
+                    "type": "Products",
+                    "thumbnailsRW": true,
+                    "type_icon_large_url": "/snresources/images/icons/large/I_Product_Thumbnail.png",
+                    "PLMParametersAvailable": false,
+                    "preview_url": "",
+                    "success": true,
+                    "modifyAccess": true,
+                    "groupData": []
+                }
+            ]
+        }
+    },
+    "version": "1.2"
+}
+
+
+
+
+
+///配置选项
+{
+    "referencesInfo": [
+        {
+            "pid": "D5D205296E1600006A1D39A800007647",
+            "isConfigurable": "YES",
+            "hasConfigContext": "YES",
+            "isCriteriaEditable": "YES",
+            "isUniqueInDB": "TRUE",
+            "hasXRevisionGraph": "NO",
+            "revisionMode": "Effectivity Based Model"
+        }
+    ],
+    "contextInfo": [
+        {
+            "modelPID": "D5D205296E1600006A1BE4F3000121EC",
+            "contextOf": [
+                "D5D205296E1600006A1D39A800007647"
+            ],
+            "notContextOf": [],
+            "content": {
+                "results": [
+                    {
+                        "type_icon_url": "/snresources/images/icons/small/I_PLCModel.png",
+                        "computed": {
+                            "label": {
+                                "path": "Marketing Name",
+                                "selectable": "attribute[Marketing Name]",
+                                "name": "Marketing Name",
+                                "value": [
+                                    "SUV"
+                                ]
+                            }
+                        },
+                        "data": [
+                            {
+                                "path": "Marketing Name",
+                                "visible": true,
+                                "nls": "标题",
+                                "maxlength": 0,
+                                "selectable": "attribute[Marketing Name]",
+                                "name": "Marketing Name",
+                                "readOnly": false,
+                                "type": "string",
+                                "value": [
+                                    "SUV"
+                                ],
+                                "UIPosition": 3,
+                                "keepformat": false
+                            }
+                        ],
+                        "physicalID": "D5D205296E1600006A1BE4F3000121EC",
+                        "basicData": [
+                            {
+                                "nls": "合作区",
+                                "selectable": "project",
+                                "name": "project",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "Common Space"
+                                ],
+                                "UIPosition": 11
+                            },
+                            {
+                                "visible": true,
+                                "nls": "描述",
+                                "selectable": "description",
+                                "multiline": true,
+                                "name": "description",
+                                "readOnly": false,
+                                "type": "string",
+                                "UIPosition": 4
+                            },
+                            {
+                                "nls": "类型",
+                                "selectable": "type",
+                                "name": "type",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "模型"
+                                ],
+                                "UIPosition": 1
+                            },
+                            {
+                                "nls": "创建日期",
+                                "selectable": "originated",
+                                "name": "originated",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "2026/05/31@07:36:19:GMT"
+                                ],
+                                "UIPosition": 8
+                            },
+                            {
+                                "nls": "成熟度状态",
+                                "selectable": "current",
+                                "name": "current",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "工作中"
+                                ],
+                                "UIPosition": 12
+                            },
+                            {
+                                "nls": "修改日期",
+                                "selectable": "modified",
+                                "name": "modified",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "2026/05/31@07:36:36:GMT"
+                                ],
+                                "UIPosition": 9
+                            },
+                            {
+                                "nls": "所有者",
+                                "selectable": "owner",
+                                "name": "owner",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "Admin Platform"
+                                ],
+                                "UIPosition": 7
+                            },
+                            {
+                                "nls": "修订版",
+                                "selectable": "revision",
+                                "name": "revision",
+                                "readOnly": true,
+                                "type": "string",
+                                "UIPosition": 5
+                            },
+                            {
+                                "nls": "组织",
+                                "selectable": "organization",
+                                "name": "organization",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "Company Name"
+                                ],
+                                "UIPosition": 10
+                            },
+                            {
+                                "visible": true,
+                                "nls": "名称",
+                                "selectable": "name",
+                                "name": "name",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "SUV"
+                                ],
+                                "UIPosition": 2
+                            }
+                        ],
+                        "metatype": "bus",
+                        "type": "Model",
+                        "type_icon_large_url": "/snresources/images/icons/large/I_PLCModel108x144.png",
+                        "PLMParametersAvailable": false,
+                        "preview_url": "",
+                        "success": true,
+                        "modifyAccess": true,
+                        "groupData": []
+                    }
+                ]
+            }
+        }
+    ],
+    "enabledCriteria": [
+        {
+            "criteriaName": "feature",
+            "activatedFor": [
+                "D5D205296E1600006A1D39A800007647"
+            ],
+            "notActivatedFor": []
+        },
+        {
+            "criteriaName": "productState",
+            "activatedFor": [
+                "D5D205296E1600006A1D39A800007647"
+            ],
+            "notActivatedFor": []
+        }
+    ],
+    "version": "1.2"
+}
+
+table展示配置上下文、有效性、变形/选项，这三列采用懒加载的方式，滚动条展示的时候再请求接口
+1:展示的时候如果还在请求接口的时候，显示正在加载中
+配置上下文的获取接口
+resources/modeler/configuration/navigationServices/getMultipleConfigurationContextInfo?tenant=OnPremise
+请求参数 table中的物理ID D5D205296E1600006A1E91D400007B45
+请求参数
+{
+    "version": "1.2",
+    "pidList": [
+        "D5D205296E1600006A1E8FE40000794D",
+        "D5D205296E1600006A1E8FFF00007965",
+        "D5D205296E1600006A1E900600007971",
+        "D5D205296E1600006A1E90120000797D"
+    ],
+    "modelMask": "Read",
+    "enabledCriteria": "YES",
+    "cfgCtxt": "YES",
+    "xRevisionContent": "YES",
+    "isUniqueInDB": "YES"
+}
+响应结果
+{
+    "referencesInfo": [
+        {
+            "pid": "D5D205296E1600006A1E8FE40000794D",
+            "isConfigurable": "YES",
+            "hasConfigContext": "YES",
+            "isCriteriaEditable": "NO",
+            "isUniqueInDB": "TRUE",
+            "hasXRevisionGraph": "NO",
+            "revisionMode": "Explicit"
+        },
+        {
+            "pid": "D5D205296E1600006A1E8FFF00007965",
+            "isConfigurable": "YES",
+            "hasConfigContext": "YES",
+            "isCriteriaEditable": "NO",
+            "isUniqueInDB": "TRUE",
+            "hasXRevisionGraph": "NO",
+            "revisionMode": "Explicit"
+        },
+        {
+            "pid": "D5D205296E1600006A1E900600007971",
+            "isConfigurable": "YES",
+            "hasConfigContext": "YES",
+            "isCriteriaEditable": "YES",
+            "isUniqueInDB": "TRUE",
+            "hasXRevisionGraph": "NO",
+            "revisionMode": "Effectivity Based Model"
+        },
+        {
+            "pid": "D5D205296E1600006A1E90120000797D",
+            "isConfigurable": "YES",
+            "hasConfigContext": "YES",
+            "isCriteriaEditable": "NO",
+            "isUniqueInDB": "TRUE",
+            "hasXRevisionGraph": "NO",
+            "revisionMode": "Explicit"
+        }
+    ],
+    "contextInfo": [
+        {
+            "modelPID": "D5D205296E1600006A1E8CA700013BF6",
+            "modelName": "BYDSong",
+            "evolutionPid": "D5D205296E1600006A1E8CA600013BE8",
+            "evolutionName": "BYDSong",
+            "evolutionRevision": "A",
+            "contextOf": [
+                "D5D205296E1600006A1E8FE40000794D",
+                "D5D205296E1600006A1E8FFF00007965",
+                "D5D205296E1600006A1E90120000797D"
+            ],
+            "notContextOf": [
+                "D5D205296E1600006A1E900600007971"
+            ],
+            "descId": "desc1"
+        },
+        {
+            "modelPID": "D5D205296E1600006A1BE4F3000121EC",
+            "contextOf": [
+                "D5D205296E1600006A1E900600007971"
+            ],
+            "notContextOf": [
+                "D5D205296E1600006A1E8FE40000794D",
+                "D5D205296E1600006A1E8FFF00007965",
+                "D5D205296E1600006A1E90120000797D"
+            ],
+            "content": {
+                "results": [
+                    {
+                        "type_icon_url": "/snresources/images/icons/small/I_PLCModel.png",
+                        "computed": {
+                            "label": {
+                                "path": "Marketing Name",
+                                "selectable": "attribute[Marketing Name]",
+                                "name": "Marketing Name",
+                                "value": [
+                                    "SUV"
+                                ]
+                            }
+                        },
+                        "data": [
+                            {
+                                "path": "Marketing Name",
+                                "visible": true,
+                                "nls": "标题",
+                                "maxlength": 0,
+                                "selectable": "attribute[Marketing Name]",
+                                "name": "Marketing Name",
+                                "readOnly": false,
+                                "type": "string",
+                                "value": [
+                                    "SUV"
+                                ],
+                                "UIPosition": 3,
+                                "keepformat": false
+                            }
+                        ],
+                        "physicalID": "D5D205296E1600006A1BE4F3000121EC",
+                        "basicData": [
+                            {
+                                "nls": "合作区",
+                                "selectable": "project",
+                                "name": "project",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "Common Space"
+                                ],
+                                "UIPosition": 11
+                            },
+                            {
+                                "visible": true,
+                                "nls": "描述",
+                                "selectable": "description",
+                                "multiline": true,
+                                "name": "description",
+                                "readOnly": false,
+                                "type": "string",
+                                "UIPosition": 4
+                            },
+                            {
+                                "nls": "类型",
+                                "selectable": "type",
+                                "name": "type",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "模型"
+                                ],
+                                "UIPosition": 1
+                            },
+                            {
+                                "nls": "创建日期",
+                                "selectable": "originated",
+                                "name": "originated",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "2026/05/31@07:36:19:GMT"
+                                ],
+                                "UIPosition": 8
+                            },
+                            {
+                                "nls": "成熟度状态",
+                                "selectable": "current",
+                                "name": "current",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "工作中"
+                                ],
+                                "UIPosition": 12
+                            },
+                            {
+                                "nls": "修改日期",
+                                "selectable": "modified",
+                                "name": "modified",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "2026/06/02@09:15:00:GMT"
+                                ],
+                                "UIPosition": 9
+                            },
+                            {
+                                "nls": "所有者",
+                                "selectable": "owner",
+                                "name": "owner",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "Admin Platform"
+                                ],
+                                "UIPosition": 7
+                            },
+                            {
+                                "nls": "修订版",
+                                "selectable": "revision",
+                                "name": "revision",
+                                "readOnly": true,
+                                "type": "string",
+                                "UIPosition": 5
+                            },
+                            {
+                                "nls": "组织",
+                                "selectable": "organization",
+                                "name": "organization",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "Company Name"
+                                ],
+                                "UIPosition": 10
+                            },
+                            {
+                                "visible": true,
+                                "nls": "名称",
+                                "selectable": "name",
+                                "name": "name",
+                                "readOnly": true,
+                                "type": "string",
+                                "value": [
+                                    "SUV"
+                                ],
+                                "UIPosition": 2
+                            }
+                        ],
+                        "metatype": "bus",
+                        "type": "Model",
+                        "type_icon_large_url": "/snresources/images/icons/large/I_PLCModel108x144.png",
+                        "PLMParametersAvailable": false,
+                        "preview_url": "",
+                        "success": true,
+                        "modifyAccess": true,
+                        "groupData": []
+                    }
+                ]
+            }
+        }
+    ],
+    "enabledCriteria": [
+        {
+            "criteriaName": "feature",
+            "activatedFor": [
+                "D5D205296E1600006A1E8FE40000794D",
+                "D5D205296E1600006A1E8FFF00007965",
+                "D5D205296E1600006A1E900600007971",
+                "D5D205296E1600006A1E90120000797D"
+            ],
+            "notActivatedFor": []
+        },
+        {
+            "criteriaName": "productState",
+            "activatedFor": [
+                "D5D205296E1600006A1E900600007971"
+            ],
+            "notActivatedFor": [
+                "D5D205296E1600006A1E8FE40000794D",
+                "D5D205296E1600006A1E8FFF00007965",
+                "D5D205296E1600006A1E90120000797D"
+            ]
+        }
+    ],
+    "description": {
+        "desc1": {
+            "results": [
+                {
+                    "type_icon_url": "/snresources/images/icons/small/iconSmallProduct.png",
+                    "computed": {
+                        "label": {
+                            "path": "Marketing Name",
+                            "selectable": "attribute[Marketing Name]",
+                            "name": "Marketing Name",
+                            "value": [
+                                "BYDSong"
+                            ]
+                        }
+                    },
+                    "data": [
+                        {
+                            "path": "Originator",
+                            "nls": "发起者",
+                            "selectable": "attribute[Originator]",
+                            "name": "Originator",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "YAN CHEN"
+                            ],
+                            "UIPosition": 12,
+                            "keepformat": false
+                        },
+                        {
+                            "path": "Base Price",
+                            "visible": true,
+                            "nls": "基本价格",
+                            "maxlength": 0,
+                            "selectable": "attribute[Base Price]",
+                            "name": "Base Price",
+                            "readOnly": false,
+                            "type": "real",
+                            "value": [
+                                "0.0"
+                            ],
+                            "UIPosition": 8,
+                            "keepformat": false
+                        },
+                        {
+                            "path": "Marketing Name",
+                            "visible": true,
+                            "nls": "标题",
+                            "maxlength": 0,
+                            "selectable": "attribute[Marketing Name]",
+                            "name": "Marketing Name",
+                            "readOnly": false,
+                            "type": "string",
+                            "value": [
+                                "BYDSong"
+                            ],
+                            "mandatory": true,
+                            "UIPosition": 3,
+                            "keepformat": false
+                        }
+                    ],
+                    "physicalID": "D5D205296E1600006A1E8CA600013BE8",
+                    "basicData": [
+                        {
+                            "nls": "合作区",
+                            "selectable": "project",
+                            "name": "project",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "Common Space"
+                            ],
+                            "UIPosition": 11
+                        },
+                        {
+                            "visible": true,
+                            "nls": "描述",
+                            "selectable": "description",
+                            "multiline": true,
+                            "name": "description",
+                            "readOnly": false,
+                            "type": "string",
+                            "UIPosition": 4
+                        },
+                        {
+                            "nls": "类型",
+                            "selectable": "type",
+                            "name": "type",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "模型版本"
+                            ],
+                            "UIPosition": 2
+                        },
+                        {
+                            "nls": "创建日期",
+                            "selectable": "originated",
+                            "name": "originated",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "2026/06/02@07:56:22:GMT"
+                            ],
+                            "UIPosition": 13
+                        },
+                        {
+                            "nls": "成熟度状态",
+                            "selectable": "current",
+                            "name": "current",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "工作中"
+                            ],
+                            "UIPosition": 6
+                        },
+                        {
+                            "nls": "修改日期",
+                            "selectable": "modified",
+                            "name": "modified",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "2026/06/02@08:07:02:GMT"
+                            ],
+                            "UIPosition": 9
+                        },
+                        {
+                            "valueDB": [
+                                "CHENYAN"
+                            ],
+                            "nls": "所有者",
+                            "selectable": "owner",
+                            "name": "owner",
+                            "readOnly": false,
+                            "type": "string",
+                            "value": [
+                                "YAN CHEN"
+                            ],
+                            "mandatory": true,
+                            "UIPosition": 7
+                        },
+                        {
+                            "nls": "修订版",
+                            "selectable": "revision",
+                            "name": "revision",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "A"
+                            ],
+                            "UIPosition": 5
+                        },
+                        {
+                            "nls": "组织",
+                            "selectable": "organization",
+                            "name": "organization",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "Company Name"
+                            ],
+                            "UIPosition": 10
+                        },
+                        {
+                            "visible": true,
+                            "nls": "名称",
+                            "selectable": "name",
+                            "name": "name",
+                            "readOnly": true,
+                            "type": "string",
+                            "value": [
+                                "BYDSong"
+                            ],
+                            "UIPosition": 1
+                        }
+                    ],
+                    "metatype": "bus",
+                    "type": "Products",
+                    "thumbnailsRW": true,
+                    "type_icon_large_url": "/snresources/images/icons/large/I_Product_Thumbnail.png",
+                    "PLMParametersAvailable": false,
+                    "preview_url": "",
+                    "success": true,
+                    "modifyAccess": true,
+                    "groupData": []
+                }
+            ]
+        }
+    },
+    "version": "1.2"
+}
+有效性和变体/选项接口请求
+resources/modeler/configuration/navigationServices/getMultipleFilterableObjectInfo?tenant=OnPremise
+请求接口 注意pidList里面用的是关系ID，和上面的接口用的不是一个ID
+{
+    "version": "2.0",
+    "output": {
+        "targetFormat": "TXT",
+        "withDescription": "YES",
+        "view": "ALL",
+        "domains": "ALL"
+    },
+    "pidList": [
+        "D5D205296E1600006A1E91DF00007B4F",
+        "D5D205296E1600006A1E91E600007B5B",
+        "D5D205296E1600006A1E91F100007B67"
+    ]
+}
+响应接口 Variant 显示到变体/选项列，如果没有值的话显示无(链接形式，后面点击可以弹出页面) hasEffectivity YES 显示为是 其他显示为否
+{
+    "version": "2.0",
+    "format": "TXT",
+    "expressions": {
+        "D5D205296E1600006A1E91DF00007B4F": {
+            "content": {
+                "Evolution": {
+                    "Current": null,
+                    "Projected": null,
+                    "Source": null
+                },
+                "Variant": "BYDSong: 底盘{空气悬挂}"
+            },
+            "hasEffectivity": "YES",
+            "status": "SUCCESS"
+        },
+        "D5D205296E1600006A1E91E600007B5B": {
+            "content": {
+                "Evolution": {
+                    "Current": null,
+                    "Projected": null,
+                    "Source": null
+                },
+                "Variant": "BYDSong: 底盘{筷子悬架}"
+            },
+            "hasEffectivity": "YES",
+            "status": "SUCCESS"
+        },
+        "D5D205296E1600006A1E91F100007B67": {
+            "content": {
+                "Evolution": {
+                    "Current": null,
+                    "Projected": null,
+                    "Source": null
+                },
+                "Variant": "BYDSong: 底盘{五连杆悬架}"
+            },
+            "hasEffectivity": "YES",
+            "status": "SUCCESS"
+        },
+        "D5D205296E1600006A1E901700007985": {
+            "hasEffectivity": "NO",
+            "status": "SUCCESS"
+        }
+    }
+}

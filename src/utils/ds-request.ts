@@ -66,25 +66,65 @@ const request = async (
 					resolve(res);
 				}
 			},
-			onFailure(error: any, ...args: any[]) {
-				console.error('WAFData request failed:', error, args);
+			onFailure(error: any, ...rawArgs: any[]) {
+				console.error('=== WAFData onFailure START ===');
+				console.error('Error object:', error);
+				console.error('Raw args count:', rawArgs.length);
+				console.error('Raw args:', JSON.stringify(rawArgs, null, 2));
+				
+				// WAFData 可能将 args 作为数组传入，需要扁平化处理
+				const args = rawArgs.length === 1 && Array.isArray(rawArgs[0]) ? rawArgs[0] : rawArgs;
+				console.error('Flattened args count:', args.length);
+				console.error('Flattened args:', JSON.stringify(args, null, 2));
+				
 				// 尝试从 args 中提取 JSON 响应体（3DSpace 业务错误通常以 JSON 返回在响应体中）
 				let parsedBody: any = null;
-				for (const arg of args) {
+				
+				for (let i = 0; i < args.length; i++) {
+					const arg = args[i];
+					console.error(`Arg[${i}] type:`, typeof arg);
+					
 					if (typeof arg === 'string') {
+						console.error(`Arg[${i}] is string:`, arg.substring(0, 200));
 						try {
 							const parsed = JSON.parse(arg);
-							if (parsed && (parsed.error !== undefined || parsed.success === false)) {
+							console.error(`Arg[${i}] parsed JSON:`, parsed);
+							if (parsed.errorMessage || parsed.errorID || parsed.error !== undefined || parsed.success === false) {
 								parsedBody = parsed;
+								console.error('Found parsedBody in string arg!');
 								break;
 							}
-						} catch {}
-					}
-					if (typeof arg === 'object' && arg && (arg.error !== undefined || arg.success === false)) {
-						parsedBody = arg;
-						break;
+						} catch (e) {
+							console.error(`Arg[${i}] not valid JSON`);
+						}
+					} else if (typeof arg === 'object' && arg !== null) {
+						console.error(`Arg[${i}] is object, keys:`, Object.keys(arg));
+						console.error(`Arg[${i}] content:`, JSON.stringify(arg, null, 2));
+						
+						if (arg.errorMessage || arg.errorID || arg.error !== undefined || arg.success === false) {
+							parsedBody = arg;
+							console.error('Found parsedBody in object arg!');
+							break;
+						}
+						// 检查是否有 responseText 或类似属性（XMLHttpRequest 对象）
+						if (arg.responseText) {
+							console.error(`Arg[${i}] has responseText:`, arg.responseText.substring(0, 200));
+							try {
+								const parsed = JSON.parse(arg.responseText);
+								console.error('Parsed responseText:', parsed);
+								if (parsed.errorMessage || parsed.errorID || parsed.error !== undefined) {
+									parsedBody = parsed;
+									console.error('Found parsedBody in responseText!');
+									break;
+								}
+							} catch {}
+						}
 					}
 				}
+				
+				console.error('=== Final parsedBody:', parsedBody);
+				console.error('=== WAFData onFailure END ===');
+				
 				if (parsedBody) {
 					reject(parsedBody);
 				} else {
